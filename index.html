@@ -431,17 +431,58 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
         <div class="champ"><label>📅 Date</label><input type="date" id="vf-date"></div>
         <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
       </div>
-      <div class="champ" style="margin-bottom:9px">
-        <label>📂 Catégorie / Ligne budgétaire</label>
-        <input type="text" id="vf-cat" list="cat-fiang" placeholder="Ex: Électricité…">
-        <datalist id="cat-fiang">
-          <option>Électricité / eau</option><option>Loyer / location salle</option>
-          <option>Transport</option><option>Fournitures bureau</option>
-          <option>Activités pastorales</option><option>Entretien / réparation</option>
-          <option>Communication</option><option>Frais bancaires</option><option>Autre</option>
-        </datalist>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ">
+          <label>🔢 N° Pièce / Reçu</label>
+          <input type="text" id="vf-piece" placeholder="Ex: P-001, R-045…">
+        </div>
+        <div class="champ">
+          <label>📄 N° Page du livre</label>
+          <input type="number" id="vf-page" min="1" placeholder="Ex: 12" inputmode="numeric">
+        </div>
+        <div class="champ full">
+          <label>📂 Ligne budgétaire</label>
+          <select id="vf-cat" style="-webkit-appearance:none">
+            <option value="">— Choisir —</option>
+            <optgroup label="C1 — Fitandremana">
+              <option value="C1.1">C1.1 — Ezaka Pst Andria</option>
+              <option value="C1.2">C1.2 — Kojakoja fitandremana Pst Rakotoniaina</option>
+            </optgroup>
+            <optgroup label="C2 — Sampana">
+              <option value="C2.1">C2.1 — Sekoly Alahady</option>
+            </optgroup>
+            <optgroup label="C3 — Fitoriana">
+              <option value="C3.1">C3.1 — Mpitoriteny ivelany</option>
+              <option value="C3.2">C3.2 — Fanampiana asa fitoriana</option>
+              <option value="C3.3">C3.3 — Fanampiana Fiangonana / SAMUEL</option>
+            </optgroup>
+            <optgroup label="C4 — Fiaraha-miasa">
+              <option value="C4.1">C4.1 — Moissons "Les Béatitudes"</option>
+              <option value="C4.2">C4.2 — Anjara fikarakarana ny fiangonana</option>
+              <option value="C4.3">C4.3 — Mpanadio trano</option>
+              <option value="C4.4">C4.4 — Fanofana trano ivelany</option>
+            </optgroup>
+            <optgroup label="C5 — Asa anatiny">
+              <option value="C5.1">C5.1 — Famangiana - Tsodrano</option>
+              <option value="C5.2">C5.2 — Asa vavolombelona</option>
+              <option value="C5.3">C5.3 — Fisintonanan'ny Fiangonana</option>
+              <option value="C5.4.1">C5.4.1 — Fiofanan'ny Mpitandrina</option>
+              <option value="C5.5">C5.5 — Divay sy mofo Fandraisana</option>
+            </optgroup>
+            <optgroup label="C6 — Fampitaovana">
+              <option value="C6.1">C6.1 — Fampitaovana</option>
+              <option value="C6.2">C6.2 — Banky</option>
+              <option value="C6.3">C6.3 — Samihafa</option>
+              <option value="C6.5">C6.5 — Prise en charge sanitaire Mpitandrina</option>
+              <option value="C6.6">C6.6 — Tranokala www.fkma.ci</option>
+            </optgroup>
+            <optgroup label="C7">
+              <option value="C7.1">C7.1 — Raki-pisaorana & fanomezana</option>
+            </optgroup>
+          </select>
+        </div>
       </div>
-      <div class="champ" style="margin-bottom:9px"><label>📝 Description</label><input type="text" id="vf-desc" placeholder="Détail…"></div>
+      <div class="champ" style="margin-bottom:9px"><label>📝 Description / Commentaire</label><input type="text" id="vf-desc" placeholder="Détail de la dépense…"></div>
       <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="vf-auteur" placeholder="Nom du responsable"></div>
       <button class="btn btn-vert" onclick="ajouterDepense('fiang')"><span>➕</span> Enregistrer</button>
     </div>
@@ -466,6 +507,16 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
       <div class="grid2" style="margin-bottom:9px">
         <div class="champ"><label>📅 Date</label><input type="date" id="va-date"></div>
         <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ">
+          <label>🔢 N° Pièce / Reçu</label>
+          <input type="text" id="va-piece" placeholder="Ex: P-001, R-045…">
+        </div>
+        <div class="champ">
+          <label>📄 N° Page du livre</label>
+          <input type="number" id="va-page" min="1" placeholder="Ex: 12" inputmode="numeric">
+        </div>
       </div>
       <div class="champ" style="margin-bottom:9px">
         <label>📂 Catégorie</label>
@@ -1077,16 +1128,20 @@ function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
   const date=document.getElementById(p+'-date').value;
   const montant=parseInt(document.getElementById(p+'-montant').value)||0;
-  const cat=document.getElementById(p+'-cat').value.trim();
+  const cat=document.getElementById(p+'-cat').value.trim?.() || document.getElementById(p+'-cat').value;
+  const piece=document.getElementById(p+'-piece')?.value.trim()||'';
+  const page=document.getElementById(p+'-page')?.value||'';
   const desc=document.getElementById(p+'-desc').value.trim();
   const auteur=document.getElementById(p+'-auteur').value.trim();
   if(!montant){alert('Veuillez saisir un montant.');return;}
   if(!date){alert('Veuillez saisir une date.');return;}
   const dep=load(SK_DEP);
-  dep.push({id:Date.now(),livre,date,montant,cat,desc,auteur});
+  dep.push({id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur});
   dep.sort((a,b)=>b.date.localeCompare(a.date));
   save(SK_DEP,dep);
   document.getElementById(p+'-montant').value='';
+  if(document.getElementById(p+'-piece')) document.getElementById(p+'-piece').value='';
+  if(document.getElementById(p+'-page')) document.getElementById(p+'-page').value='';
   document.getElementById(p+'-desc').value='';
   afficherDepenses(livre);
 }
@@ -1111,7 +1166,8 @@ function afficherDepenses(livre){
       <span class="depense-montant">-${fmt(d.montant)} F</span>
       <button onclick="supprimerDepense(${d.id})" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
     </div>
-    ${d.desc?`<div style="font-size:12px;color:var(--texte2);margin-top:3px">${d.desc}</div>`:''}
+        <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${d.page}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${d.piece}</span>`:''}</div>
+    ${d.desc?`<div style="font-size:12px;color:var(--texte2);margin-top:2px">${d.desc}</div>`:''}
     ${d.auteur?`<div style="font-size:11px;color:var(--texte2)">Autorisé par : ${d.auteur}</div>`:''}
   </div>`).join('');
 }
@@ -1214,10 +1270,10 @@ function exporterExcelAnjarako(){
 function exporterExcelDepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);const wb=XLSX.utils.book_new();
   const rows=[['VOLA MIVAOKA — '+(livre==='fiang'?'FIANGONANA':'ANJARAKO')],[],
-    ['Date','Montant','Catégorie','Description','Autorisé par']];
-  all.forEach(d=>rows.push([d.date,d.montant,d.cat||'',d.desc||'',d.auteur||'']));
-  rows.push([],[,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
-  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:20},{wch:28},{wch:18}];
+    ['Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
+  all.forEach(d=>rows.push([d.date,d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
+  rows.push([],[,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
 }
 
