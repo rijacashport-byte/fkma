@@ -47,7 +47,7 @@ function lireJSON(inp){
       if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
       if(data.membres)  msg += '  👥 Membres  : ' + data.membres.length  + ' entrée(s)\n';
       if(data.depenses) msg += '  💸 Dépenses : ' + data.depenses.length + ' entrée(s)\n';
-      msg += '\n⚠️ Importer va FUSIONNER avec les données existantes (pas d'écrasement).\nContinuer ?';
+      msg += NL+'⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).'+NL+'Continuer ?';
       if(!confirm(msg)) return;
       // Fusionner sans doublons (clé = date)
       function fusionner(sk, nouv, cle){
@@ -222,6 +222,28 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
   @page{margin:8mm;size:A4 portrait;}
 }
 </style>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBy_6YvJa-paKC6CfZ-2uFpznlEDc5_Pfk",
+  authDomain: "fkma-abidjan.firebaseapp.com",
+  projectId: "fkma-abidjan",
+  storageBucket: "fkma-abidjan.firebasestorage.app",
+  messagingSenderId: "535913496796",
+  appId: "1:535913496796:web:5a3005d03f0b4b98f7f419"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+window._db = db;
+window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
+window._fbReady = true;
+window.dispatchEvent(new Event("fb-ready"));
+</script>
+
 </head>
 <body>
 
@@ -243,6 +265,16 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
 
 
 <!-- ═══ ONGLET 2 : RAKITRA ═══ -->
+
+<div id="fb-status" style="display:flex;align-items:center;gap:7px;padding:7px 12px;
+  border-radius:8px;font-size:12px;margin-bottom:10px;background:#fff8e7;color:#8a6200">
+  <div id="fb-dot" style="width:8px;height:8px;border-radius:50%;background:#c49a2a;
+    animation:fbpulse 1s infinite;flex-shrink:0"></div>
+  <span id="fb-txt">Connexion Firebase…</span>
+</div>
+<style>
+@keyframes fbpulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+</style>
 <div id="tab-rakitra">
 
   <div class="card">
@@ -640,6 +672,31 @@ const SK_ANJ_H   = 'fkma_anj_hist';
 const SK_ANJ_M   = 'fkma_anj_membres';
 const SK_DEP     = 'fkma_depenses';
 
+// ── FIREBASE ──────────────────────────────────────────────────
+let _db = null, _fs = null;
+function fbOK(){
+  _db = window._db; _fs = window._fs;
+  document.getElementById('fb-status').style.background='#e8f5ee';
+  document.getElementById('fb-status').style.color='#1a6b3c';
+  document.getElementById('fb-dot').style.background='#1a6b3c';
+  document.getElementById('fb-dot').style.animation='none';
+  document.getElementById('fb-txt').textContent='Firebase connecté ✓';
+  // Charger les données depuis Firebase au démarrage
+  chargerDepenses();
+  chargerAnjarako();
+}
+function fbErr(msg){
+  document.getElementById('fb-status').style.background='#fdecea';
+  document.getElementById('fb-status').style.color='#c0392b';
+  document.getElementById('fb-dot').style.background='#c0392b';
+  document.getElementById('fb-dot').style.animation='none';
+  document.getElementById('fb-txt').textContent='Firebase hors ligne — mode local';
+}
+if(window._fbReady){ fbOK(); }
+else { window.addEventListener('fb-ready', fbOK); }
+setTimeout(function(){ if(!_db) fbErr('délai dépassé'); }, 8000);
+
+
 function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{return[];}}
 function save(k,d){localStorage.setItem(k,JSON.stringify(d));}
 function fmt(n){return Number(n||0).toLocaleString('fr-FR');}
@@ -988,15 +1045,22 @@ function snapRakitra(){
   };
 }
 
-function enregistrerRakitra(){
+async function enregistrerRakitra(){
   const d=snapRakitra();
-  if(!d.date){alert('Veuillez renseigner la date dans Fiainam-piangonana.');return;}
+  if(!d.date){alert('Veuillez renseigner la date.');return;}
   const hist=load(SK_RAKITRA);
   const idx=hist.findIndex(h=>h.date===d.date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=d;}else hist.push(d);
-  hist.sort((a,b)=>b.date.localeCompare(a.date));
-  save(SK_RAKITRA,hist);
-  alert('✅ Rakitra du '+d.date+' enregistré !');
+  hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_RAKITRA,hist);
+  if(_db){try{
+    const col=_fs.collection(_db,'rakitra');
+    const snap=await _fs.getDocs(col);let xId=null;
+    snap.forEach(function(ds){if(ds.data().date===d.date)xId=ds.id;});
+    if(xId)await _fs.updateDoc(_fs.doc(_db,'rakitra',xId),d);
+    else await _fs.addDoc(col,d);
+    alert('✅ Rakitra du '+d.date+' enregistré dans Firebase !');
+  }catch(e){alert('Local OK — Firebase: '+e.message);}}
+  else alert('✅ Rakitra enregistré localement.');
 }
 
 // ── DIACRES ──────────────────────────────────────────────────
@@ -1102,17 +1166,24 @@ function calculerAnjMoisCourant(){
   if(le)le.textContent=pctE.toFixed(1)+'% ('+cumulE+' / '+objE+' env.)';
   if(be){be.style.width=Math.min(pctE,100)+'%';be.className='pct-fill'+(pctE>=100?' ok':'');}
 }
-function enregistrerAnjarako(){
+async function enregistrerAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
-  if(!date){alert('Veuillez renseigner la date dans Fiainam-piangonana.');return;}
-  const hist=load(SK_ANJ_H);
+  if(!date){alert('Veuillez renseigner la date.');return;}
   const rec={date,total,enveloppes:[...enveloppesJour]};
+  const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
-  hist.sort((a,b)=>b.date.localeCompare(a.date));
-  save(SK_ANJ_H,hist);
-  alert('✅ Anjarako du '+date+' enregistré !');
+  hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_ANJ_H,hist);
+  if(_db){try{
+    const col=_fs.collection(_db,'anjarako');
+    const snap=await _fs.getDocs(col);let xId=null;
+    snap.forEach(function(ds){if(ds.data().date===date)xId=ds.id;});
+    if(xId)await _fs.updateDoc(_fs.doc(_db,'anjarako',xId),rec);
+    else await _fs.addDoc(col,rec);
+    alert('✅ Anjarako du '+date+' enregistré dans Firebase !');
+  }catch(e){alert('Local OK — Firebase: '+e.message);}}
+  else alert('✅ Anjarako enregistré localement.');
 }
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
@@ -1124,30 +1195,35 @@ function resetAnjarako(){
 }
 
 // ── VOLA MIVAOKA ─────────────────────────────────────────────
-function ajouterDepense(livre){
+async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
   const date=document.getElementById(p+'-date').value;
   const montant=parseInt(document.getElementById(p+'-montant').value)||0;
-  const cat=document.getElementById(p+'-cat').value.trim?.() || document.getElementById(p+'-cat').value;
+  const cat=document.getElementById(p+'-cat').value?.trim?document.getElementById(p+'-cat').value.trim():document.getElementById(p+'-cat').value;
   const piece=document.getElementById(p+'-piece')?.value.trim()||'';
   const page=document.getElementById(p+'-page')?.value||'';
   const desc=document.getElementById(p+'-desc').value.trim();
   const auteur=document.getElementById(p+'-auteur').value.trim();
   if(!montant){alert('Veuillez saisir un montant.');return;}
   if(!date){alert('Veuillez saisir une date.');return;}
+  const rec={id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur};
   const dep=load(SK_DEP);
-  dep.push({id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur});
-  dep.sort((a,b)=>b.date.localeCompare(a.date));
-  save(SK_DEP,dep);
+  dep.push(rec);dep.sort((a,b)=>b.date.localeCompare(a.date));save(SK_DEP,dep);
+  if(_db){try{await _fs.addDoc(_fs.collection(_db,'depenses'),rec);}catch(e){console.log('FB dep:',e.message);}}
   document.getElementById(p+'-montant').value='';
-  if(document.getElementById(p+'-piece')) document.getElementById(p+'-piece').value='';
-  if(document.getElementById(p+'-page')) document.getElementById(p+'-page').value='';
+  if(document.getElementById(p+'-piece'))document.getElementById(p+'-piece').value='';
+  if(document.getElementById(p+'-page'))document.getElementById(p+'-page').value='';
   document.getElementById(p+'-desc').value='';
   afficherDepenses(livre);
 }
-function supprimerDepense(id){
+async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
   save(SK_DEP,load(SK_DEP).filter(d=>d.id!==id));
+  if(_db){try{
+    const col=_fs.collection(_db,'depenses');
+    const snap=await _fs.getDocs(col);
+    for(const ds of snap.docs){if(ds.data().id===id){await _fs.deleteDoc(ds.ref);break;}}
+  }catch(e){console.log('Firebase delete:',e.message);}}
   afficherDepenses('fiang');afficherDepenses('anj');
 }
 function afficherDepenses(livre){
@@ -1277,6 +1353,32 @@ function exporterExcelDepenses(livre){
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
 }
 
+
+// ── CHARGEMENT FIREBASE AU DÉMARRAGE ─────────────────────────
+async function chargerDepenses(){
+  if(!_db)return;
+  try{
+    const snap=await _fs.getDocs(_fs.collection(_db,'depenses'));
+    if(snap.empty)return;
+    const deps=[];
+    snap.forEach(function(ds){deps.push(ds.data());});
+    deps.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+    save(SK_DEP,deps);
+    afficherDepenses('fiang');afficherDepenses('anj');
+  }catch(e){console.log('Erreur chargement dépenses:',e.message);}
+}
+
+async function chargerAnjarako(){
+  if(!_db)return;
+  try{
+    const snap=await _fs.getDocs(_fs.collection(_db,'anjarako'));
+    if(snap.empty)return;
+    const hist=[];
+    snap.forEach(function(ds){hist.push(ds.data());});
+    hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+    save(SK_ANJ_H,hist);
+  }catch(e){console.log('Erreur chargement anjarako:',e.message);}
+}
 // ── DASHBOARD ────────────────────────────────────────────────
 let dashAnnee=new Date().getFullYear();
 function changerAnnee(d){dashAnnee+=d;renderDashboard();}
