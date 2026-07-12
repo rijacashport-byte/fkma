@@ -79,21 +79,6 @@ function lireJSON(inp){
 
 
 
-function copierPressePapier(msg){
-  navigator.clipboard.writeText(msg).then(function(){
-    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
-  }).catch(function(){
-    // Fallback pour anciens navigateurs
-    const el=document.createElement('textarea');
-    el.value=msg;
-    el.style.position='fixed';el.style.opacity='0';
-    document.body.appendChild(el);
-    el.focus();el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
-  });
-}
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap');
@@ -622,6 +607,7 @@ window.dispatchEvent(new Event("fb-ready"));
     <button class="dtab actif" onclick="showDtab('finances',this)">💰 Finances</button>
     <button class="dtab" onclick="showDtab('presences',this)">👥 Présences</button>
     <button class="dtab" onclick="showDtab('cultes',this)">⛪ Cultes</button>
+    <button class="dtab" onclick="showDtab('historique',this)">🔄 Modifier</button>
   </div>
 
   <div id="dtab-finances">
@@ -659,6 +645,23 @@ window.dispatchEvent(new Event("fb-ready"));
           <tbody id="dash-tbody-cultes"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <div id="dtab-historique" style="display:none">
+    <div class="card">
+      <div class="card-titre">🔄 Modifier une saisie existante</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--texte2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">📅 Sélectionner une date</div>
+        <select id="hist-select-date" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;background:white" onchange="chargerSaisieDate(this.value)">
+          <option value="">— Choisir une date —</option>
+        </select>
+      </div>
+      <div id="hist-actions" style="display:none;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-bleu" onclick="chargerRakitraHist()"><span>🙏</span> Recharger ce Rakitra</button>
+        <button class="btn btn-or"   onclick="chargerAnjHist()"><span>📨</span> Recharger cet Anjarako</button>
+      </div>
+      <div id="hist-info" style="font-size:12px;color:var(--texte2);margin-top:8px;padding:8px 10px;background:var(--gris1);border-radius:7px;display:none"></div>
     </div>
   </div>
 
@@ -749,6 +752,7 @@ function showDtab(tab,btn){
   if(tab==='finances')  renderDashFinances();
   if(tab==='presences') renderDashPresences();
   if(tab==='cultes')    renderDashCultes();
+  if(tab==='historique')peuplerHistSelect();
 }
 
 function syncDateLabel(){}
@@ -1276,7 +1280,7 @@ function partagerWACulte(){
   if(d.theme)m+=`🗓️ *Thème :* ${d.theme}\n`;
   if(d.faits.length){m+=`━━━━━━━━━━━━━━━━━\n⭐ *Faits marquants :*\n`;d.faits.forEach(f=>{m+=`  • ${f.label}${f.noms?' : '+f.noms:''}\n`;});}
   m+=`\n_FKMA Abidjan — Côte d'Ivoire_`;
-  copierPressePapier(m);
+  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 
 function partagerWARakitra(){
@@ -1300,7 +1304,7 @@ function partagerWARakitra(){
   m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*`;
   if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}`;
   m+=`\n_FKMA Abidjan_`;
-  copierPressePapier(m);
+  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 
 function partagerWAAnjarako(){
@@ -1312,7 +1316,7 @@ function partagerWAAnjarako(){
   enveloppesJour.forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
   Object.keys(parMois).sort().forEach(mo=>{m+=`  ${moisLabel(mo)} : cartes ${parMois[mo].sort((a,b)=>a-b).join(', ')}\n`;});
   m+=`\n_FKMA Abidjan_`;
-  copierPressePapier(m);
+  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 
 function partagerWADepenses(livre){
@@ -1321,7 +1325,7 @@ function partagerWADepenses(livre){
   let m=`💸 *VOLA MIVAOKA — ${livre==='fiang'?'FIANGONANA':'ANJARAKO'}*\n━━━━━━━━━━━━━━━━━\n`;
   all.slice(0,10).forEach(d=>{m+=`  ${d.date} | ${fmt(d.montant)} F | ${d.cat||'—'}${d.desc?' — '+d.desc:''}\n`;});
   m+=`━━━━━━━━━━━━━━━━━\n💰 *Total : ${fmt(total)} FCFA*\n_FKMA Abidjan_`;
-  copierPressePapier(m);
+  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 
 function exportExcelCulte(){
@@ -1395,6 +1399,81 @@ async function chargerAnjarako(){
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
     save(SK_ANJ_H,hist);
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
+}
+
+// ── MODIFIER SAISIE EXISTANTE ─────────────────────────────────
+function peuplerHistSelect(){
+  const sel=document.getElementById('hist-select-date');
+  const rakDates=load(SK_RAKITRA).map(h=>h.date);
+  const anjDates=load(SK_ANJ_H).map(h=>h.date);
+  const allDates=[...new Set([...rakDates,...anjDates])].sort((a,b)=>b.localeCompare(a));
+  sel.innerHTML='<option value="">— Choisir une date —</option>';
+  allDates.forEach(function(d){
+    const hasR=rakDates.includes(d);
+    const hasA=anjDates.includes(d);
+    const label=d+(hasR?' 🙏':'')+(hasA?' 📨':'');
+    sel.innerHTML+='<option value="'+d+'">'+label+'</option>';
+  });
+}
+
+let _dateSelectionnee=null;
+function chargerSaisieDate(date){
+  _dateSelectionnee=date;
+  const actions=document.getElementById('hist-actions');
+  const info=document.getElementById('hist-info');
+  if(!date){actions.style.display='none';info.style.display='none';return;}
+  const rak=load(SK_RAKITRA).find(h=>h.date===date);
+  const anj=load(SK_ANJ_H).find(h=>h.date===date);
+  actions.style.display='flex';
+  info.style.display='block';
+  let txt='📅 '+date+' :\n';
+  if(rak) txt+='🙏 Rakitra : '+fmt(rak.total||rak.totalRakitra||0)+' FCFA\n';
+  else txt+='🙏 Rakitra : non saisi\n';
+  if(anj) txt+='📨 Anjarako : '+fmt(anj.total||0)+' FCFA — '+(anj.enveloppes||[]).length+' enveloppes';
+  else txt+='📨 Anjarako : non saisi';
+  info.textContent=txt;
+}
+
+function chargerRakitraHist(){
+  if(!_dateSelectionnee){alert('Veuillez choisir une date.');return;}
+  const rak=load(SK_RAKITRA).find(h=>h.date===_dateSelectionnee);
+  if(!rak){alert('Aucun Rakitra pour cette date.');return;}
+  // Naviguer vers onglet Rakitra et pré-remplir la date
+  document.querySelectorAll('.nav-btn')[0].click();
+  const dateInp=document.getElementById('rak-date-input');
+  if(dateInp) dateInp.value=rak.date;
+  // Remettre les billets
+  BILLETS.forEach(function(b){
+    const el=document.getElementById('b_'+b.v);
+    const found=rak.lb?rak.lb.find(function(x){return x.v===b.v;}):null;
+    if(el) el.value=found&&found.q>0?found.q:'';
+  });
+  PIECES.forEach(function(p){
+    const el=document.getElementById('p_'+p.v);
+    const found=rak.lp?rak.lp.find(function(x){return x.v===p.v;}):null;
+    if(el) el.value=found&&found.q>0?found.q:'';
+  });
+  // Remettre trésorier/observations
+  if(document.getElementById('tres-nom')) document.getElementById('tres-nom').value=rak.tresNom||'';
+  if(document.getElementById('tres-obs')) document.getElementById('tres-obs').value=rak.tresObs||'';
+  if(document.getElementById('observations')) document.getElementById('observations').value=rak.obs||'';
+  calculerRakitra();
+  alert('✅ Rakitra du '+rak.date+' rechargé — modifie et enregistre.');
+}
+
+function chargerAnjHist(){
+  if(!_dateSelectionnee){alert('Veuillez choisir une date.');return;}
+  const anj=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee);
+  if(!anj){alert('Aucun Anjarako pour cette date.');return;}
+  // Naviguer vers onglet Anjarako
+  document.querySelectorAll('.nav-btn')[1].click();
+  const dateInp=document.getElementById('rak-date-input');
+  if(dateInp) dateInp.value=anj.date;
+  const totalInp=document.getElementById('anj-total');
+  if(totalInp) totalInp.value=anj.total||'';
+  enveloppesJour=[...(anj.enveloppes||[])];
+  afficherEnveloppesJour();
+  alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
 }
 // ── DASHBOARD ────────────────────────────────────────────────
 let dashAnnee=new Date().getFullYear();
@@ -1531,21 +1610,8 @@ function exporterDashWA(){
   m+=`📅 ${cul.length} cultes | 👥 ${fmt(tP)} présences\n`;
   m+=`🙏 Rakitra : *${fmt(tR)} FCFA*\n📨 Anjarako : *${fmt(tA)} FCFA*\n💸 Dépenses : *${fmt(tD)} FCFA*\n`;
   m+=`━━━━━━━━━━━━━━━━━\n💰 *Solde net : ${fmt(tR+tA-tD)} FCFA*\n\n_FKMA Abidjan — Côte d'Ivoire_`;
-  copierPressePapier(m);
+  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 </script>
-
-    <textarea id="wa-texte" readonly style="flex:1;min-height:220px;border:1.5px solid #dddcd5;border-radius:8px;
-      padding:10px;font-size:12px;font-family:inherit;resize:none;background:#f4f3ee;line-height:1.6"></textarea>
-    <button onclick="copierWA()" id="wa-copy-btn" style="width:100%;padding:13px;background:#25d366;color:white;
-      border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;gap:7px">
-      📋 Copier le message
-    </button>
-    <div style="font-size:11px;color:#666;text-align:center">
-      Colle ensuite dans ton groupe WhatsApp diacres
-    </div>
-  </div>
-</div>
 </body>
 </html>

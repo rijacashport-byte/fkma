@@ -38,21 +38,6 @@ window._fbReady = true;
 window.dispatchEvent(new Event('fb-ready'));
 
 
-function copierPressePapier(msg){
-  navigator.clipboard.writeText(msg).then(function(){
-    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
-  }).catch(function(){
-    // Fallback pour anciens navigateurs
-    const el=document.createElement('textarea');
-    el.value=msg;
-    el.style.position='fixed';el.style.opacity='0';
-    document.body.appendChild(el);
-    el.focus();el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
-  });
-}
 </script>
 
 <style>
@@ -626,7 +611,14 @@ async function enregistrer(){
       const data=docSnap.data();
       if(data.date===d.date && data.type===d.type) existId=docSnap.id;
     });
-    if(existId){
+    if(_ficheEnCoursId){
+      // Mode modification — mettre à jour la fiche existante
+      await fs.updateDoc(fs.doc(db,'journal_k45',_ficheEnCoursId), d);
+      alert('✅ Fiche mise à jour !');
+      _ficheEnCoursId=null;
+      btn.innerHTML='<i class="ti ti-device-floppy"></i> Enregistrer dans Firebase';
+      btn.style.background='var(--vert)';
+    } else if(existId){
       if(!confirm('Une fiche existe déjà pour ce culte. Remplacer ?')){
         btn.innerHTML='<i class="ti ti-device-floppy"></i> Enregistrer dans Firebase';
         btn.disabled=false;
@@ -660,9 +652,10 @@ async function chargerHistorique(){
       const d=docSnap.data();
       const dd=new Date((d.date||'')+'T00:00:00');
       const dateStr=d.date?dd.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
+      const docId=docSnap.id;
       html+=`<div class="hist-item">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
+          <div style="flex:1">
             <div class="hist-date">Page ${n--} · ${dateStr}</div>
             <div class="hist-type">${d.type||'—'} · ${d.lieu||'—'}</div>
             <div class="hist-meta">
@@ -673,6 +666,11 @@ async function chargerHistorique(){
               ${d.faits?.length?`<span>⭐ ${d.faits.length} fait(s)</span>`:''}
             </div>
           </div>
+          <button onclick="modifierFiche('${docId}')"
+            style="background:var(--bleu);color:white;border:none;border-radius:8px;
+              padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">
+            ✏️ Modifier
+          </button>
         </div>
       </div>`;
     });
@@ -717,10 +715,73 @@ function envoyerWA(){
     d.faits.forEach(function(f){ msg+="  • "+f.label+(f.noms?" : "+f.noms:"")+NL; });
   }
   msg+=NL+SEP+NL+"_FKMA Abidjan — Journal K45_";
-  copierPressePapier(msg);
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
 
+
+// ── MODIFIER UNE FICHE ──────────────────────────────────────────
+let _ficheEnCoursId = null;
+
+async function modifierFiche(docId){
+  if(!_db){alert('Firebase non connecté.');return;}
+  try{
+    const docRef=_fs.doc(_db,'journal_k45',docId);
+    const snap=await _fs.getDocs(_fs.collection(_db,'journal_k45'));
+    let d=null;
+    snap.forEach(function(ds){if(ds.id===docId)d=ds.data();});
+    if(!d){alert('Fiche introuvable.');return;}
+    _ficheEnCoursId=docId;
+    // Basculer sur l'onglet Saisie
+    document.querySelectorAll('.tab-btn')[0].click();
+    // Remplir les champs
+    document.getElementById('f-date').value=d.date||'';
+    document.getElementById('f-type').value=d.type||'';
+    document.getElementById('f-lieu').value=d.lieu||'';
+    document.getElementById('f-mpitarika').value=d.mpitarika||'';
+    document.getElementById('f-mitory').value=d.mitory||'';
+    document.getElementById('f-vavaka').value=d.vavaka||'';
+    document.getElementById('f-theme').value=d.theme||'';
+    document.getElementById('f-sermon').value=d.sermon||'';
+    document.getElementById('f-ref').value=d.ref||'';
+    document.getElementById('f-photo-num').value=d.photoNum||'';
+    document.getElementById('f-photo-cap').value=d.photoCap||'';
+    // Toggle Fandraisana
+    const tog=document.getElementById('tog-f');
+    tog.checked=d.isFandraisana||false;
+    toggleFandr();
+    if(d.presences) setTimeout(function(){
+      const p=document.getElementById('f-pres');if(p)p.value=d.presences;
+      const mp=document.getElementById('f-mpandray');if(mp)mp.value=d.mpandray||'';
+    },100);
+    // Mpamaky teny (tags)
+    tagsListe=[];
+    if(d.mpamaky&&d.mpamaky.length){
+      d.mpamaky.forEach(function(nom){ajouterTag(nom);});
+    }
+    // Faits marquants
+    document.getElementById('faits-liste').innerHTML='';
+    nFaits=0;
+    if(d.faits&&d.faits.length){
+      d.faits.forEach(function(f){
+        ajouterFait();
+        const id='f'+nFaits;
+        const sel=document.getElementById(id+'-type');
+        const nomsInp=document.getElementById(id+'-noms');
+        const noteInp=document.getElementById(id+'-note');
+        if(sel){for(let i=0;i<sel.options.length;i++){if(sel.options[i].value===f.type){sel.selectedIndex=i;break;}}}
+        if(nomsInp)nomsInp.value=f.noms||'';
+        if(noteInp)noteInp.value=f.note||'';
+      });
+    }
+    // Changer le bouton enregistrer en mode modification
+    const btn=document.querySelector('.bv');
+    btn.innerHTML='<i class="ti ti-edit"></i> Mettre à jour cette fiche';
+    btn.style.background='var(--orange)';
+    majApercu();
+    alert('✅ Fiche chargée — modifie et appuie sur "Mettre à jour".');
+  }catch(err){alert('Erreur : '+err.message);}
+}
 // ── INIT ──────────────────────────────────────────────────────
 document.getElementById('f-date').valueAsDate=new Date();
 
@@ -733,18 +794,5 @@ document.getElementById('f-date').valueAsDate=new Date();
 initIntervenants();
 majApercu();
 </script>
-
-    <textarea id="wa-texte" readonly style="flex:1;min-height:220px;border:1.5px solid #dddcd5;border-radius:8px;
-      padding:10px;font-size:12px;font-family:inherit;resize:none;background:#f4f3ee;line-height:1.6"></textarea>
-    <button onclick="copierWA()" id="wa-copy-btn" style="width:100%;padding:13px;background:#25d366;color:white;
-      border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;gap:7px">
-      📋 Copier le message
-    </button>
-    <div style="font-size:11px;color:#666;text-align:center">
-      Colle ensuite dans ton groupe WhatsApp diacres
-    </div>
-  </div>
-</div>
 </body>
 </html>
