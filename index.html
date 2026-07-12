@@ -79,6 +79,95 @@ function lireJSON(inp){
 
 
 
+
+// ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
+const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+
+let currentUser = null;
+let currentRole = null;
+
+// Importer Auth Firebase
+async function initAuth(){
+  const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } =
+    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+
+  const auth = getAuth(window._app);
+
+  // Écouter l'état de connexion
+  onAuthStateChanged(auth, function(user){
+    if(user){
+      currentUser = user;
+      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
+      currentRole = cfg.role;
+      afficherUserBar(cfg);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('user-bar').style.display = 'flex';
+      onLoginSuccess(cfg.role);
+    } else {
+      currentUser = null;
+      currentRole = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('user-bar').style.display = 'none';
+    }
+  });
+
+  window._auth      = auth;
+  window._signIn    = signInWithEmailAndPassword;
+  window._signOut   = signOut;
+}
+
+function afficherUserBar(cfg){
+  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
+  document.getElementById('user-nom').textContent    = cfg.nom;
+  document.getElementById('user-role').textContent   = cfg.label;
+}
+
+async function seConnecter(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const err   = document.getElementById('login-err');
+  const load  = document.getElementById('login-load');
+  const btn   = document.querySelector('.login-btn');
+
+  if(!email || !pwd){ err.textContent = 'Veuillez remplir tous les champs.'; return; }
+  if(!ROLES_CONFIG[email]){ err.textContent = 'Accès non autorisé pour cet email.'; return; }
+
+  err.textContent = '';
+  load.style.display = 'block';
+  btn.disabled = true;
+
+  try{
+    await window._signIn(window._auth, email, pwd);
+  } catch(e){
+    load.style.display = 'none';
+    btn.disabled = false;
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+      err.textContent = 'Mot de passe incorrect.';
+    else if(e.code === 'auth/user-not-found')
+      err.textContent = 'Email introuvable.';
+    else if(e.code === 'auth/too-many-requests')
+      err.textContent = 'Trop de tentatives. Réessaie plus tard.';
+    else
+      err.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+async function seDeconnecter(){
+  if(!confirm('Se déconnecter ?')) return;
+  await window._signOut(window._auth);
+}
+
+// Appeler initAuth au chargement
+window.addEventListener('fb-ready', function(){ initAuth(); });
+
+function onLoginSuccess(role){
+  // Tous les rôles peuvent voir l'appli de gestion
+  // mais on pourra restreindre plus tard
+  console.log('Connecté avec rôle:', role);
+  // Charger les données Firebase
+  if(window._db){chargerDepenses();chargerAnjarako();}
+}
+
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap');
@@ -223,6 +312,37 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
   .tbl thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   @page{margin:8mm;size:A4 portrait;}
 }
+
+/* ── LOGIN ─────────────────────────────────────────────────── */
+#login-screen{position:fixed;inset:0;background:white;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;}
+.login-logo{width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:16px;}
+.login-titre{font-size:18px;font-weight:700;color:var(--bleu);margin-bottom:4px;text-align:center;}
+.login-sub{font-size:12px;color:var(--texte2);margin-bottom:24px;text-align:center;}
+.login-form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
+.login-inp{width:100%;border:1.5px solid var(--gris2);border-radius:9px;
+  padding:12px 14px;font-size:15px;font-family:inherit;outline:none;}
+.login-inp:focus{border-color:var(--bleu);}
+.login-btn{width:100%;padding:14px;background:var(--bleu);color:white;border:none;
+  border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+.login-btn:active{opacity:.85;}
+.login-err{font-size:12px;color:var(--rouge);text-align:center;min-height:18px;}
+.login-load{font-size:13px;color:var(--texte2);text-align:center;display:none;}
+
+/* ── USER BAR ───────────────────────────────────────────────── */
+.user-bar{background:white;border-radius:10px;padding:9px 14px;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.user-info{display:flex;align-items:center;gap:8px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--bleu);
+  color:white;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;}
+.user-nom{font-size:13px;font-weight:600;color:var(--texte);}
+.user-role{font-size:10px;color:var(--texte2);}
+.btn-deconnexion{background:none;border:1.5px solid var(--gris2);border-radius:7px;
+  padding:5px 10px;font-size:11px;cursor:pointer;color:var(--texte2);font-family:inherit;}
+
 </style>
 <!-- Firebase SDK -->
 <script type="module">
@@ -239,6 +359,7 @@ const firebaseConfig = {
   appId: "1:535913496796:web:5a3005d03f0b4b98f7f419"
 };
 const app = initializeApp(firebaseConfig);
+window._app = app;
 const db  = getFirestore(app);
 window._db = db;
 window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
@@ -267,6 +388,33 @@ window.dispatchEvent(new Event("fb-ready"));
 
 
 <!-- ═══ ONGLET 2 : RAKITRA ═══ -->
+
+
+<!-- ÉCRAN DE CONNEXION -->
+<div id="login-screen">
+  <img class="login-logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAg" alt="FKMA">
+  <div class="login-titre">FKMA Abidjan</div>
+  <div class="login-sub">Gestion · Rakitra · Anjarako · Dépenses</div>
+  <div class="login-form">
+    <input class="login-inp" type="email" id="login-email" placeholder="Adresse e-mail" autocomplete="email">
+    <input class="login-inp" type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password">
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" onclick="seConnecter()">Se connecter</button>
+    <div class="login-load" id="login-load">Connexion en cours…</div>
+  </div>
+</div>
+
+<!-- BARRE UTILISATEUR (cachée jusqu'au login) -->
+<div class="user-bar" id="user-bar" style="display:none">
+  <div class="user-info">
+    <div class="user-avatar" id="user-avatar">?</div>
+    <div>
+      <div class="user-nom" id="user-nom">—</div>
+      <div class="user-role" id="user-role">—</div>
+    </div>
+  </div>
+  <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
+</div>
 
 <div id="fb-status" style="display:flex;align-items:center;gap:7px;padding:7px 12px;
   border-radius:8px;font-size:12px;margin-bottom:10px;background:#fff8e7;color:#8a6200">
@@ -377,29 +525,83 @@ window.dispatchEvent(new Event("fb-ready"));
 
 
   <div class="card">
-    <div class="card-titre">💰 Total collecté ce dimanche</div>
-    <div class="champ">
-      <label>Montant total enveloppes (FCFA) — à reporter depuis Rakitra</label>
-      <input type="number" id="anj-total" min="0" placeholder="0" inputmode="numeric" oninput="mettreAJourBannerAnj()">
+    <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
+
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="anj-mode-btn-billets" onclick="showAnjMode('billets')">🟠 Billetage</button>
+      <button class="sub-btn" id="anj-mode-btn-total" onclick="showAnjMode('total')">💰 Montant direct</button>
     </div>
+
+    <!-- Mode billetage -->
+    <div id="anj-zone-billets">
+      <table class="tbl"><thead><tr>
+        <th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th>
+      </tr></thead>
+      <tbody id="anj-tbody-billets"></tbody>
+      <tfoot><tr><td colspan="2">TOTAL BILLETS</td><td id="anj-tfoot-billets">0 FCFA</td></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- Mode montant direct -->
+    <div id="anj-zone-total" style="display:none">
+      <div class="champ">
+        <label>💰 Montant total (FCFA)</label>
+        <input type="number" id="anj-total-direct" min="0" placeholder="0"
+          inputmode="numeric" oninput="calculerAnjTotal()">
+      </div>
+    </div>
+
+    <!-- Toujours visible : total calculé -->
+    <div style="background:var(--gris1);border-radius:8px;padding:8px 12px;margin-top:10px;
+      display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--vert)">Total Anjarako</span>
+      <span style="font-size:18px;font-weight:700;color:var(--vert)" id="anj-total-affiche">0 FCFA</span>
+    </div>
+    <input type="hidden" id="anj-total" value="0">
   </div>
 
   <div class="card">
-    <div class="card-titre">📨 Enregistrer une enveloppe</div>
-    <div class="grid2" style="margin-bottom:9px">
-      <div class="champ carte-wrap">
-        <label>📇 N° de carte</label>
-        <input type="number" id="env-carte" min="1" placeholder="Ex: 47" inputmode="numeric"
-          oninput="rechercherCarte(this.value)" onblur="fermerSugCarte()">
-        <div class="carte-sug" id="carte-sug"></div>
+    <div class="card-titre">📨 Enveloppes</div>
+
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="env-mode-btn-carte" onclick="showEnvMode('carte')">📇 Par n° carte</button>
+      <button class="sub-btn" id="env-mode-btn-nb" onclick="showEnvMode('nb')">🔢 Nombre direct</button>
+    </div>
+
+    <!-- Mode par carte -->
+    <div id="env-zone-carte">
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ carte-wrap">
+          <label>📇 N° de carte</label>
+          <input type="number" id="env-carte" min="1" placeholder="Ex: 47" inputmode="numeric"
+            oninput="rechercherCarte(this.value)" onblur="fermerSugCarte()">
+          <div class="carte-sug" id="carte-sug"></div>
+        </div>
+        <div class="champ">
+          <label>📆 Mois payé</label>
+          <input type="month" id="env-mois">
+        </div>
+      </div>
+      <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
+      <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
+    </div>
+
+    <!-- Mode nombre direct -->
+    <div id="env-zone-nb" style="display:none">
+      <div class="champ" style="margin-bottom:9px">
+        <label>🔢 Nombre d'enveloppes reçues</label>
+        <input type="number" id="env-nb-direct" min="0" placeholder="Ex: 23"
+          inputmode="numeric" oninput="mettreAJourBannerAnj()">
       </div>
       <div class="champ">
-        <label>📆 Mois payé</label>
-        <input type="month" id="env-mois">
+        <label>📆 Mois payé (optionnel)</label>
+        <input type="month" id="env-mois-direct">
+      </div>
+      <div style="background:#fff8e7;border-left:3px solid var(--or);border-radius:0 7px 7px 0;
+        padding:7px 10px;font-size:11px;color:#8a6200;margin-top:8px">
+        💡 Les numéros de cartes ne seront pas enregistrés — juste le nombre total.
       </div>
     </div>
-    <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
-    <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
   </div>
 
   <div class="total-banner orange">
@@ -766,6 +968,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('env-mois').value=moisActuel();
   buildTableaux();
   ajouterDiacre(); ajouterDiacre();
+  buildAnjBillets();
   syncDateLabel();
   afficherDepenses('fiang');
   afficherDepenses('anj');
@@ -993,10 +1196,15 @@ function calculerRepartition(rakiId){
 
 function calculerRaki(){
   let tot=0;
-  document.querySelectorAll('[id^="raki_"][id$="_m"]').forEach(i=>tot+=parseInt(i.value)||0);
+  // Ne compter que les montants totaux des offrandesraki (raki_N_m)
+  // et ignorer les lignes de répartition (raki_N_lX_m)
+  document.querySelectorAll('#raki-liste .raki-item').forEach(function(item){
+    const mEl=document.getElementById(item.id+'_m');
+    if(mEl) tot+=parseInt(mEl.value)||0;
+  });
   document.getElementById('raki-total-val').textContent=fmt(tot)+' FCFA';
-  document.getElementById('raki-total-row').style.display=
-    document.querySelectorAll('[id^="raki_"][id$="_m"]').length>0?'flex':'none';
+  const hasRaki=document.querySelectorAll('#raki-liste .raki-item').length>0;
+  document.getElementById('raki-total-row').style.display=hasRaki?'flex':'none';
   return tot;
 }
 
@@ -1160,11 +1368,16 @@ function afficherEnveloppesJour(){
   </div>`).join('');
 }
 function mettreAJourBannerAnj(){
+  // Nombre d'enveloppes selon le mode
+  const nbDirect = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
+
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
   const nb=enveloppesJour.length;
   const membres=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  document.getElementById('anj-banner-total').innerHTML=`${fmt(total)} <span>FCFA</span>`;
-  document.getElementById('anj-nb-env-disp').textContent=nb;
+  const nbTotal = nb + nbDirect; // cartes + nombre direct
+  const total2 = parseInt(document.getElementById('anj-total')?.value)||0;
+  document.getElementById('anj-banner-total').innerHTML=`${fmt(total2)} <span>FCFA</span>`;
+  document.getElementById('anj-nb-env-disp').textContent=nbTotal;
   document.getElementById('anj-moy-disp').textContent=nb>0?fmt(Math.round(total/nb))+' F':'—';
   document.getElementById('anj-pct-disp').textContent=membres.length>0?Math.round((nb/membres.length)*100)+'%':'—';
 }
@@ -1191,7 +1404,9 @@ async function enregistrerAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
   if(!date){alert('Veuillez renseigner la date.');return;}
-  const rec={date,total,enveloppes:[...enveloppesJour]};
+  const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
+  const moisDirect = document.getElementById('env-mois-direct')?.value||'';
+  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
   const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
@@ -1215,6 +1430,62 @@ function resetAnjarako(){
   afficherEnveloppesJour();mettreAJourBannerAnj();
 }
 
+
+// ── ANJARAKO BILLETAGE ──────────────────────────────────────────
+let anjMode = 'billets'; // 'billets' ou 'total'
+let envMode = 'carte';  // 'carte' ou 'nb'
+
+function showAnjMode(mode){
+  anjMode = mode;
+  document.getElementById('anj-zone-billets').style.display = mode==='billets'?'':'none';
+  document.getElementById('anj-zone-total').style.display   = mode==='total'?'':'none';
+  document.getElementById('anj-mode-btn-billets').classList.toggle('actif', mode==='billets');
+  document.getElementById('anj-mode-btn-total').classList.toggle('actif', mode==='total');
+  calculerAnjTotal();
+}
+
+function showEnvMode(mode){
+  envMode = mode;
+  document.getElementById('env-zone-carte').style.display = mode==='carte'?'':'none';
+  document.getElementById('env-zone-nb').style.display   = mode==='nb'?'':'none';
+  document.getElementById('env-mode-btn-carte').classList.toggle('actif', mode==='carte');
+  document.getElementById('env-mode-btn-nb').classList.toggle('actif', mode==='nb');
+  mettreAJourBannerAnj();
+}
+
+function buildAnjBillets(){
+  const tbody = document.getElementById('anj-tbody-billets');
+  if(!tbody || tbody.children.length > 0) return;
+  BILLETS.forEach(function(item){
+    const eid = 'anj_b_'+item.v;
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><div class="badge-coupure"><div class="dot" style="background:'+item.color+'"></div>'+item.v.toLocaleString('fr-FR')+' FCFA</div></td>'
+      +'<td><input class="qty-input" type="number" id="'+eid+'" min="0" inputmode="numeric" oninput="calculerAnjTotal()"></td>'
+      +'<td id="st_'+eid+'">—</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function calculerAnjTotal(){
+  let tot = 0;
+  if(anjMode === 'billets'){
+    BILLETS.forEach(function(b){
+      const q = parseInt(document.getElementById('anj_b_'+b.v)?.value)||0;
+      const s = q * b.v; tot += s;
+      const el = document.getElementById('st_anj_b_'+b.v);
+      if(el) el.textContent = s > 0 ? fmt(s)+' F' : '—';
+    });
+    document.getElementById('anj-tfoot-billets').textContent = fmt(tot)+' FCFA';
+  } else {
+    tot = parseInt(document.getElementById('anj-total-direct')?.value)||0;
+  }
+  // Mettre à jour le champ hidden utilisé partout ailleurs
+  const hiddenInp = document.getElementById('anj-total');
+  if(hiddenInp) hiddenInp.value = tot;
+  const affiche = document.getElementById('anj-total-affiche');
+  if(affiche) affiche.textContent = fmt(tot)+' FCFA';
+  mettreAJourBannerAnj();
+}
 // ── VOLA MIVAOKA ─────────────────────────────────────────────
 async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';

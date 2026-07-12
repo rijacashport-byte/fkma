@@ -29,6 +29,7 @@ const firebaseConfig = {
   appId: "1:535913496796:web:5a3005d03f0b4b98f7f419"
 };
 const app = initializeApp(firebaseConfig);
+window._app = app;
 const db  = getFirestore(app);
 
 // ── Exposer db et fonctions Firestore au reste de la page ────
@@ -37,6 +38,103 @@ window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, or
 window._fbReady = true;
 window.dispatchEvent(new Event('fb-ready'));
 
+
+
+// ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
+const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+
+let currentUser = null;
+let currentRole = null;
+
+// Importer Auth Firebase
+async function initAuth(){
+  const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } =
+    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+
+  const auth = getAuth(window._app);
+
+  // Écouter l'état de connexion
+  onAuthStateChanged(auth, function(user){
+    if(user){
+      currentUser = user;
+      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
+      currentRole = cfg.role;
+      afficherUserBar(cfg);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('user-bar').style.display = 'flex';
+      onLoginSuccess(cfg.role);
+    } else {
+      currentUser = null;
+      currentRole = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('user-bar').style.display = 'none';
+    }
+  });
+
+  window._auth      = auth;
+  window._signIn    = signInWithEmailAndPassword;
+  window._signOut   = signOut;
+}
+
+function afficherUserBar(cfg){
+  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
+  document.getElementById('user-nom').textContent    = cfg.nom;
+  document.getElementById('user-role').textContent   = cfg.label;
+}
+
+async function seConnecter(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const err   = document.getElementById('login-err');
+  const load  = document.getElementById('login-load');
+  const btn   = document.querySelector('.login-btn');
+
+  if(!email || !pwd){ err.textContent = 'Veuillez remplir tous les champs.'; return; }
+  if(!ROLES_CONFIG[email]){ err.textContent = 'Accès non autorisé pour cet email.'; return; }
+
+  err.textContent = '';
+  load.style.display = 'block';
+  btn.disabled = true;
+
+  try{
+    await window._signIn(window._auth, email, pwd);
+  } catch(e){
+    load.style.display = 'none';
+    btn.disabled = false;
+    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+      err.textContent = 'Mot de passe incorrect.';
+    else if(e.code === 'auth/user-not-found')
+      err.textContent = 'Email introuvable.';
+    else if(e.code === 'auth/too-many-requests')
+      err.textContent = 'Trop de tentatives. Réessaie plus tard.';
+    else
+      err.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+async function seDeconnecter(){
+  if(!confirm('Se déconnecter ?')) return;
+  await window._signOut(window._auth);
+}
+
+// Appeler initAuth au chargement
+window.addEventListener('fb-ready', function(){ initAuth(); });
+
+function onLoginSuccess(role){
+  // Seuls le diacre et le secrétaire peuvent saisir
+  // Le contrôleur et la trésorière voient l'historique en lecture
+  const btnEnregistrer = document.querySelector('.bv');
+  const btnWA = document.querySelector('.bwa');
+  if(role === 'controleur' || role === 'tresoriere'){
+    if(btnEnregistrer) btnEnregistrer.style.display='none';
+    // Basculer directement sur l'historique
+    setTimeout(function(){
+      const btnHist = document.querySelectorAll('.tab-btn')[1];
+      if(btnHist) btnHist.click();
+    }, 500);
+  }
+  chargerHistorique();
+}
 
 </script>
 
@@ -185,6 +283,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
 .note{background:#fff8e7;border-left:3px solid var(--or);border-radius:0 8px 8px 0;
   padding:8px 12px;font-size:12px;color:#8a6200;margin-bottom:10px;}
+
+/* ── LOGIN ─────────────────────────────────────────────────── */
+#login-screen{position:fixed;inset:0;background:white;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;}
+.login-logo{width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:16px;}
+.login-titre{font-size:18px;font-weight:700;color:var(--bleu);margin-bottom:4px;text-align:center;}
+.login-sub{font-size:12px;color:var(--texte2);margin-bottom:24px;text-align:center;}
+.login-form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
+.login-inp{width:100%;border:1.5px solid var(--gris2);border-radius:9px;
+  padding:12px 14px;font-size:15px;font-family:inherit;outline:none;}
+.login-inp:focus{border-color:var(--bleu);}
+.login-btn{width:100%;padding:14px;background:var(--bleu);color:white;border:none;
+  border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;}
+.login-btn:active{opacity:.85;}
+.login-err{font-size:12px;color:var(--rouge);text-align:center;min-height:18px;}
+.login-load{font-size:13px;color:var(--texte2);text-align:center;display:none;}
+
+/* ── USER BAR ───────────────────────────────────────────────── */
+.user-bar{background:white;border-radius:10px;padding:9px 14px;margin-bottom:10px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.user-info{display:flex;align-items:center;gap:8px;}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--bleu);
+  color:white;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;flex-shrink:0;}
+.user-nom{font-size:13px;font-weight:600;color:var(--texte);}
+.user-role{font-size:10px;color:var(--texte2);}
+.btn-deconnexion{background:none;border:1.5px solid var(--gris2);border-radius:7px;
+  padding:5px 10px;font-size:11px;cursor:pointer;color:var(--texte2);font-family:inherit;}
+
 </style>
 </head>
 <body>
