@@ -36,6 +36,26 @@ window._db = db;
 window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot };
 window._fbReady = true;
 window.dispatchEvent(new Event('fb-ready'));
+
+function afficherModalWA(msg){
+  document.getElementById('wa-texte').value=msg;
+  document.getElementById('wa-modal').style.display='flex';
+}
+function fermerWA(){
+  document.getElementById('wa-modal').style.display='none';
+}
+function copierWA(){
+  const txt=document.getElementById('wa-texte');
+  txt.select();
+  navigator.clipboard.writeText(txt.value).then(function(){
+    const btn=document.getElementById('wa-copy-btn');
+    btn.textContent='✅ Copié !';
+    setTimeout(function(){btn.innerHTML='📋 Copier le message';},2000);
+  }).catch(function(){
+    document.execCommand('copy');
+    alert('Copié !');
+  });
+}
 </script>
 
 <style>
@@ -334,7 +354,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   </div>
 
   <button class="btn bv" onclick="enregistrer()"><i class="ti ti-device-floppy"></i> Enregistrer dans Firebase</button>
-  <button class="btn bwa" onclick="envoyerWA()"><i class="ti ti-brand-whatsapp"></i> Envoyer aux diacres</button>
+  <button class="btn bwa" onclick="envoyerWA()"><i class="ti ti-brand-whatsapp"></i> Préparer message diacres</button>
 
 </div><!-- /saisie -->
 
@@ -700,7 +720,7 @@ function envoyerWA(){
     d.faits.forEach(function(f){ msg+="  • "+f.label+(f.noms?" : "+f.noms:"")+NL; });
   }
   msg+=NL+SEP+NL+"_FKMA Abidjan — Journal K45_";
-  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+  afficherModalWA(msg);
 }
 
 
@@ -716,5 +736,25 @@ document.getElementById('f-date').valueAsDate=new Date();
 initIntervenants();
 majApercu();
 </script>
+
+<!-- Modal message WhatsApp -->
+<div id="wa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;padding:16px;align-items:flex-end">
+  <div style="background:white;border-radius:14px;padding:16px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#1a6b3c">💬 Message prêt</span>
+      <button onclick="fermerWA()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
+    </div>
+    <textarea id="wa-texte" readonly style="flex:1;min-height:220px;border:1.5px solid #dddcd5;border-radius:8px;
+      padding:10px;font-size:12px;font-family:inherit;resize:none;background:#f4f3ee;line-height:1.6"></textarea>
+    <button onclick="copierWA()" id="wa-copy-btn" style="width:100%;padding:13px;background:#25d366;color:white;
+      border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:7px">
+      📋 Copier le message
+    </button>
+    <div style="font-size:11px;color:#666;text-align:center">
+      Colle ensuite dans ton groupe WhatsApp diacres
+    </div>
+  </div>
+</div>
 </body>
 </html>
