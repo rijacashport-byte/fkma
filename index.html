@@ -87,14 +87,13 @@ let currentUser = null;
 let currentRole = null;
 
 // Importer Auth Firebase
-async function initAuth(){
-  const { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } =
-    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-
-  const auth = getAuth(window._app);
+function initAuth(){
+  // Auth déjà importé dans le module Firebase
+  const auth = window._auth;
+  if(!auth){ setTimeout(initAuth, 200); return; }
 
   // Écouter l'état de connexion
-  onAuthStateChanged(auth, function(user){
+  window._onAuth(auth, function(user){
     if(user){
       currentUser = user;
       const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
@@ -137,6 +136,10 @@ async function seConnecter(){
   btn.disabled = true;
 
   try{
+    if(!window._auth || !window._signIn){
+      err.textContent = 'Firebase pas encore prêt, réessaie dans 2 secondes.';
+      load.style.display='none'; btn.disabled=false; return;
+    }
     await window._signIn(window._auth, email, pwd);
   } catch(e){
     load.style.display = 'none';
@@ -154,7 +157,7 @@ async function seConnecter(){
 
 async function seDeconnecter(){
   if(!confirm('Se déconnecter ?')) return;
-  await window._signOut(window._auth);
+  if(window._signOut && window._auth) await window._signOut(window._auth);
 }
 
 // Appeler initAuth au chargement
@@ -349,6 +352,8 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBy_6YvJa-paKC6CfZ-2uFpznlEDc5_Pfk",
@@ -359,9 +364,16 @@ const firebaseConfig = {
   appId: "1:535913496796:web:5a3005d03f0b4b98f7f419"
 };
 const app = initializeApp(firebaseConfig);
-window._app = app;
 const db  = getFirestore(app);
-window._db = db;
+const auth = getAuth(app);
+
+// Exposer tout au script principal
+window._app    = app;
+window._db     = db;
+window._auth   = auth;
+window._signIn = signInWithEmailAndPassword;
+window._signOut= signOut;
+window._onAuth = onAuthStateChanged;
 window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
