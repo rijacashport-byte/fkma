@@ -78,23 +78,20 @@ function lireJSON(inp){
 }
 
 
-function afficherModalWA(msg){
-  document.getElementById('wa-texte').value=msg;
-  document.getElementById('wa-modal').style.display='flex';
-}
-function fermerWA(){
-  document.getElementById('wa-modal').style.display='none';
-}
-function copierWA(){
-  const txt=document.getElementById('wa-texte');
-  txt.select();
-  navigator.clipboard.writeText(txt.value).then(function(){
-    const btn=document.getElementById('wa-copy-btn');
-    btn.textContent='✅ Copié !';
-    setTimeout(function(){btn.innerHTML='📋 Copier le message';},2000);
+
+function copierPressePapier(msg){
+  navigator.clipboard.writeText(msg).then(function(){
+    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
   }).catch(function(){
+    // Fallback pour anciens navigateurs
+    const el=document.createElement('textarea');
+    el.value=msg;
+    el.style.position='fixed';el.style.opacity='0';
+    document.body.appendChild(el);
+    el.focus();el.select();
     document.execCommand('copy');
-    alert('Copié !');
+    document.body.removeChild(el);
+    alert('✅ Message copié !\nColle-le dans ton groupe WhatsApp diacres.');
   });
 }
 </script>
@@ -1279,7 +1276,7 @@ function partagerWACulte(){
   if(d.theme)m+=`🗓️ *Thème :* ${d.theme}\n`;
   if(d.faits.length){m+=`━━━━━━━━━━━━━━━━━\n⭐ *Faits marquants :*\n`;d.faits.forEach(f=>{m+=`  • ${f.label}${f.noms?' : '+f.noms:''}\n`;});}
   m+=`\n_FKMA Abidjan — Côte d'Ivoire_`;
-  afficherModalWA(m);
+  copierPressePapier(m);
 }
 
 function partagerWARakitra(){
@@ -1303,7 +1300,7 @@ function partagerWARakitra(){
   m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*`;
   if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}`;
   m+=`\n_FKMA Abidjan_`;
-  afficherModalWA(m);
+  copierPressePapier(m);
 }
 
 function partagerWAAnjarako(){
@@ -1315,7 +1312,7 @@ function partagerWAAnjarako(){
   enveloppesJour.forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
   Object.keys(parMois).sort().forEach(mo=>{m+=`  ${moisLabel(mo)} : cartes ${parMois[mo].sort((a,b)=>a-b).join(', ')}\n`;});
   m+=`\n_FKMA Abidjan_`;
-  afficherModalWA(m);
+  copierPressePapier(m);
 }
 
 function partagerWADepenses(livre){
@@ -1324,7 +1321,7 @@ function partagerWADepenses(livre){
   let m=`💸 *VOLA MIVAOKA — ${livre==='fiang'?'FIANGONANA':'ANJARAKO'}*\n━━━━━━━━━━━━━━━━━\n`;
   all.slice(0,10).forEach(d=>{m+=`  ${d.date} | ${fmt(d.montant)} F | ${d.cat||'—'}${d.desc?' — '+d.desc:''}\n`;});
   m+=`━━━━━━━━━━━━━━━━━\n💰 *Total : ${fmt(total)} FCFA*\n_FKMA Abidjan_`;
-  afficherModalWA(m);
+  copierPressePapier(m);
 }
 
 function exportExcelCulte(){
@@ -1534,17 +1531,10 @@ function exporterDashWA(){
   m+=`📅 ${cul.length} cultes | 👥 ${fmt(tP)} présences\n`;
   m+=`🙏 Rakitra : *${fmt(tR)} FCFA*\n📨 Anjarako : *${fmt(tA)} FCFA*\n💸 Dépenses : *${fmt(tD)} FCFA*\n`;
   m+=`━━━━━━━━━━━━━━━━━\n💰 *Solde net : ${fmt(tR+tA-tD)} FCFA*\n\n_FKMA Abidjan — Côte d'Ivoire_`;
-  afficherModalWA(m);
+  copierPressePapier(m);
 }
 </script>
 
-<!-- Modal message WhatsApp -->
-<div id="wa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;padding:16px;align-items:flex-end">
-  <div style="background:white;border-radius:14px;padding:16px;width:100%;max-height:80vh;display:flex;flex-direction:column;gap:10px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <span style="font-size:13px;font-weight:700;color:#1a6b3c">💬 Message prêt</span>
-      <button onclick="fermerWA()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
-    </div>
     <textarea id="wa-texte" readonly style="flex:1;min-height:220px;border:1.5px solid #dddcd5;border-radius:8px;
       padding:10px;font-size:12px;font-family:inherit;resize:none;background:#f4f3ee;line-height:1.6"></textarea>
     <button onclick="copierWA()" id="wa-copy-btn" style="width:100%;padding:13px;background:#25d366;color:white;
