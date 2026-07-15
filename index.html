@@ -11,157 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Gestion FKMA Abidjan</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-// ── EXPORT / IMPORT JSON ─────────────────────────────────────
-function exporterJSON(){
-  const data = {
-    exportedAt: new Date().toISOString(),
-    version: '1.0',
-    rakitra:  load(SK_RAKITRA),
-    anjarako: load(SK_ANJ_H),
-    membres:  load(SK_ANJ_M),
-    depenses: load(SK_DEP),
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  const date = new Date().toISOString().slice(0,10);
-  a.href     = url;
-  a.download = 'fkma_donnees_' + date + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importerJSON(){
-  document.getElementById('json-import-inp').click();
-}
-
-function lireJSON(inp){
-  const file = inp.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      let msg = '📦 Fichier du ' + (data.exportedAt||'?').slice(0,10) + '\n\nDonnées trouvées :\n';
-      if(data.rakitra)  msg += '  🙏 Rakitra  : ' + data.rakitra.length  + ' entrée(s)\n';
-      if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
-      if(data.membres)  msg += '  👥 Membres  : ' + data.membres.length  + ' entrée(s)\n';
-      if(data.depenses) msg += '  💸 Dépenses : ' + data.depenses.length + ' entrée(s)\n';
-      msg += NL+'⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).'+NL+'Continuer ?';
-      if(!confirm(msg)) return;
-      // Fusionner sans doublons (clé = date)
-      function fusionner(sk, nouv, cle){
-        if(!nouv||!nouv.length) return;
-        const exist = load(sk);
-        nouv.forEach(n => {
-          const idx = exist.findIndex(e => e[cle] === n[cle]);
-          if(idx < 0) exist.push(n);
-        });
-        exist.sort((a,b) => (b[cle]||'').localeCompare(a[cle]||''));
-        save(sk, exist);
-      }
-      fusionner(SK_RAKITRA, data.rakitra,  'date');
-      fusionner(SK_ANJ_H,   data.anjarako, 'date');
-      fusionner(SK_DEP,     data.depenses, 'id');
-      if(data.membres && data.membres.length){
-        const em = load(SK_ANJ_M);
-        data.membres.forEach(m => { if(!em.find(e=>e.num===m.num)) em.push(m); });
-        save(SK_ANJ_M, em);
-      }
-      alert('✅ Importation terminée !\nRechargez la page pour voir les données mises à jour.');
-      inp.value = '';
-    } catch(err) {
-      alert('❌ Fichier JSON invalide : ' + err.message);
-    }
-  };
-  reader.readAsText(file);
-}
-
-
-
-
-// ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
-const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijasvm@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
-
-let currentUser = null;
-let currentRole = null;
-
-// Importer Auth Firebase
-function initAuth(){
-  // Auth déjà importé dans le module Firebase
-  const auth = window._auth;
-  if(!auth){ setTimeout(initAuth, 200); return; }
-
-  // Écouter l'état de connexion
-  window._onAuth(auth, function(user){
-    if(user){
-      currentUser = user;
-      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
-      currentRole = cfg.role;
-      afficherUserBar(cfg);
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('user-bar').style.display = 'flex';
-      onLoginSuccess(cfg.role);
-    } else {
-      currentUser = null;
-      currentRole = null;
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('user-bar').style.display = 'none';
-    }
-  });
-
-  window._auth      = auth;
-  window._signIn    = signInWithEmailAndPassword;
-  window._signOut   = signOut;
-}
-
-function afficherUserBar(cfg){
-  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
-  document.getElementById('user-nom').textContent    = cfg.nom;
-  document.getElementById('user-role').textContent   = cfg.label;
-}
-
-async function seConnecter(){
-  const email = document.getElementById('login-email').value.trim();
-  const pwd   = document.getElementById('login-pwd').value;
-  const err   = document.getElementById('login-err');
-  const load  = document.getElementById('login-load');
-  const btn   = document.querySelector('.login-btn');
-  err.style.color = 'orange'; err.textContent = 'Vérification...';
-  if(!email || !pwd){ err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return; }
-  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent='Email non autorisé : '+email; return; }
-  if(!window._auth){ err.style.color='red'; err.textContent='Firebase Auth non chargé — recharger la page.'; return; }
-  if(!window._signIn){ err.style.color='red'; err.textContent='signIn non disponible — recharger la page.'; return; }
-  err.style.color='orange'; err.textContent='Connexion Firebase...';
-  load.style.display='block'; btn.disabled=true;
-  try{
-    await window._signIn(window._auth, email, pwd);
-  } catch(e){
-    load.style.display='none'; btn.disabled=false; err.style.color='red';
-    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. ('+e.code+')';
-    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
-    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
-    else err.textContent='Erreur : '+e.code+' — '+e.message;
-  }
-}
-
-async function seDeconnecter(){
-  if(!confirm('Se déconnecter ?')) return;
-  if(window._signOut && window._auth) await window._signOut(window._auth);
-}
-
-// Appeler initAuth au chargement
-window.addEventListener('fb-ready', function(){ initAuth(); });
-
-function onLoginSuccess(role){
-  // Tous les rôles peuvent voir l'appli de gestion
-  // mais on pourra restreindre plus tard
-  console.log('Connecté avec rôle:', role);
-  // Charger les données Firebase
-  if(window._db){chargerDepenses();chargerAnjarako();}
-}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap');
 :root{
@@ -882,6 +732,157 @@ window.dispatchEvent(new Event("fb-ready"));
 <div class="footer"><strong>FKMA Abidjan</strong> · Système de gestion · Côte d'Ivoire · FCFA</div>
 
 <script>
+
+// ── EXPORT / IMPORT JSON ─────────────────────────────────────
+function exporterJSON(){
+  const data = {
+    exportedAt: new Date().toISOString(),
+    version: '1.0',
+    rakitra:  load(SK_RAKITRA),
+    anjarako: load(SK_ANJ_H),
+    membres:  load(SK_ANJ_M),
+    depenses: load(SK_DEP),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = 'fkma_donnees_' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importerJSON(){
+  document.getElementById('json-import-inp').click();
+}
+
+function lireJSON(inp){
+  const file = inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let msg = '📦 Fichier du ' + (data.exportedAt||'?').slice(0,10) + '\n\nDonnées trouvées :\n';
+      if(data.rakitra)  msg += '  🙏 Rakitra  : ' + data.rakitra.length  + ' entrée(s)\n';
+      if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
+      if(data.membres)  msg += '  👥 Membres  : ' + data.membres.length  + ' entrée(s)\n';
+      if(data.depenses) msg += '  💸 Dépenses : ' + data.depenses.length + ' entrée(s)\n';
+      msg += NL+'⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).'+NL+'Continuer ?';
+      if(!confirm(msg)) return;
+      // Fusionner sans doublons (clé = date)
+      function fusionner(sk, nouv, cle){
+        if(!nouv||!nouv.length) return;
+        const exist = load(sk);
+        nouv.forEach(n => {
+          const idx = exist.findIndex(e => e[cle] === n[cle]);
+          if(idx < 0) exist.push(n);
+        });
+        exist.sort((a,b) => (b[cle]||'').localeCompare(a[cle]||''));
+        save(sk, exist);
+      }
+      fusionner(SK_RAKITRA, data.rakitra,  'date');
+      fusionner(SK_ANJ_H,   data.anjarako, 'date');
+      fusionner(SK_DEP,     data.depenses, 'id');
+      if(data.membres && data.membres.length){
+        const em = load(SK_ANJ_M);
+        data.membres.forEach(m => { if(!em.find(e=>e.num===m.num)) em.push(m); });
+        save(SK_ANJ_M, em);
+      }
+      alert('✅ Importation terminée !\nRechargez la page pour voir les données mises à jour.');
+      inp.value = '';
+    } catch(err) {
+      alert('❌ Fichier JSON invalide : ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+
+
+
+// ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
+const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijasvm@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+
+let currentUser = null;
+let currentRole = null;
+
+// Importer Auth Firebase
+function initAuth(){
+  // Auth déjà importé dans le module Firebase
+  const auth = window._auth;
+  if(!auth){ setTimeout(initAuth, 200); return; }
+
+  // Écouter l'état de connexion
+  window._onAuth(auth, function(user){
+    if(user){
+      currentUser = user;
+      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
+      currentRole = cfg.role;
+      afficherUserBar(cfg);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('user-bar').style.display = 'flex';
+      onLoginSuccess(cfg.role);
+    } else {
+      currentUser = null;
+      currentRole = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('user-bar').style.display = 'none';
+    }
+  });
+
+  window._auth      = auth;
+  window._signIn    = signInWithEmailAndPassword;
+  window._signOut   = signOut;
+}
+
+function afficherUserBar(cfg){
+  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
+  document.getElementById('user-nom').textContent    = cfg.nom;
+  document.getElementById('user-role').textContent   = cfg.label;
+}
+
+async function seConnecter(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const err   = document.getElementById('login-err');
+  const load  = document.getElementById('login-load');
+  const btn   = document.querySelector('.login-btn');
+  err.style.color = 'orange'; err.textContent = 'Vérification...';
+  if(!email || !pwd){ err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return; }
+  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent='Email non autorisé : '+email; return; }
+  if(!window._auth){ err.style.color='red'; err.textContent='Firebase Auth non chargé — recharger la page.'; return; }
+  if(!window._signIn){ err.style.color='red'; err.textContent='signIn non disponible — recharger la page.'; return; }
+  err.style.color='orange'; err.textContent='Connexion Firebase...';
+  load.style.display='block'; btn.disabled=true;
+  try{
+    await window._signIn(window._auth, email, pwd);
+  } catch(e){
+    load.style.display='none'; btn.disabled=false; err.style.color='red';
+    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. ('+e.code+')';
+    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
+    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
+    else err.textContent='Erreur : '+e.code+' — '+e.message;
+  }
+}
+
+async function seDeconnecter(){
+  if(!confirm('Se déconnecter ?')) return;
+  if(window._signOut && window._auth) await window._signOut(window._auth);
+}
+
+// Appeler initAuth au chargement
+window.addEventListener('fb-ready', function(){ initAuth(); });
+
+function onLoginSuccess(role){
+  // Tous les rôles peuvent voir l'appli de gestion
+  // mais on pourra restreindre plus tard
+  console.log('Connecté avec rôle:', role);
+  // Charger les données Firebase
+  if(window._db){chargerDepenses();chargerAnjarako();}
+}
+
+
 // ── DONNÉES ──────────────────────────────────────────────────
 const BILLETS = [{"v": 10000, "color": "#e67e22"}, {"v": 5000, "color": "#8e44ad"}, {"v": 2000, "color": "#2980b9"}, {"v": 1000, "color": "#27ae60"}, {"v": 500, "color": "#c0392b"}];
 const PIECES  = [{"v": 500, "color": "#f39c12"}, {"v": 200, "color": "#7f8c8d"}, {"v": 100, "color": "#95a5a6"}, {"v": 50, "color": "#bdc3c7"}, {"v": 25, "color": "#aaa"}, {"v": 10, "color": "#ccc"}, {"v": 5, "color": "#ddd"}];

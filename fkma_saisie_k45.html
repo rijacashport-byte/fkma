@@ -43,89 +43,7 @@ window._signOut= signOut;
 window._onAuth = onAuthStateChanged;
 window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
 window._fbReady = true;
-window.dispatchEvent(new Event("fb-ready"));
-
-// ── AUTHENTIFICATION ────────────────────────────────────────────
-const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijasvm@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
-
-let currentUser = null;
-let currentRole = null;
-
-function initAuth(){
-  const auth = window._auth;
-  if(!auth){ setTimeout(initAuth, 200); return; }
-
-  window._onAuth(auth, function(user){
-    if(user){
-      currentUser = user;
-      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
-      currentRole = cfg.role;
-      afficherUserBar(cfg);
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('user-bar').style.display = 'flex';
-      onLoginSuccess(cfg.role);
-    } else {
-      currentUser = null; currentRole = null;
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('user-bar').style.display = 'none';
-    }
-  });
-}
-
-function afficherUserBar(cfg){
-  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
-  document.getElementById('user-nom').textContent    = cfg.nom;
-  document.getElementById('user-role').textContent   = cfg.label;
-}
-
-async function seConnecter(){
-  const email = document.getElementById('login-email').value.trim();
-  const pwd   = document.getElementById('login-pwd').value;
-  const err   = document.getElementById('login-err');
-  const load  = document.getElementById('login-load');
-  const btn   = document.querySelector('.login-btn');
-  // Debug visible
-  err.style.color = 'orange';
-  err.textContent = 'Vérification...';
-  if(!email || !pwd){ err.style.color='red'; err.textContent = 'Remplir email et mot de passe.'; return; }
-  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent = 'Email non autorisé : '+email; return; }
-  if(!window._auth){ err.style.color='red'; err.textContent = 'Firebase Auth non chargé. Recharger la page.'; return; }
-  if(!window._signIn){ err.style.color='red'; err.textContent = 'signIn non disponible. Recharger la page.'; return; }
-  err.style.color='orange'; err.textContent = 'Connexion Firebase en cours...';
-  load.style.display = 'block'; btn.disabled = true;
-  try{
-    await window._signIn(window._auth, email, pwd);
-    err.textContent = 'Connexion réussie !';
-  } catch(e){
-    load.style.display = 'none'; btn.disabled = false;
-    err.style.color = 'red';
-    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. Code: '+e.code;
-    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
-    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
-    else err.textContent='Erreur '+e.code+' : '+e.message;
-  }
-}
-
-async function seDeconnecter(){
-  if(!confirm('Se déconnecter ?')) return;
-  if(window._signOut && window._auth) await window._signOut(window._auth);
-}
-
-window.addEventListener('fb-ready', function(){ initAuth(); });
-
-function onLoginSuccess(role){
-  const btnEnregistrer = document.querySelector('.bv');
-  if(role === 'controleur' || role === 'tresoriere'){
-    if(btnEnregistrer) btnEnregistrer.style.display='none';
-    setTimeout(function(){
-      const btnHist = document.querySelectorAll('.tab-btn')[1];
-      if(btnHist) btnHist.click();
-    }, 500);
-  }
-  chargerHistorique();
-}
-
-</script>
+window.dispatchEvent(new Event("fb-ready"));</script>
 
 <style>
 :root{
@@ -467,6 +385,89 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 </div>
 
 <script>
+
+
+// ── AUTHENTIFICATION ────────────────────────────────────────────
+const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijasvm@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+
+let currentUser = null;
+let currentRole = null;
+
+function initAuth(){
+  const auth = window._auth;
+  if(!auth){ setTimeout(initAuth, 200); return; }
+
+  window._onAuth(auth, function(user){
+    if(user){
+      currentUser = user;
+      const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
+      currentRole = cfg.role;
+      afficherUserBar(cfg);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('user-bar').style.display = 'flex';
+      onLoginSuccess(cfg.role);
+    } else {
+      currentUser = null; currentRole = null;
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('user-bar').style.display = 'none';
+    }
+  });
+}
+
+function afficherUserBar(cfg){
+  document.getElementById('user-avatar').textContent = cfg.nom.charAt(0).toUpperCase();
+  document.getElementById('user-nom').textContent    = cfg.nom;
+  document.getElementById('user-role').textContent   = cfg.label;
+}
+
+async function seConnecter(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const err   = document.getElementById('login-err');
+  const load  = document.getElementById('login-load');
+  const btn   = document.querySelector('.login-btn');
+  // Debug visible
+  err.style.color = 'orange';
+  err.textContent = 'Vérification...';
+  if(!email || !pwd){ err.style.color='red'; err.textContent = 'Remplir email et mot de passe.'; return; }
+  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent = 'Email non autorisé : '+email; return; }
+  if(!window._auth){ err.style.color='red'; err.textContent = 'Firebase Auth non chargé. Recharger la page.'; return; }
+  if(!window._signIn){ err.style.color='red'; err.textContent = 'signIn non disponible. Recharger la page.'; return; }
+  err.style.color='orange'; err.textContent = 'Connexion Firebase en cours...';
+  load.style.display = 'block'; btn.disabled = true;
+  try{
+    await window._signIn(window._auth, email, pwd);
+    err.textContent = 'Connexion réussie !';
+  } catch(e){
+    load.style.display = 'none'; btn.disabled = false;
+    err.style.color = 'red';
+    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. Code: '+e.code;
+    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
+    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
+    else err.textContent='Erreur '+e.code+' : '+e.message;
+  }
+}
+
+async function seDeconnecter(){
+  if(!confirm('Se déconnecter ?')) return;
+  if(window._signOut && window._auth) await window._signOut(window._auth);
+}
+
+window.addEventListener('fb-ready', function(){ initAuth(); });
+
+function onLoginSuccess(role){
+  const btnEnregistrer = document.querySelector('.bv');
+  if(role === 'controleur' || role === 'tresoriere'){
+    if(btnEnregistrer) btnEnregistrer.style.display='none';
+    setTimeout(function(){
+      const btnHist = document.querySelectorAll('.tab-btn')[1];
+      if(btnHist) btnHist.click();
+    }, 500);
+  }
+  chargerHistorique();
+}
+
+
 const MEMBRES = [{"isa": 1, "nom": "ACHI Axel", "genre": "Lahy", "mpandray": false}, {"isa": 2, "nom": "ACHI David", "genre": "Lahy", "mpandray": false}, {"isa": 3, "nom": "ACHI Nathanael", "genre": "Lahy", "mpandray": false}, {"isa": 4, "nom": "ACHI Sahoby", "genre": "Vavy", "mpandray": true}, {"isa": 5, "nom": "ANDRIAHERINIAINA Ny Antsa", "genre": "", "mpandray": false}, {"isa": 6, "nom": "ANDRIAMAHATANA Tanjona", "genre": "Lahy", "mpandray": false}, {"isa": 7, "nom": "ANDRIAMAMPAHERY Davida", "genre": "Lahy", "mpandray": true}, {"isa": 8, "nom": "ANDRIAMAMPAHERY Jeremia", "genre": "Lahy", "mpandray": true}, {"isa": 9, "nom": "ANDRIAMANANA Gershom", "genre": "Lahy", "mpandray": false}, {"isa": 10, "nom": "ANDRIAMANANTSOA Holy", "genre": "Vavy", "mpandray": false}, {"isa": 11, "nom": "ANDRIAMANDROSO Alexia", "genre": "Vavy", "mpandray": true}, {"isa": 12, "nom": "ANDRIAMANDROSO Ilona", "genre": "Vavy", "mpandray": false}, {"isa": 13, "nom": "ANDRIAMBAHINY ATHENA", "genre": "Vavy", "mpandray": false}, {"isa": 14, "nom": "ANDRIAMBAHINY ATTILIO", "genre": "Lahy", "mpandray": false}, {"isa": 15, "nom": "ANDRIAMBAHINY AYLA", "genre": "Vavy", "mpandray": false}, {"isa": 16, "nom": "ANDRIAMBAHINY Fetra", "genre": "Vavy", "mpandray": true}, {"isa": 17, "nom": "ANDRIAMBAHINY Patrick", "genre": "Lahy", "mpandray": true}, {"isa": 18, "nom": "ANDRIAMIADANA Mirintsoa", "genre": "Vavy", "mpandray": true}, {"isa": 19, "nom": "ANDRIAMITANA Tina Henri Adya", "genre": "Lahy", "mpandray": false}, {"isa": 20, "nom": "ANDRIANARY RAKOTOARISON Verohaja Nivosoa", "genre": "Vavy", "mpandray": true}, {"isa": 21, "nom": "ANDRIANAVALONA Tsanta", "genre": "Vavy", "mpandray": false}, {"isa": 22, "nom": "ANDRIANTAVY Hary", "genre": "Lahy", "mpandray": true}, {"isa": 23, "nom": "ANDRIANTAVY RAKOTOVOAVY Clémence", "genre": "Vavy", "mpandray": true}, {"isa": 24, "nom": "ANDRIATSIFERANA Irina", "genre": "Vavy", "mpandray": true}, {"isa": 25, "nom": "ANDRIHERINIAINA Ny kanto Irintsoa", "genre": "vavy", "mpandray": false}, {"isa": 26, "nom": "ANDRIHERINIAINA Ony Mahefa", "genre": "Vavy", "mpandray": true}, {"isa": 27, "nom": "ANDRIHERINIAINA Ramanolosoa Omega", "genre": "Lahy", "mpandray": true}, {"isa": 28, "nom": "FANDRESENA Abigail", "genre": "Vavy", "mpandray": true}, {"isa": 29, "nom": "HAJAVOLA Ethaniel", "genre": "Lahy", "mpandray": false}, {"isa": 30, "nom": "HARIVELO Hanta", "genre": "Vavy", "mpandray": true}, {"isa": 31, "nom": "Harivelo Tantely", "genre": "", "mpandray": true}, {"isa": 32, "nom": "KAMDEM  Andry Cheick", "genre": "Lahy", "mpandray": false}, {"isa": 33, "nom": "KAMDEM Serena Mioty", "genre": "Vavy", "mpandray": false}, {"isa": 34, "nom": "MAMPAHERY JORDAN", "genre": "Lahy", "mpandray": true}, {"isa": 35, "nom": "MANAMBITSOA Toavina", "genre": "Lahy", "mpandray": false}, {"isa": 36, "nom": "MANAMBITSOA Tovo", "genre": "Lahy", "mpandray": true}, {"isa": 37, "nom": "MIRADO Solofo Ny Fitiavana", "genre": "Lahy", "mpandray": false}, {"isa": 38, "nom": "NASOLOMALALA MANAMBITSOA Verohanta", "genre": "Vavy", "mpandray": true}, {"isa": 39, "nom": "ONINJATOVO Kamdem Felanarinofy Nina", "genre": "Vavy", "mpandray": true}, {"isa": 40, "nom": "RABARY Mamonjisoanirina", "genre": "Vavy", "mpandray": true}, {"isa": 41, "nom": "RABARY Nandrianina Claudio", "genre": "Lahy", "mpandray": true}, {"isa": 42, "nom": "RABARY Tianaritsimba", "genre": "Lahy", "mpandray": true}, {"isa": 43, "nom": "RABEFANIRAKA Noroarisoa", "genre": "Vavy", "mpandray": true}, {"isa": 44, "nom": "RABEHERIFARA Fiderana", "genre": "Vavy", "mpandray": true}, {"isa": 45, "nom": "RABEHERIFARA Guy", "genre": "Lahy", "mpandray": true}, {"isa": 46, "nom": "RABEHERIFARA Stephane", "genre": "Lahy", "mpandray": false}, {"isa": 47, "nom": "RABENJA Irina", "genre": "Lahy", "mpandray": false}, {"isa": 48, "nom": "RABEONY Sarah Michèle", "genre": "Vavy", "mpandray": true}, {"isa": 49, "nom": "RABETALIANA  Vatosoa", "genre": "Vavy", "mpandray": false}, {"isa": 50, "nom": "RABETALIANA Mahefa", "genre": "Lahy", "mpandray": true}, {"isa": 51, "nom": "RABETALIANA Malalasoa", "genre": "Vavy", "mpandray": true}, {"isa": 52, "nom": "RABETRANO Hantasoanirina  Josette", "genre": "Vavy", "mpandray": true}, {"isa": 53, "nom": "RABETSIMIALONA Ndriana", "genre": "Lahy", "mpandray": true}, {"isa": 54, "nom": "RABOSAONA Aina Herilanto Yvon Staël", "genre": "Lahy", "mpandray": true}, {"isa": 55, "nom": "RABOSAONA Chris", "genre": "Lahy", "mpandray": false}, {"isa": 56, "nom": "RABOSAONA Hansa", "genre": "Lahy", "mpandray": true}, {"isa": 57, "nom": "RABOSAONA Miaro Hanson", "genre": "Lahy", "mpandray": false}, {"isa": 58, "nom": "RABOSAONA Mihaja Hansel", "genre": "", "mpandray": false}, {"isa": 59, "nom": "RABOSAONA Ricardo", "genre": "Lahy", "mpandray": false}, {"isa": 60, "nom": "RABOSAONA Staella", "genre": "Vavy", "mpandray": false}, {"isa": 61, "nom": "RABOSOANA Hasintsoa Rebecca", "genre": "vavy", "mpandray": false}, {"isa": 62, "nom": "RAFANOMEZANTSOA Sahondra", "genre": "Vavy", "mpandray": false}, {"isa": 63, "nom": "RAHARIMALALA Florence", "genre": "Vavy", "mpandray": true}, {"isa": 64, "nom": "RAHARINAIVO Juslain Nomenjanahary", "genre": "Lahy", "mpandray": false}, {"isa": 65, "nom": "RAHARISOA Eliane Christella", "genre": "vavy", "mpandray": false}, {"isa": 66, "nom": "RAHASIVELONJANAHARY  Dina Onintsoa", "genre": "vavy", "mpandray": true}, {"isa": 67, "nom": "RAJAOBELINA Sarah", "genre": "Vavy", "mpandray": true}, {"isa": 68, "nom": "RAJAONAH Mamy", "genre": "Lahy", "mpandray": true}, {"isa": 69, "nom": "RAJAONAH Voahirana", "genre": "Vavy", "mpandray": true}, {"isa": 70, "nom": "RAJAONARIFETRA Andriamahandry Tony M.", "genre": "Lahy", "mpandray": true}, {"isa": 71, "nom": "RAJAONARIFETRA Patricia", "genre": "Vavy", "mpandray": true}, {"isa": 72, "nom": "RAJAONARIFETRA Rivo Mahaleo", "genre": "Lahy", "mpandray": true}, {"isa": 73, "nom": "RAJAONARIFETRA Rotsy Fitahiana Vahiandrianina", "genre": "Vavy", "mpandray": false}, {"isa": 74, "nom": "rakoto", "genre": "Vavy", "mpandray": false}, {"isa": 75, "nom": "RAKOTOARISOA Aina Raphaël", "genre": "Lahy", "mpandray": false}, {"isa": 76, "nom": "RAKOTOARISOA RABENANDRASANA Norohasina Narindra", "genre": "Vavy", "mpandray": true}, {"isa": 77, "nom": "RAKOTOARISOA Toky Lalaina", "genre": "Lahy", "mpandray": true}, {"isa": 78, "nom": "RAKOTOARISON  Blaise Fitahiana", "genre": "Lahy", "mpandray": false}, {"isa": 79, "nom": "RAKOTOARISON ANDRIANARY  Ny Harena", "genre": "Vavy", "mpandray": true}, {"isa": 80, "nom": "RAKOTOARISON ANDRIANARY Chsitelle", "genre": "Vavy", "mpandray": true}, {"isa": 81, "nom": "RAKOTOARISON ANDRIANARY Nantenaina", "genre": "Lahy", "mpandray": true}, {"isa": 82, "nom": "RAKOTOARIVELO Nirina Julien", "genre": "Lahy", "mpandray": true}, {"isa": 83, "nom": "RAKOTOARIVONY  Nasya", "genre": "vavy", "mpandray": false}, {"isa": 84, "nom": "RAKOTOARIVONY Andry Setra", "genre": "Lahy", "mpandray": true}, {"isa": 85, "nom": "RAKOTOARIVONY Evah", "genre": "Vavy", "mpandray": true}, {"isa": 86, "nom": "RAKOTOARIVONY Ny Aina Ando", "genre": "Vavy", "mpandray": true}, {"isa": 87, "nom": "RAKOTOARIVONY Soraya", "genre": "", "mpandray": false}, {"isa": 88, "nom": "RAKOTOMAHEFA Fetra Emilie", "genre": "Vavy", "mpandray": true}, {"isa": 89, "nom": "RAKOTOMAHEFA Lewis", "genre": "Lahy", "mpandray": true}, {"isa": 90, "nom": "RAKOTOMALALA Faniry", "genre": "Vavy", "mpandray": true}, {"isa": 91, "nom": "RAKOTOMALALA Hanitra", "genre": "Vavy", "mpandray": true}, {"isa": 92, "nom": "RAKOTOMANANA Anjara Tolotra", "genre": "Lahy", "mpandray": true}, {"isa": 93, "nom": "RAKOTONDRAINIBE Miaro", "genre": "Lahy", "mpandray": false}, {"isa": 94, "nom": "RAKOTONDRAINIBE Mieja", "genre": "Vavy", "mpandray": false}, {"isa": 95, "nom": "RAKOTONDRAINIBE Mihamintsoa Hasina", "genre": "Lahy", "mpandray": true}, {"isa": 96, "nom": "RAKOTONDRAINIBE Mirajo", "genre": "Lahy", "mpandray": false}, {"isa": 97, "nom": "RAKOTONDRAINIBE Mirija Yanael", "genre": "Lahy", "mpandray": false}, {"isa": 98, "nom": "RAKOTONDRASOA Nambinintsoa", "genre": "Vavy", "mpandray": true}, {"isa": 99, "nom": "RAKOTONDRATOVO Michou Thierry", "genre": "Lahy", "mpandray": true}, {"isa": 100, "nom": "RAKOTONDRATOVO Mihaingo Abigail", "genre": "Vavy", "mpandray": false}, {"isa": 101, "nom": "RAKOTONDRAZAKA Hajavola", "genre": "Lahy", "mpandray": true}, {"isa": 102, "nom": "RAKOTONDRAZAKA RATSIMANOHATRA  Hanitra", "genre": "Vavy", "mpandray": true}, {"isa": 103, "nom": "RAKOTONIAINA", "genre": "Lahy", "mpandray": true}, {"isa": 104, "nom": "RAKOTONIAINA Ando Ny Kanto", "genre": "Vavy", "mpandray": true}, {"isa": 105, "nom": "RAKOTONIAINA RASOAZANANY Géroline", "genre": "Vavy", "mpandray": true}, {"isa": 106, "nom": "RAKOTONIRAINY Jary's  Bryan", "genre": "Lahy", "mpandray": false}, {"isa": 107, "nom": "RAKOTONIRAINY Jennifer J Toavinkaja", "genre": "Vavy", "mpandray": false}, {"isa": 108, "nom": "RAKOTONIRAINY Manovosoa", "genre": "Lahy", "mpandray": true}, {"isa": 109, "nom": "RAKOTONIRAINY Mégane", "genre": "vavy", "mpandray": false}, {"isa": 110, "nom": "RAKOTOSON Nathalie Lolona", "genre": "Vavy", "mpandray": true}, {"isa": 111, "nom": "RAKOTOSON Nathalie Rija", "genre": "Vavy", "mpandray": true}, {"isa": 112, "nom": "RAKOTOSON Rado", "genre": "Lahy", "mpandray": true}, {"isa": 113, "nom": "RAKOTOSON Rija", "genre": "Lahy", "mpandray": true}, {"isa": 114, "nom": "RAMAMBASOA Aina Hery", "genre": "Lahy", "mpandray": true}, {"isa": 115, "nom": "RAMAROMANANA Clara", "genre": "Vavy", "mpandray": true}, {"isa": 116, "nom": "RAMAROMANANA Herizo", "genre": "Lahy", "mpandray": true}, {"isa": 117, "nom": "RAMBOATINA Aina", "genre": "Vavy", "mpandray": true}, {"isa": 118, "nom": "RANARIJAONA Josea", "genre": "Vavy", "mpandray": true}, {"isa": 119, "nom": "RANARIJAONA Marc", "genre": "Lahy", "mpandray": true}, {"isa": 120, "nom": "RANARIJAONA Tefy", "genre": "Lahy", "mpandray": true}, {"isa": 121, "nom": "RANDRIAMANANTSOA Faly", "genre": "Lahy", "mpandray": false}, {"isa": 122, "nom": "RANDRIANAIVO Hariirina", "genre": "Vavy", "mpandray": true}, {"isa": 123, "nom": "RANDRIANAIVO Harilalao", "genre": "Vavy", "mpandray": true}, {"isa": 124, "nom": "RANDRIANAIVO HARIMANANTSOA  Laeticia", "genre": "Vavy", "mpandray": true}, {"isa": 125, "nom": "RANDRIANAIVO Harimboahangy", "genre": "Vavy", "mpandray": true}, {"isa": 126, "nom": "RANDRIANAIVO Kathy", "genre": "Vavy", "mpandray": true}, {"isa": 127, "nom": "RANDRIANAIVO Tovohery Zo", "genre": "Lahy", "mpandray": false}, {"isa": 128, "nom": "RANDRIANAIVONAVALONA RAKOTONIRAINY Michelle", "genre": "vavy", "mpandray": true}, {"isa": 129, "nom": "RANDRIARIMANANA Faramalala", "genre": "Vavy", "mpandray": true}, {"isa": 130, "nom": "RANDRIASY Nomentsoa  Andrianina (Nina)", "genre": "Vavy", "mpandray": true}, {"isa": 131, "nom": "RAPELANORO RABENJA Tiana Pauml", "genre": "Lahy", "mpandray": true}, {"isa": 132, "nom": "RASOANAIVO Faramalala", "genre": "vavy", "mpandray": true}, {"isa": 133, "nom": "RATOARIJAONA Fenitra Ny Aina", "genre": "Lahy", "mpandray": false}, {"isa": 134, "nom": "RATOARIJAONA Ilo Ny Aina", "genre": "Lahy", "mpandray": false}, {"isa": 135, "nom": "RATOARIJAONA Irina", "genre": "Vavy", "mpandray": false}, {"isa": 136, "nom": "RATOARIJAONA Mahery", "genre": "Lahy", "mpandray": true}, {"isa": 137, "nom": "RATOARIJAONA Njato", "genre": "Lahy", "mpandray": true}, {"isa": 138, "nom": "RATOARIJAONA Tahina Andosoa", "genre": "Lahy", "mpandray": true}, {"isa": 139, "nom": "RATOARIJAONA Tsinjo Ny Aina", "genre": "Lahy", "mpandray": false}, {"isa": 140, "nom": "RATOARIJAONA Vololona", "genre": "Vavy", "mpandray": true}, {"isa": 141, "nom": "RATOVO Holy", "genre": "Vavy", "mpandray": true}, {"isa": 142, "nom": "RATOVO Jean Samuel", "genre": "Lahy", "mpandray": true}, {"isa": 143, "nom": "RATOVO Mahera", "genre": "Lahy", "mpandray": true}, {"isa": 144, "nom": "RATOVO RAKOTONDRATSIMA Carole", "genre": "vavy", "mpandray": false}, {"isa": 145, "nom": "RATSIMANDRESY Mirana Nodimbiasina", "genre": "vavy", "mpandray": true}, {"isa": 146, "nom": "RATSIMBAZAFY RATOARIJAONA Hary Ny Aina", "genre": "Vavy", "mpandray": true}, {"isa": 147, "nom": "RAVELOARISOA Safidy", "genre": "", "mpandray": false}, {"isa": 148, "nom": "RAVELOSON Soafaneva Aina", "genre": "Vavy", "mpandray": true}, {"isa": 149, "nom": "RAVELOSON Toky Fanomezana", "genre": "Lahy", "mpandray": true}, {"isa": 150, "nom": "RAZAFIMAHATRA Mamy Rijason", "genre": "Lahy", "mpandray": true}, {"isa": 151, "nom": "RAZAFIMAHATRA Nomenjanahary Mirana", "genre": "Vavy", "mpandray": true}, {"isa": 152, "nom": "RAZAFIMAHATRATRA Tsiky Océane", "genre": "Vavy", "mpandray": false}, {"isa": 153, "nom": "RAZAFIMANDIMBY A. Tsiory", "genre": "Lahy", "mpandray": true}, {"isa": 154, "nom": "RAZAFINDRANASINA Amelia Faneva", "genre": "Vavy", "mpandray": false}, {"isa": 155, "nom": "RAZAFINDRANASINA Manoa Adrien", "genre": "Lahy", "mpandray": false}, {"isa": 156, "nom": "RAZAFINDRANASINA Michelle Irène", "genre": "Vavy", "mpandray": true}, {"isa": 157, "nom": "RAZAFINDRANASINA Paul Lalaniaina", "genre": "Lahy", "mpandray": true}, {"isa": 158, "nom": "RAZAFINDRANASINA Rantoanina", "genre": "Lahy", "mpandray": true}, {"isa": 159, "nom": "RAZAFINDRANASINA Sarah", "genre": "Vavy", "mpandray": true}, {"isa": 160, "nom": "RAZAFINDRANASINA Tahina", "genre": "Lahy", "mpandray": true}, {"isa": 161, "nom": "RAZAKAHARIVONY Sataniaina  Lucia", "genre": "Vavy", "mpandray": true}, {"isa": 162, "nom": "SOLOMANANA Jô", "genre": "Lahy", "mpandray": true}, {"isa": 163, "nom": "SOLOMANANA Mireille", "genre": "Vavy", "mpandray": true}, {"isa": 164, "nom": "SOMANO Cheiche", "genre": "Lahy", "mpandray": true}, {"isa": 165, "nom": "SOMANO Fara", "genre": "Vavy", "mpandray": true}, {"isa": 166, "nom": "SOMANO Nazma", "genre": "Vavy", "mpandray": true}, {"isa": 167, "nom": "SOMANO Patrick", "genre": "Lahy", "mpandray": true}, {"isa": 168, "nom": "TSIKINIAINA Julio Eddye", "genre": "Lahy", "mpandray": true}, {"isa": 169, "nom": "VONINTSOA Heriniaina Fifaliana", "genre": "Vavy", "mpandray": true}, {"isa": 170, "nom": "ZAFINDRAIBE Cédric", "genre": "Lahy", "mpandray": true}, {"isa": 171, "nom": "RAJAOHERITIANA Meja Sandra", "genre": "Vavy", "mpandray": false}];
 const FAITS_TYPES = [
   {id:"fiarahabana", label:"Fiarahabana izay vao tonga"},
