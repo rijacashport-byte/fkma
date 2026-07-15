@@ -281,7 +281,22 @@ window.dispatchEvent(new Event("fb-ready"));
 
   <div class="card">
     <div class="card-titre">📅 Date du culte</div>
-    <input type="date" id="rak-date-input" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+      <div class="champ full" style="grid-column:1/-1">
+        <label>📅 Date</label>
+        <input type="date" id="rak-date-input" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+      </div>
+      <div class="champ">
+        <label>📄 N° Page livre</label>
+        <input type="number" id="rak-page" min="1" placeholder="Ex: 12" inputmode="numeric"
+          style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+      </div>
+      <div class="champ" style="grid-column:2/4">
+        <label>🔤 Lettrage</label>
+        <input type="text" id="rak-lettrage" placeholder="Ex: A, B, C…"
+          style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;text-transform:uppercase;">
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -1270,6 +1285,8 @@ function snapRakitra(){
     date:document.getElementById('rak-date-input')?.value||'',lb,lp,tb,tp,totalRakitra:tb+tp,
     rpOn,lrpb,lrpp,rpb,rpp,totalRP:rpb+rpp,total:tb+tp+rpb+rpp,
     rakis,totalRaki,diacres,
+    page:document.getElementById('rak-page')?.value||'',
+    lettrage:document.getElementById('rak-lettrage')?.value.toUpperCase()||'',
     tresNom:document.getElementById('tres-nom').value,
     tresDate:document.getElementById('tres-date').value,
     tresObs:document.getElementById('tres-obs').value,
@@ -1285,12 +1302,15 @@ async function enregistrerRakitra(){
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=d;}else hist.push(d);
   hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_RAKITRA,hist);
   if(_db){try{
+    // Sauvegarder dans collection rakitra
     const col=_fs.collection(_db,'rakitra');
     const snap=await _fs.getDocs(col);let xId=null;
     snap.forEach(function(ds){if(ds.data().date===d.date)xId=ds.id;});
     if(xId)await _fs.updateDoc(_fs.doc(_db,'rakitra',xId),d);
     else await _fs.addDoc(col,d);
-    alert('✅ Rakitra du '+d.date+' enregistré dans Firebase !');
+    // Écriture automatique dans le Grand Livre Fiangonana
+    await ecrireGrandLivreFiang(d);
+    alert('✅ Rakitra du '+d.date+' enregistré !');
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
   else alert('✅ Rakitra enregistré localement.');
 }
@@ -1420,7 +1440,9 @@ async function enregistrerAnjarako(){
     snap.forEach(function(ds){if(ds.data().date===date)xId=ds.id;});
     if(xId)await _fs.updateDoc(_fs.doc(_db,'anjarako',xId),rec);
     else await _fs.addDoc(col,rec);
-    alert('✅ Anjarako du '+date+' enregistré dans Firebase !');
+    // Écriture automatique dans le Grand Livre Anjarako
+    await ecrireGrandLivreAnj(rec);
+    alert('✅ Anjarako du '+date+' enregistré !');
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
   else alert('✅ Anjarako enregistré localement.');
 }
@@ -1649,6 +1671,52 @@ function exporterExcelDepenses(livre){
 }
 
 
+
+// ── ÉCRITURE AUTOMATIQUE GRAND LIVRE ────────────────────────
+async function ecrireGrandLivreFiang(d){
+  if(!_db) return;
+  const col=_fs.collection(_db,'grandlivre_fiang');
+  const base={date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',savedAt:new Date().toISOString()};
+  const ecritures=[];
+  // Rakitra tsotra (B1.1)
+  if(d.totalRakitra>0) ecritures.push({...base,es:'E',rubrique:'B1.1',libelle:'Rakitra',montant:d.totalRakitra});
+  // Raki-pandraisana (hors budget — info seulement)
+  if(d.rpOn&&d.totalRP>0) ecritures.push({...base,es:'E',rubrique:'K45-INFO',libelle:'Raki-pandraisana (hors budget)',montant:d.totalRP,horsbudget:true});
+  // Raki-pisaorana (B2) — chaque offrande
+  if(d.rakis&&d.rakis.length){
+    d.rakis.forEach(function(r){
+      ecritures.push({...base,es:'E',rubrique:'B2',libelle:'Raki-pisaorana',montant:r.montant,verset:r.verset||''});
+      // Répartition par destination → sorties
+      if(r.repartition&&r.repartition.length){
+        r.repartition.forEach(function(rep){
+          if(rep.montant>0){
+            ecritures.push({...base,es:'S',rubrique:'C7.1',libelle:'Raki-pisaorana → '+rep.dest,montant:rep.montant});
+          }
+        });
+      }
+    });
+  }
+  // Supprimer les anciennes écritures GL de cette date avant d'écrire
+  const existing=await _fs.getDocs(col);
+  const toDelete=[];
+  existing.forEach(function(ds){if(ds.data().date===d.date&&ds.data().source==='caisse'&&!ds.data().transfert)toDelete.push(ds.ref);});
+  for(const ref of toDelete) await _fs.deleteDoc(ref);
+  // Écrire les nouvelles
+  for(const ec of ecritures) await _fs.addDoc(col,ec);
+}
+
+async function ecrireGrandLivreAnj(rec){
+  if(!_db) return;
+  const col=_fs.collection(_db,'grandlivre_anj');
+  const base={date:rec.date,page:'',lettrage:'',source:'caisse',savedAt:new Date().toISOString()};
+  // Supprimer anciennes écritures auto de cette date
+  const existing=await _fs.getDocs(col);
+  const toDelete=[];
+  existing.forEach(function(ds){if(ds.data().date===rec.date&&ds.data().auto===true)toDelete.push(ds.ref);});
+  for(const ref of toDelete) await _fs.deleteDoc(ref);
+  // Écriture entrée Anjarako voaray
+  await _fs.addDoc(col,{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true});
+}
 // ── CHARGEMENT FIREBASE AU DÉMARRAGE ─────────────────────────
 async function chargerDepenses(){
   if(!_db)return;
