@@ -332,7 +332,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div><!-- /app -->
 
 <script>
-const ROLES_CONFIG={"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+const ROLES_CONFIG={"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}};
 const fmt=n=>Math.round(n||0).toLocaleString('fr-FR');
 let GL={fiang:[],anj:[],k45:[]};
 let obES='S';
@@ -348,6 +348,7 @@ function initAuth(){
       document.getElementById('app').style.display='block';
       document.getElementById('user-nom').textContent=cfg.nom;
       document.getElementById('user-role').textContent=cfg.label;
+      window._currentRole=cfg.role; // Sauvegarder le rôle pour les droits
       // ── DROITS PAR RÔLE ────────────────────────────────────────────
       // Opérations bancaires (saisie) : Rija + PL seulement
       // Opérations bancaires (lecture) : Ando + Herizo
@@ -450,6 +451,9 @@ function renderLivre(livre){
   const initBanque=parseFloat(document.getElementById(livre+'-init-banque')?.value)||0;
 
   let soldeCaisse=initCaisse, soldeBanque=initBanque;
+  // Peut supprimer : secretaire + diacre seulement
+  const currentRole=(window._currentRole||'');
+  const canDelete=currentRole==='secretaire'||currentRole==='diacre';
   el.innerHTML=list.map(function(e){
     const isE=e.es==='E';
     const src=e.source||'caisse';
@@ -470,7 +474,9 @@ function renderLivre(livre){
       +(e.comment?'<span>💬 '+e.comment+'</span>':'')
       +(e.horsbudget?'<span style="color:var(--orange)">ℹ️ Hors budget</span>':'')
       +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
-      +'</div></div>';
+      +'</div>'
+      +(canDelete?'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" '+'style="background:none;border:none;color:var(--rouge);font-size:11px;cursor:pointer;margin-top:4px">✕ Supprimer</button>':'')
+      +'</div>';
   }).join('');
 }
 
@@ -593,6 +599,24 @@ function faireRapprochement(){
     msg.textContent='⚠️ Écart de '+fmt(Math.abs(ecart))+' F — vérifier les opérations bancaires manquantes';
     msg.style.cssText='background:#fdecea;color:var(--rouge);margin-top:8px;font-size:12px;text-align:center;padding:6px;border-radius:6px;';
   }
+}
+
+// ── SUPPRESSION ÉCRITURE GL ──────────────────────────────────────
+async function supprimerEcritureGL(btn){
+  const db=window._db,fs=window._fs;
+  if(!db){alert('Firebase non connecté.');return;}
+  const id=btn.getAttribute('data-id');
+  const livre=btn.getAttribute('data-livre');
+  if(!id){alert('ID introuvable.');return;}
+  if(!confirm('Supprimer cette écriture définitivement ?'))return;
+  try{
+    await fs.deleteDoc(fs.doc(db,'grandlivre_'+livre,id));
+    GL[livre]=GL[livre].filter(e=>e._id!==id);
+    renderLivre(livre);
+    renderSoldes(livre);
+    renderSynth();
+    alert('✅ Écriture supprimée !');
+  }catch(e){alert('Erreur : '+e.message);}
 }
 
 // ── EXPORT EXCEL ──────────────────────────────────────────────

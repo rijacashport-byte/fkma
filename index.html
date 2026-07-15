@@ -817,7 +817,7 @@ function lireJSON(inp){
 
 
 // ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
-const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}};
 
 let currentUser = null;
 let currentRole = null;
@@ -1744,12 +1744,26 @@ async function chargerAnjarako(){
 }
 
 // ── MODIFIER SAISIE EXISTANTE ─────────────────────────────────
-function peuplerHistSelect(){
+async function peuplerHistSelect(){
   const sel=document.getElementById('hist-select-date');
-  const rakDates=load(SK_RAKITRA).map(h=>h.date);
-  const anjDates=load(SK_ANJ_H).map(h=>h.date);
+  sel.innerHTML='<option value="">Chargement…</option>';
+  // Lire depuis Firebase
+  let rakDates=[],anjDates=[];
+  if(_db){
+    try{
+      const snapR=await _fs.getDocs(_fs.collection(_db,'rakitra'));
+      snapR.forEach(ds=>rakDates.push(ds.data().date));
+      const snapA=await _fs.getDocs(_fs.collection(_db,'anjarako'));
+      snapA.forEach(ds=>anjDates.push(ds.data().date));
+    }catch(e){console.log('Hist:',e.message);}
+  } else {
+    // Fallback localStorage
+    rakDates=load(SK_RAKITRA).map(h=>h.date);
+    anjDates=load(SK_ANJ_H).map(h=>h.date);
+  }
   const allDates=[...new Set([...rakDates,...anjDates])].sort((a,b)=>b.localeCompare(a));
   sel.innerHTML='<option value="">— Choisir une date —</option>';
+  if(!allDates.length){sel.innerHTML+='<option disabled>Aucune saisie trouvée</option>';return;}
   allDates.forEach(function(d){
     const hasR=rakDates.includes(d);
     const hasA=anjDates.includes(d);
@@ -1759,11 +1773,33 @@ function peuplerHistSelect(){
 }
 
 let _dateSelectionnee=null;
-function chargerSaisieDate(date){
+async function chargerSaisieDate(date){
   _dateSelectionnee=date;
   const actions=document.getElementById('hist-actions');
   const info=document.getElementById('hist-info');
   if(!date){actions.style.display='none';info.style.display='none';return;}
+  // Chercher dans Firebase
+  let rak=null,anj=null;
+  if(_db){
+    try{
+      const snapR=await _fs.getDocs(_fs.collection(_db,'rakitra'));
+      snapR.forEach(ds=>{if(ds.data().date===date)rak=ds.data();});
+      const snapA=await _fs.getDocs(_fs.collection(_db,'anjarako'));
+      snapA.forEach(ds=>{if(ds.data().date===date)anj=ds.data();});
+    }catch(e){console.log('Date:',e.message);}
+  } else {
+    rak=load(SK_RAKITRA).find(h=>h.date===date);
+    anj=load(SK_ANJ_H).find(h=>h.date===date);
+  }
+  actions.style.display='flex';
+  info.style.display='block';
+  let txt='📅 '+date+' :\n';
+  if(rak) txt+='🙏 Rakitra : '+fmt(rak.totalRakitra||rak.total||0)+' FCFA\n';
+  else txt+='🙏 Rakitra : non saisi\n';
+  if(anj) txt+='📨 Anjarako : '+fmt(anj.total||0)+' FCFA';
+  else txt+='📨 Anjarako : non saisi';
+  info.textContent=txt;
+}
   const rak=load(SK_RAKITRA).find(h=>h.date===date);
   const anj=load(SK_ANJ_H).find(h=>h.date===date);
   actions.style.display='flex';
@@ -1776,15 +1812,22 @@ function chargerSaisieDate(date){
   info.textContent=txt;
 }
 
-function chargerRakitraHist(){
+async function chargerRakitraHist(){
   if(!_dateSelectionnee){alert('Veuillez choisir une date.');return;}
-  const rak=load(SK_RAKITRA).find(h=>h.date===_dateSelectionnee);
+  let rak=null;
+  if(_db){
+    try{
+      const snap=await _fs.getDocs(_fs.collection(_db,'rakitra'));
+      snap.forEach(ds=>{if(ds.data().date===_dateSelectionnee)rak=ds.data();});
+    }catch(e){}
+  }
+  if(!rak) rak=load(SK_RAKITRA).find(h=>h.date===_dateSelectionnee);
   if(!rak){alert('Aucun Rakitra pour cette date.');return;}
-  // Naviguer vers onglet Rakitra et pré-remplir la date
   document.querySelectorAll('.nav-btn')[0].click();
   const dateInp=document.getElementById('rak-date-input');
   if(dateInp) dateInp.value=rak.date;
-  // Remettre les billets
+  if(document.getElementById('rak-page')) document.getElementById('rak-page').value=rak.page||'';
+  if(document.getElementById('rak-lettrage')) document.getElementById('rak-lettrage').value=rak.lettrage||'';
   BILLETS.forEach(function(b){
     const el=document.getElementById('b_'+b.v);
     const found=rak.lb?rak.lb.find(function(x){return x.v===b.v;}):null;
@@ -1795,7 +1838,6 @@ function chargerRakitraHist(){
     const found=rak.lp?rak.lp.find(function(x){return x.v===p.v;}):null;
     if(el) el.value=found&&found.q>0?found.q:'';
   });
-  // Remettre trésorier/observations
   if(document.getElementById('tres-nom')) document.getElementById('tres-nom').value=rak.tresNom||'';
   if(document.getElementById('tres-obs')) document.getElementById('tres-obs').value=rak.tresObs||'';
   if(document.getElementById('observations')) document.getElementById('observations').value=rak.obs||'';
@@ -1803,11 +1845,17 @@ function chargerRakitraHist(){
   alert('✅ Rakitra du '+rak.date+' rechargé — modifie et enregistre.');
 }
 
-function chargerAnjHist(){
+async function chargerAnjHist(){
   if(!_dateSelectionnee){alert('Veuillez choisir une date.');return;}
-  const anj=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee);
+  let anj=null;
+  if(_db){
+    try{
+      const snap=await _fs.getDocs(_fs.collection(_db,'anjarako'));
+      snap.forEach(ds=>{if(ds.data().date===_dateSelectionnee)anj=ds.data();});
+    }catch(e){}
+  }
+  if(!anj) anj=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee);
   if(!anj){alert('Aucun Anjarako pour cette date.');return;}
-  // Naviguer vers onglet Anjarako
   document.querySelectorAll('.nav-btn')[1].click();
   const dateInp=document.getElementById('rak-date-input');
   if(dateInp) dateInp.value=anj.date;
