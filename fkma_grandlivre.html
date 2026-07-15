@@ -348,9 +348,30 @@ function initAuth(){
       document.getElementById('app').style.display='block';
       document.getElementById('user-nom').textContent=cfg.nom;
       document.getElementById('user-role').textContent=cfg.label;
-      // Masquer opérations bancaires si pas trésorière ou secrétaire
-      if(cfg.role!=='tresoriere'&&cfg.role!=='secretaire'){
+      // ── DROITS PAR RÔLE ────────────────────────────────────────────
+      // Opérations bancaires (saisie) : Rija + PL seulement
+      // Opérations bancaires (lecture) : Ando + Herizo
+      // Grand Livre (éditeur) : Rija + PL
+      // Grand Livre (consultation) : Ando + Herizo
+
+      const canEditGL = cfg.role==='secretaire'||cfg.role==='diacre';
+      const canEditOps = cfg.role==='secretaire'||cfg.role==='diacre';
+      const canSeeOps = true; // tout le monde voit l'onglet Opérations
+
+      // Si pas éditeur GL → soldes initiaux non modifiables
+      if(!canEditGL){
+        document.querySelectorAll('#fiang-init-caisse,#fiang-init-banque,#anj-init-caisse,#anj-init-banque').forEach(el=>el.disabled=true);
+      }
+
+      // Si pas éditeur Opérations → masquer les boutons d'action mais garder la vue
+      if(!canEditOps){
         document.querySelectorAll('#tab-ops .btn').forEach(b=>b.style.display='none');
+        document.querySelectorAll('#tab-ops input,#tab-ops select').forEach(el=>el.disabled=true);
+        // Garder le rapprochement en lecture pour Ando et Herizo
+        const rpBtn=document.getElementById('rp-solde-reel');
+        if(rpBtn) rpBtn.disabled=false;
+        const rpCalcBtn=document.querySelector('#tab-ops .bo');
+        if(rpCalcBtn) rpCalcBtn.style.display='';
       }
       chargerTout();
     } else {
