@@ -81,7 +81,7 @@ function lireJSON(inp){
 
 
 // ── AUTHENTIFICATION FIREBASE ─────────────────────────────────
-const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
+const ROLES_CONFIG = {"fkma.abidjan@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijasvm@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}};
 
 let currentUser = null;
 let currentRole = null;
@@ -127,31 +127,21 @@ async function seConnecter(){
   const err   = document.getElementById('login-err');
   const load  = document.getElementById('login-load');
   const btn   = document.querySelector('.login-btn');
-
-  if(!email || !pwd){ err.textContent = 'Veuillez remplir tous les champs.'; return; }
-  if(!ROLES_CONFIG[email]){ err.textContent = 'Accès non autorisé pour cet email.'; return; }
-
-  err.textContent = '';
-  load.style.display = 'block';
-  btn.disabled = true;
-
+  err.style.color = 'orange'; err.textContent = 'Vérification...';
+  if(!email || !pwd){ err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return; }
+  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent='Email non autorisé : '+email; return; }
+  if(!window._auth){ err.style.color='red'; err.textContent='Firebase Auth non chargé — recharger la page.'; return; }
+  if(!window._signIn){ err.style.color='red'; err.textContent='signIn non disponible — recharger la page.'; return; }
+  err.style.color='orange'; err.textContent='Connexion Firebase...';
+  load.style.display='block'; btn.disabled=true;
   try{
-    if(!window._auth || !window._signIn){
-      err.textContent = 'Firebase pas encore prêt, réessaie dans 2 secondes.';
-      load.style.display='none'; btn.disabled=false; return;
-    }
     await window._signIn(window._auth, email, pwd);
   } catch(e){
-    load.style.display = 'none';
-    btn.disabled = false;
-    if(e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
-      err.textContent = 'Mot de passe incorrect.';
-    else if(e.code === 'auth/user-not-found')
-      err.textContent = 'Email introuvable.';
-    else if(e.code === 'auth/too-many-requests')
-      err.textContent = 'Trop de tentatives. Réessaie plus tard.';
-    else
-      err.textContent = 'Erreur : ' + e.message;
+    load.style.display='none'; btn.disabled=false; err.style.color='red';
+    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. ('+e.code+')';
+    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
+    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
+    else err.textContent='Erreur : '+e.code+' — '+e.message;
   }
 }
 
