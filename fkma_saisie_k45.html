@@ -234,6 +234,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 </div>
 
 <!-- STATUS FIREBASE -->
+<!-- NAVIGATION INTER-APPLIS -->
+<div style="display:flex;gap:8px;margin-bottom:10px;">
+  <a href="accueil.html" style="flex:1;padding:9px;background:white;border:1.5px solid var(--gris2);border-radius:9px;font-size:12px;font-weight:600;color:var(--bleu);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;">🏠 Accueil</a>
+  <a href="index.html" id="lien-gestion" style="flex:1;padding:9px;background:white;border:1.5px solid var(--gris2);border-radius:9px;font-size:12px;font-weight:600;color:var(--vert);text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;">🙏 Gestion</a>
+</div>
+
 <div class="fb-status wait" id="fb-status">
   <div class="fb-dot wait" id="fb-dot"></div>
   <span id="fb-txt">Connexion à Firebase…</span>
@@ -393,6 +399,9 @@ let currentUser = null;
 let currentRole = null;
 
 function initAuth(){
+  // Afficher message de chargement
+  const loginSub=document.querySelector('.ls,.login-sub');
+  if(loginSub) loginSub.textContent='Chargement de la session…';
   const auth = window._auth;
   if(!auth){ setTimeout(initAuth, 200); return; }
 
@@ -455,6 +464,11 @@ async function seDeconnecter(){
 window.addEventListener('fb-ready', function(){ initAuth(); });
 
 function onLoginSuccess(role){
+  // Masquer lien Gestion pour diacre_journal
+  if(role==='diacre_journal'){
+    const lienG=document.getElementById('lien-gestion');
+    if(lienG) lienG.style.display='none';
+  }
   const btnEnregistrer = document.querySelector('.bv');
   // Lecture seule pour controleur et tresoriere
   if(role==='controleur'||role==='tresoriere'){

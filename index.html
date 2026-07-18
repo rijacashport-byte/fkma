@@ -266,6 +266,25 @@ window.dispatchEvent(new Event("fb-ready"));
   <button class="btn-deconnexion" onclick="seDeconnecter()">Déconnexion</button>
 </div>
 
+<!-- NAVIGATION INTER-APPLIS -->
+<div style="display:flex;gap:8px;margin-bottom:10px;">
+  <a href="accueil.html" style="flex:1;padding:9px;background:white;border:1.5px solid var(--gris2);
+    border-radius:9px;font-size:12px;font-weight:600;color:var(--bleu);text-align:center;
+    text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;">
+    🏠 Accueil
+  </a>
+  <a href="fkma_saisie_k45.html" style="flex:1;padding:9px;background:white;border:1.5px solid var(--gris2);
+    border-radius:9px;font-size:12px;font-weight:600;color:var(--bleu);text-align:center;
+    text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;">
+    📖 Journal K45
+  </a>
+  <a href="fkma_grandlivre.html" style="flex:1;padding:9px;background:white;border:1.5px solid var(--gris2);
+    border-radius:9px;font-size:12px;font-weight:600;color:var(--violet);text-align:center;
+    text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;">
+    📒 Grand Livre
+  </a>
+</div>
+
 <div id="fb-status" style="display:flex;align-items:center;gap:7px;padding:7px 12px;
   border-radius:8px;font-size:12px;margin-bottom:10px;background:#fff8e7;color:#8a6200">
   <div id="fb-dot" style="width:8px;height:8px;border-radius:50%;background:#c49a2a;
@@ -822,6 +841,9 @@ let currentRole = null;
 
 // Importer Auth Firebase
 function initAuth(){
+  // Afficher message de chargement
+  const loginSub=document.querySelector('.ls,.login-sub');
+  if(loginSub) loginSub.textContent='Chargement de la session…';
   // Auth déjà importé dans le module Firebase
   const auth = window._auth;
   if(!auth){ setTimeout(initAuth, 200); return; }
