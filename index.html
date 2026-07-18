@@ -1798,18 +1798,6 @@ async function chargerSaisieDate(date){
   else txt+='📨 Anjarako : non saisi';
   info.textContent=txt;
 }
-  const rak=load(SK_RAKITRA).find(h=>h.date===date);
-  const anj=load(SK_ANJ_H).find(h=>h.date===date);
-  actions.style.display='flex';
-  info.style.display='block';
-  let txt='📅 '+date+' :\n';
-  if(rak) txt+='🙏 Rakitra : '+fmt(rak.total||rak.totalRakitra||0)+' FCFA\n';
-  else txt+='🙏 Rakitra : non saisi\n';
-  if(anj) txt+='📨 Anjarako : '+fmt(anj.total||0)+' FCFA — '+(anj.enveloppes||[]).length+' enveloppes';
-  else txt+='📨 Anjarako : non saisi';
-  info.textContent=txt;
-}
-
 async function chargerRakitraHist(){
   if(!_dateSelectionnee){alert('Veuillez choisir une date.');return;}
   let rak=null;
