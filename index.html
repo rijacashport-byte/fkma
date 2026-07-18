@@ -192,30 +192,28 @@ body{font-family:'Inter',sans-serif;background:var(--gris1);color:var(--texte);p
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const firebaseConfig = {
+const app  = initializeApp({
   apiKey: "AIzaSyBF5iccgQkqsT2wEtzu9GByKHJY_48oaQA",
   authDomain: "fkma-abidjan-1596c.firebaseapp.com",
   projectId: "fkma-abidjan-1596c",
   storageBucket: "fkma-abidjan-1596c.firebasestorage.app",
   messagingSenderId: "658105738928",
   appId: "1:658105738928:web:71c3552474f5fbf1e9bd75"
-};
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+});
+const db   = getFirestore(app);
 const auth = getAuth(app);
-
-// Exposer tout au script principal
+setPersistence(auth, browserLocalPersistence).catch(e=>console.log('Persist:',e));
 window._app    = app;
 window._db     = db;
 window._auth   = auth;
+window._fs     = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
 window._signIn = signInWithEmailAndPassword;
 window._signOut= signOut;
 window._onAuth = onAuthStateChanged;
-window._fs = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where };
-window._fbReady = true;
+window._fbReady= true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
 
