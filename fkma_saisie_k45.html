@@ -406,13 +406,22 @@ let currentRole = null;
 
 function initAuth(){
   // Afficher message de chargement
-  const loginSub=document.querySelector('.ls,.login-sub');
+  const loginSub=document.querySelector('.ls,.login-sub,.ls');
   if(loginSub) loginSub.textContent='Chargement de la session…';
+  // Pré-remplir email depuis sessionStorage
+  try{
+    const savedEmail=sessionStorage.getItem('fkma_user_email');
+    if(savedEmail){
+      const emailInp=document.getElementById('login-email');
+      if(emailInp) emailInp.value=savedEmail;
+    }
+  }catch(e){}
   const auth = window._auth;
   if(!auth){ setTimeout(initAuth, 200); return; }
 
   window._onAuth(auth, function(user){
     if(user){
+      try{sessionStorage.setItem('fkma_user_email',user.email);}catch(e){}
       currentUser = user;
       const cfg = ROLES_CONFIG[user.email] || {nom: user.email, role: 'inconnu', label: 'Inconnu'};
       currentRole = cfg.role;
@@ -424,6 +433,9 @@ function initAuth(){
       currentUser = null; currentRole = null;
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('user-bar').style.display = 'none';
+      // Proposer de retourner au tableau de bord
+      const sub=document.querySelector('.ls,.login-sub');
+      if(sub) sub.innerHTML='<a href="accueil.html" style="color:var(--bleu);text-decoration:none">← Retour au tableau de bord</a>';
     }
   });
 }

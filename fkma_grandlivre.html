@@ -418,8 +418,16 @@ let obES='S';
 // ── AUTH ─────────────────────────────────────────────────────
 function initAuth(){
   // Afficher message de chargement
-  const loginSub=document.querySelector('.ls,.login-sub');
+  const loginSub=document.querySelector('.ls,.login-sub,.ls');
   if(loginSub) loginSub.textContent='Chargement de la session…';
+  // Pré-remplir email depuis sessionStorage
+  try{
+    const savedEmail=sessionStorage.getItem('fkma_user_email');
+    if(savedEmail){
+      const emailInp=document.getElementById('login-email');
+      if(emailInp) emailInp.value=savedEmail;
+    }
+  }catch(e){}
   const auth=window._auth;
   if(!auth){setTimeout(initAuth,200);return;}
   window._onAuth(auth,function(user){
@@ -464,6 +472,8 @@ function initAuth(){
     } else {
       document.getElementById('login-screen').style.display='flex';
       document.getElementById('app').style.display='none';
+      const sub=document.querySelector('.ls,.login-sub');
+      if(sub) sub.innerHTML='<a href="accueil.html" style="color:var(--bleu)">← Retour au tableau de bord</a>';
     }
   });
 }
@@ -489,6 +499,7 @@ async function seConnecter(){
 
 async function seDeconnecter(){
   if(!confirm('Se déconnecter ?'))return;
+  try{sessionStorage.removeItem('fkma_user_email');}catch(e){}
   if(window._signOut&&window._auth)await window._signOut(window._auth);
 }
 

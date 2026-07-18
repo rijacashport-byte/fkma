@@ -267,6 +267,8 @@ function initAuth(){
   window._onAuth(auth, function(user){
     if(user){
       const cfg = ROLES_CONFIG[user.email] || {nom:user.email, role:'inconnu', label:'Inconnu'};
+      // Stocker la session pour les autres applis
+      try{sessionStorage.setItem('fkma_user_email', user.email);}catch(e){}
       afficherDashboard(cfg);
     } else {
       document.getElementById('login-screen').style.display = 'flex';
