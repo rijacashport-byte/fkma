@@ -14,6 +14,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -25,14 +26,24 @@ const app  = initializeApp({
   messagingSenderId: "658105738928",
   appId: "1:658105738928:web:71c3552474f5fbf1e9bd75"
 });
+
 const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence).catch(e=>console.log('Persist:',e));
+window._app    = app;
+
 window._auth   = auth;
 window._signIn = signInWithEmailAndPassword;
 window._signOut= signOut;
 window._onAuth = onAuthStateChanged;
-window._fbReady= true;
-window.dispatchEvent(new Event("fb-ready"));
+
+// Attendre que la persistance soit établie AVANT de signaler que Firebase est prêt
+setPersistence(auth, browserLocalPersistence).then(function(){
+  window._fbReady = true;
+  window.dispatchEvent(new Event("fb-ready"));
+}).catch(function(e){
+  console.log("Persist error:", e);
+  window._fbReady = true;
+  window.dispatchEvent(new Event("fb-ready"));
+});
 </script>
 
 <style>
