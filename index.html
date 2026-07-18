@@ -888,11 +888,15 @@ async function seDeconnecter(){
 window.addEventListener('fb-ready', function(){ initAuth(); });
 
 function onLoginSuccess(role){
-  // Tous les rôles peuvent voir l'appli de gestion
-  // mais on pourra restreindre plus tard
+  // diacre_journal n'a pas accès à la Gestion → rediriger vers Journal
+  if(role==='diacre_journal'){
+    alert('Votre accès est limité au Journal K45.');
+    window.location.href='fkma_saisie_k45.html';
+    return;
+  }
   console.log('Connecté avec rôle:', role);
-  // Charger les données Firebase
   if(window._db){chargerDepenses();chargerAnjarako();}
+}
 }
 
 

@@ -456,13 +456,16 @@ window.addEventListener('fb-ready', function(){ initAuth(); });
 
 function onLoginSuccess(role){
   const btnEnregistrer = document.querySelector('.bv');
-  if(role === 'controleur' || role === 'tresoriere'){
+  // Lecture seule pour controleur et tresoriere
+  if(role==='controleur'||role==='tresoriere'){
     if(btnEnregistrer) btnEnregistrer.style.display='none';
     setTimeout(function(){
-      const btnHist = document.querySelectorAll('.tab-btn')[1];
+      const btnHist=document.querySelectorAll('.tab-btn')[1];
       if(btnHist) btnHist.click();
-    }, 500);
+    },500);
   }
+  // diacre_journal → saisie complète (accès normal)
+  // secretaire, diacre → saisie complète
   chargerHistorique();
 }
 
