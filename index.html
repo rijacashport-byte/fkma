@@ -1461,6 +1461,32 @@ function showMain(section, btn){
   if(section==='gl') chargerTout();
 }
 
+// ── NAVIGATION SOUS-ONGLETS GESTION ──────────────────────────
+function showGestTab(tab, btn){
+  document.querySelectorAll('#section-gest .nav-btn').forEach(b=>b.classList.remove('actif'));
+  if(btn) btn.classList.add('actif');
+  ['rakitra','anjarako','vola','dashboard'].forEach(function(t){
+    const el=document.getElementById('tab-'+t);
+    if(el) el.style.display=t===tab?'':'none';
+  });
+  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();}
+  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
+  if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
+}
+
+// ── NAVIGATION SOUS-ONGLETS JOURNAL K45 ──────────────────────
+function showK45Tab(tab, btn){
+  document.querySelectorAll('#section-k45 .tab-btn').forEach(function(b){b.classList.remove('actif');});
+  if(btn) btn.classList.add('actif');
+  ['saisie','historique'].forEach(function(t){
+    const el=document.getElementById('k45-tab-'+t);
+    if(el) el.style.display=t===tab?'':'none';
+  });
+  if(tab==='historique') chargerHistorique();
+}
+
+
+
 
 // ── JS GESTION ────────────────────────────────────────────────
 
