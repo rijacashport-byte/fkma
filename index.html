@@ -522,7 +522,7 @@ body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
     <input class="login-inp" type="email" id="login-email" placeholder="Adresse e-mail" autocomplete="email">
     <input class="login-inp" type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password">
     <div class="login-err" id="login-err"></div>
-    <button class="login-btn" id="login-btn" onclick="seConnecter()">Se connecter</button>
+    <button class="login-btn" id="login-btn" onclick="seConnecter()" disabled>Chargement...</button>
   </div>
 </div>
 
@@ -1569,8 +1569,9 @@ async function seConnecter(){
   if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent='Email non autorisé : '+email; return; }
   if(!window._auth){ err.style.color='red'; err.textContent='Firebase Auth non chargé — recharger la page.'; return; }
   if(!window._signIn){ err.style.color='red'; err.textContent='signIn non disponible — recharger la page.'; return; }
-  err.style.color='orange'; err.textContent='Connexion Firebase...';
-  load.style.display='block'; btn.disabled=true;
+  // Firebase pas encore prêt — le bouton est déjà disabled, on attend
+  btn.disabled=true; btn.textContent='Chargement...';
+  return;
   try{
     await window._signIn(window._auth, email, pwd);
   } catch(e){
