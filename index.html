@@ -503,6 +503,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ecart-ok{color:var(--vert);font-weight:700;}
 .ecart-nok{color:var(--rouge);font-weight:700;}
 
+
+/* ── RÔLES ─────────────────────────────────────────────────── */
+/* Contrôleur : masquer Rakitra, Vola, Dashboard dans Gestion */
+body.role-controleur .nav-btn:nth-child(1),
+body.role-controleur .nav-btn:nth-child(3),
+body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
 </style>
 </head>
 <body>
@@ -541,6 +547,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="main-tab actif" id="mnav-gest" onclick="showMain('gest',this)">🙏<br>Gestion</button>
   <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)">📖<br>Journal</button>
   <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)">📒<br>Grand Livre</button>
+  <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none">🏦<br>Opérations</button>
 </div>
 
 <div class="fb-status" id="fb-status">
@@ -550,6 +557,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 
 <div id="section-gest" style="display:block">
+<div class="nav-tabs">
+  <button class="nav-btn actif" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
+  <button class="nav-btn" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
+  <button class="nav-btn" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
+  <button class="nav-btn" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
+</div>
 <div id="tab-rakitra">
 
   <div class="card">
@@ -1304,97 +1317,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- ══ OPÉRATIONS BANCAIRES (Ando) ══ -->
-<div id="gl-tab-ops" style="display:none">
-
-  <!-- Transfert Caisse → Banque -->
-  <div class="card">
-    <div class="ctit">🔄 Transfert Caisse → Banque</div>
-    <div class="note">Quand tu verses de la caisse à la SIB — double écriture automatique.</div>
-
-    <div class="g2">
-      <div class="ch"><label>📂 Livre</label>
-        <select id="tr-livre">
-          <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
-          <option value="anj">📘 Anjarako (SIB Anjarako)</option>
-        </select>
-      </div>
-      <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
-    </div>
-    <div class="g2">
-      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
-      <div class="ch"><label>📄 N° Page livre</label><input type="number" id="tr-page" min="1" placeholder="Ex: 12" inputmode="numeric"></div>
-    </div>
-    <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
-    <div class="ch"><label>🔢 N° Bordereau</label><input type="text" id="tr-piece" placeholder="Ex: BV-001"></div>
-    <button class="btn bv" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
-  </div>
-
-  <!-- Opérations bancaires directes (frais, agios…) -->
-  <div class="card">
-    <div class="ctit">🏦 Opération bancaire directe</div>
-    <div class="note">Frais bancaires, agios, timbres, chèques — opérations sur le relevé SIB.</div>
-
-    <div class="es-toggle">
-      <button class="es-btn e actif" id="ob-es-e" onclick="setObES('E')">⬆️ Crédit</button>
-      <button class="es-btn s" id="ob-es-s" onclick="setObES('S')">⬇️ Débit</button>
-    </div>
-
-    <div class="g2">
-      <div class="ch"><label>📂 Compte</label>
-        <select id="ob-livre">
-          <option value="fiang">📗 SIB Rakitra</option>
-          <option value="anj">📘 SIB Anjarako</option>
-        </select>
-      </div>
-      <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
-    </div>
-    <div class="ch">
-      <label>📂 Nature</label>
-      <select id="ob-nature">
-        <option value="">— Choisir —</option>
-        <option value="AGI">Agios</option>
-        <option value="FRB">Frais bancaires</option>
-        <option value="TIM">Timbre</option>
-        <option value="CHQ">Chèque payé</option>
-        <option value="RET">Retrait espèces</option>
-        <option value="EXT">Extrait de compte</option>
-        <option value="AUT">Autre</option>
-      </select>
-    </div>
-    <div class="g2">
-      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
-      <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
-    </div>
-    <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
-  </div>
-
-  <!-- Rapprochement bancaire -->
-  <div class="card">
-    <div class="ctit">✅ Rapprochement bancaire</div>
-    <div class="note">Compare le solde dans l'appli avec le relevé bancaire réel.</div>
-    <div class="g2">
-      <div class="ch"><label>📂 Compte</label>
-        <select id="rp-livre">
-          <option value="fiang">📗 SIB Rakitra</option>
-          <option value="anj">📘 SIB Anjarako</option>
-        </select>
-      </div>
-      <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
-    </div>
-    <div class="ch"><label>💰 Solde relevé SIB (FCFA)</label>
-      <input type="number" id="rp-solde-reel" placeholder="Solde selon relevé bancaire" inputmode="numeric">
-    </div>
-    <button class="btn bo" onclick="faireRapprochement()">✅ Calculer l'écart</button>
-    <div id="rp-resultat" style="display:none;margin-top:10px;background:var(--gris1);border-radius:8px;padding:12px">
-      <div class="rappr-row"><span>Solde théorique (appli)</span><span id="rp-theo">0 F</span></div>
-      <div class="rappr-row"><span>Solde réel (relevé SIB)</span><span id="rp-reel">0 F</span></div>
-      <div class="rappr-row" style="font-weight:700;font-size:14px"><span>Écart</span><span id="rp-ecart">0 F</span></div>
-      <div id="rp-msg" style="margin-top:8px;font-size:12px;text-align:center;padding:6px;border-radius:6px"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ SYNTHÈSE ══ -->
+<div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
 <div id="gl-tab-synth" style="display:none">
   <div class="card">
     <div class="ctit">📊 Vue globale</div>
@@ -1406,10 +1329,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (4 feuilles)</button>
 </div>
 
+
+<div id="section-ops" style="display:none">
+  <div class="note" style="margin-bottom:10px">
+    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
+  </div>
+  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+</div>
 </div><!-- /app -->
 
 </div>
 
+
+<div id="section-ops" style="display:none">
+  <div class="note" style="margin-bottom:10px">
+    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
+  </div>
+  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+</div>
 </div><!-- /app -->
 
 <script>
@@ -1436,6 +1375,8 @@ function initAuth(){
       document.getElementById('user-avatar').textContent=cfg.nom.charAt(0).toUpperCase();
       document.getElementById('user-nom').textContent=cfg.nom;
       document.getElementById('user-role').textContent=cfg.label;
+      // Ajouter classe rôle au body pour CSS ciblé
+      document.querySelector('body')?.classList.add('role-'+cfg.role);
       appliquerRole(cfg.role);
     } else {
       currentUser=null; currentRole=null;
@@ -1447,25 +1388,47 @@ function initAuth(){
 }
 
 function appliquerRole(role){
-  // Masquer onglets selon rôle
   const tabGest = document.getElementById('mnav-gest');
-  const tabGL   = document.getElementById('mnav-gl');
   const tabK45  = document.getElementById('mnav-k45');
-  
+  const tabGL   = document.getElementById('mnav-gl');
+  const tabOps  = document.getElementById('mnav-ops');
+
+  // Cacher tout par défaut
+  if(tabOps) tabOps.style.display='none';
+
   if(role==='diacre_journal'){
-    // Diacre journal : Journal K45 seulement
+    // Nataly — Journal K45 seulement
     if(tabGest) tabGest.style.display='none';
     if(tabGL)   tabGL.style.display='none';
+    if(tabK45)  tabK45.style.display='';
     showMain('k45', tabK45);
     return;
   }
+
   if(role==='controleur'){
-    // Contrôleur : pas de Grand Livre éditeur (mais consultation)
+    // Herizo — Grand Livre uniquement (+ Anjarako dans Gestion)
+    if(tabGest) tabGest.style.display='none';
+    if(tabK45)  tabK45.style.display='none';
+    if(tabGL)   tabGL.style.display='';
+    showMain('gl', tabGL);
+    if(window._db) chargerTout();
+    return;
   }
-  // Par défaut : commencer par Gestion
-  showMain('gest', document.getElementById('mnav-gest'));
-  // Charger les données Firebase
-  if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); }
+
+  if(role==='secretaire'||role==='diacre'||role==='tresoriere'){
+    // Rija, PL, Ando — tout sauf diacre_journal
+    if(tabGest) tabGest.style.display='';
+    if(tabK45)  tabK45.style.display='';
+    if(tabGL)   tabGL.style.display='';
+    if(tabOps)  tabOps.style.display=''; // Opérations visibles
+    showMain('gest', tabGest);
+    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); }
+    return;
+  }
+
+  // Défaut
+  showMain('gest', tabGest);
+  if(window._db){ chargerDepenses(); chargerAnjarako(); }
 }
 
 window.addEventListener('fb-ready', function(){
@@ -1480,7 +1443,7 @@ window.addEventListener('fb-ready', function(){
 function showMain(section, btn){
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['gest','k45','gl'].forEach(s=>{
+  ['gest','k45','gl','ops'].forEach(s=>{
     const el=document.getElementById('section-'+s);
     if(el) el.style.display=s===section?'':'none';
   });
