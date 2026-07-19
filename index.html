@@ -1429,10 +1429,25 @@ function appliquerRole(role){
 
 window.addEventListener('fb-ready', function(){
   initAuth();
-  document.getElementById('fb-status').style.background='#e8f5ee';
-  document.getElementById('fb-status').style.color='#1a6b3c';
-  document.getElementById('fb-dot').style.cssText='width:8px;height:8px;border-radius:50%;background:#1a6b3c;flex-shrink:0;';
-  document.getElementById('fb-txt').textContent='Firebase connecté ✓';
+  // Activer le bouton login
+  const loginBtn=document.getElementById('login-btn');
+  if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='Se connecter';}
+  // Mettre à jour le statut Firebase
+  const fbStatus=document.getElementById('fb-status');
+  if(fbStatus){fbStatus.style.background='#e8f5ee';fbStatus.style.color='#1a6b3c';}
+  const fbDot=document.getElementById('fb-dot');
+  if(fbDot) fbDot.style.cssText='width:8px;height:8px;border-radius:50%;background:#1a6b3c;flex-shrink:0;';
+  const fbTxt=document.getElementById('fb-txt');
+  if(fbTxt) fbTxt.textContent='Firebase connecté ✓';
+});
+
+// Désactiver le bouton login jusqu'à Firebase prêt
+document.addEventListener('DOMContentLoaded', function(){
+  const loginBtn=document.getElementById('login-btn');
+  if(loginBtn && !window._fbReady){
+    loginBtn.disabled=true;
+    loginBtn.textContent='Chargement...';
+  }
 });
 
 // ── NAVIGATION PRINCIPALE ─────────────────────────────────────
@@ -3392,6 +3407,16 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 });
 
+
+// Timeout Firebase — afficher erreur si pas connecté après 10s
+setTimeout(function(){
+  if(!window._fbReady){
+    const fbTxt=document.getElementById('fb-txt');
+    if(fbTxt) fbTxt.textContent='⚠️ Connexion lente — vérifier internet';
+    const loginBtn=document.getElementById('login-btn');
+    if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='Se connecter';}
+  }
+}, 10000);
 </script>
 </body>
 </html>
