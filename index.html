@@ -1181,7 +1181,7 @@ body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
   <button class="tab-btn actif" onclick="showGLTab('fiang',this)">📗<br>Fiangonana</button>
   <button class="tab-btn" onclick="showGLTab('anj',this)">📘<br>Anjarako</button>
   <button class="tab-btn" onclick="showGLTab('k45',this)">📙<br>K45</button>
-  <button class="tab-btn" onclick="showGLTab('ops',this)">🔄<br>Opérations</button>
+  
   <button class="tab-btn" onclick="showGLTab('synth',this)">📊<br>Synthèse</button>
 </div>
 
@@ -1326,11 +1326,102 @@ body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
 </div>
 
 
+  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+</div>
+
 <div id="section-ops" style="display:none">
   <div class="note" style="margin-bottom:10px">
     🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
   </div>
-  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+  
+
+  <!-- Transfert Caisse → Banque -->
+  <div class="card">
+    <div class="ctit">🔄 Transfert Caisse → Banque</div>
+    <div class="note">Quand tu verses de la caisse à la SIB — double écriture automatique.</div>
+
+    <div class="g2">
+      <div class="ch"><label>📂 Livre</label>
+        <select id="tr-livre">
+          <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
+          <option value="anj">📘 Anjarako (SIB Anjarako)</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>📄 N° Page livre</label><input type="number" id="tr-page" min="1" placeholder="Ex: 12" inputmode="numeric"></div>
+    </div>
+    <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
+    <div class="ch"><label>🔢 N° Bordereau</label><input type="text" id="tr-piece" placeholder="Ex: BV-001"></div>
+    <button class="btn bv" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
+  </div>
+
+  <!-- Opérations bancaires directes (frais, agios…) -->
+  <div class="card">
+    <div class="ctit">🏦 Opération bancaire directe</div>
+    <div class="note">Frais bancaires, agios, timbres, chèques — opérations sur le relevé SIB.</div>
+
+    <div class="es-toggle">
+      <button class="es-btn e actif" id="ob-es-e" onclick="setObES('E')">⬆️ Crédit</button>
+      <button class="es-btn s" id="ob-es-s" onclick="setObES('S')">⬇️ Débit</button>
+    </div>
+
+    <div class="g2">
+      <div class="ch"><label>📂 Compte</label>
+        <select id="ob-livre">
+          <option value="fiang">📗 SIB Rakitra</option>
+          <option value="anj">📘 SIB Anjarako</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
+    </div>
+    <div class="ch">
+      <label>📂 Nature</label>
+      <select id="ob-nature">
+        <option value="">— Choisir —</option>
+        <option value="AGI">Agios</option>
+        <option value="FRB">Frais bancaires</option>
+        <option value="TIM">Timbre</option>
+        <option value="CHQ">Chèque payé</option>
+        <option value="RET">Retrait espèces</option>
+        <option value="EXT">Extrait de compte</option>
+        <option value="AUT">Autre</option>
+      </select>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
+    </div>
+    <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
+  </div>
+
+  <!-- Rapprochement bancaire -->
+  <div class="card">
+    <div class="ctit">✅ Rapprochement bancaire</div>
+    <div class="note">Compare le solde dans l'appli avec le relevé bancaire réel.</div>
+    <div class="g2">
+      <div class="ch"><label>📂 Compte</label>
+        <select id="rp-livre">
+          <option value="fiang">📗 SIB Rakitra</option>
+          <option value="anj">📘 SIB Anjarako</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
+    </div>
+    <div class="ch"><label>💰 Solde relevé SIB (FCFA)</label>
+      <input type="number" id="rp-solde-reel" placeholder="Solde selon relevé bancaire" inputmode="numeric">
+    </div>
+    <button class="btn bo" onclick="faireRapprochement()">✅ Calculer l'écart</button>
+    <div id="rp-resultat" style="display:none;margin-top:10px;background:var(--gris1);border-radius:8px;padding:12px">
+      <div class="rappr-row"><span>Solde théorique (appli)</span><span id="rp-theo">0 F</span></div>
+      <div class="rappr-row"><span>Solde réel (relevé SIB)</span><span id="rp-reel">0 F</span></div>
+      <div class="rappr-row" style="font-weight:700;font-size:14px"><span>Écart</span><span id="rp-ecart">0 F</span></div>
+      <div id="rp-msg" style="margin-top:8px;font-size:12px;text-align:center;padding:6px;border-radius:6px"></div>
+    </div>
+  </div>
 
 </div>
 </div><!-- /app -->
@@ -1338,10 +1429,6 @@ body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
 </div>
 
 
-<div id="section-ops" style="display:none">
-  <div class="note" style="margin-bottom:10px">
-    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
-  </div>
   <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
 
 </div>
