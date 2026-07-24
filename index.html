@@ -522,7 +522,7 @@ body.role-controleur .nav-btn:nth-child(4) { display: none !important; }
     <input class="login-inp" type="email" id="login-email" placeholder="Adresse e-mail" autocomplete="email">
     <input class="login-inp" type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password">
     <div class="login-err" id="login-err"></div>
-    <button class="login-btn" id="login-btn" onclick="seConnecter()" disabled>Chargement...</button>
+    <button class="login-btn" id="login-btn" onclick="seConnecter()">Se connecter</button>
   </div>
 </div>
 
@@ -1649,24 +1649,47 @@ async function seConnecter(){
   const email = document.getElementById('login-email').value.trim();
   const pwd   = document.getElementById('login-pwd').value;
   const err   = document.getElementById('login-err');
-  const load  = document.getElementById('login-load');
-  const btn   = document.querySelector('.login-btn');
-  err.style.color = 'orange'; err.textContent = 'Vérification...';
-  if(!email || !pwd){ err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return; }
-  if(!ROLES_CONFIG[email]){ err.style.color='red'; err.textContent='Email non autorisé : '+email; return; }
-  if(!window._auth){ err.style.color='red'; err.textContent='Firebase Auth non chargé — recharger la page.'; return; }
-  if(!window._signIn){ err.style.color='red'; err.textContent='signIn non disponible — recharger la page.'; return; }
-  // Firebase pas encore prêt — le bouton est déjà disabled, on attend
-  btn.disabled=true; btn.textContent='Chargement...';
-  return;
+  const btn   = document.getElementById('login-btn');
+
+  err.textContent = '';
+  if(!email || !pwd){
+    err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return;
+  }
+  if(!ROLES_CONFIG[email]){
+    err.style.color='red'; err.textContent='Email non autorisé : '+email; return;
+  }
+
+  // Si Firebase pas encore prêt → attendre jusqu'à 10 secondes
+  if(!window._auth || !window._signIn){
+    err.style.color='orange'; err.textContent='Connexion en cours…';
+    btn.disabled=true; btn.textContent='Chargement...';
+    let attente=0;
+    while((!window._auth || !window._signIn) && attente < 100){
+      await new Promise(r=>setTimeout(r,100));
+      attente++;
+    }
+    if(!window._auth || !window._signIn){
+      err.style.color='red'; err.textContent='Firebase non disponible — vérifier votre connexion internet.';
+      btn.disabled=false; btn.textContent='Se connecter';
+      return;
+    }
+  }
+
+  btn.disabled=true; btn.textContent='Connexion...';
+  err.style.color='orange'; err.textContent='Vérification...';
+
   try{
     await window._signIn(window._auth, email, pwd);
   } catch(e){
-    load.style.display='none'; btn.disabled=false; err.style.color='red';
-    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') err.textContent='Mot de passe incorrect. ('+e.code+')';
-    else if(e.code==='auth/user-not-found') err.textContent='Email introuvable.';
-    else if(e.code==='auth/too-many-requests') err.textContent='Trop de tentatives.';
-    else err.textContent='Erreur : '+e.code+' — '+e.message;
+    btn.disabled=false; btn.textContent='Se connecter';
+    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')
+      err.style.color='red', err.textContent='Mot de passe incorrect.';
+    else if(e.code==='auth/user-not-found')
+      err.style.color='red', err.textContent='Email introuvable.';
+    else if(e.code==='auth/network-request-failed')
+      err.style.color='red', err.textContent='Pas de connexion internet.';
+    else
+      err.style.color='red', err.textContent='Erreur : '+e.message;
   }
 }
 
