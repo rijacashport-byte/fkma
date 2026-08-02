@@ -3013,6 +3013,8 @@ function snapData(){
 
 // ── ENREGISTRER DANS FIREBASE ─────────────────────────────────
 async function enregistrer(){
+  // Toujours lire depuis window pour éviter les problèmes de timing
+  const db=window._db; const fs=window._fs;
   if(!db){ alert('Firebase non connecté. Vérifier la connexion.'); return; }
   const d=snapData();
   if(!d.date){ alert('Veuillez renseigner la date.'); return; }
@@ -3059,6 +3061,7 @@ async function enregistrer(){
 
 // ── CHARGER HISTORIQUE ────────────────────────────────────────
 async function chargerHistorique(){
+  const db=window._db; const fs=window._fs;
   if(!db) return;
   const liste=document.getElementById('hist-liste');
   liste.innerHTML='<div class="apvide">Chargement…</div>';
