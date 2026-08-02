@@ -1516,6 +1516,7 @@ function appliquerRole(role){
 
 window.addEventListener('fb-ready', function(){
   initAuth();
+  fbOK(); // Initialiser db, fs, _db, _fs pour les modules K45 et Gestion
   // Activer le bouton login
   const loginBtn=document.getElementById('login-btn');
   if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='Se connecter';}
@@ -1735,6 +1736,7 @@ const SK_DEP     = 'fkma_depenses';
 let _db = null, _fs = null;
 function fbOK(){
   _db = window._db; _fs = window._fs;
+  db = window._db; fs = window._fs; // Pour le module Journal K45
   document.getElementById('fb-status').style.background='#e8f5ee';
   document.getElementById('fb-status').style.color='#1a6b3c';
   document.getElementById('fb-dot').style.background='#1a6b3c';
@@ -1751,6 +1753,8 @@ function fbErr(msg){
   document.getElementById('fb-dot').style.animation='none';
   document.getElementById('fb-txt').textContent='Firebase hors ligne — mode local';
 }
+// Synchroniser immédiatement si Firebase déjà disponible
+if(window._db){ _db=window._db; _fs=window._fs; db=window._db; fs=window._fs; }
 if(window._fbReady){ fbOK(); }
 
 function showVolaTab(tab){
@@ -2098,6 +2102,7 @@ async function enregistrerRakitra(){
   const idx=hist.findIndex(h=>h.date===d.date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=d;}else hist.push(d);
   hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_RAKITRA,hist);
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{
     // Sauvegarder dans collection rakitra
     const col=_fs.collection(_db,'rakitra');
@@ -2231,6 +2236,7 @@ async function enregistrerAnjarako(){
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
   hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_ANJ_H,hist);
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{
     const col=_fs.collection(_db,'anjarako');
     const snap=await _fs.getDocs(col);let xId=null;
@@ -2323,6 +2329,7 @@ async function ajouterDepense(livre){
   const rec={id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur};
   const dep=load(SK_DEP);
   dep.push(rec);dep.sort((a,b)=>b.date.localeCompare(a.date));save(SK_DEP,dep);
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{await _fs.addDoc(_fs.collection(_db,'depenses'),rec);}catch(e){console.log('FB dep:',e.message);}}
   document.getElementById(p+'-montant').value='';
   if(document.getElementById(p+'-piece'))document.getElementById(p+'-piece').value='';
@@ -2333,6 +2340,7 @@ async function ajouterDepense(livre){
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
   save(SK_DEP,load(SK_DEP).filter(d=>d.id!==id));
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{
     const col=_fs.collection(_db,'depenses');
     const snap=await _fs.getDocs(col);
