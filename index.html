@@ -17,7 +17,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app  = initializeApp({
@@ -35,11 +35,18 @@ window._fs={collection,addDoc,getDocs,doc,updateDoc,deleteDoc,setDoc,query,order
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._onAuth=onAuthStateChanged;
+// Essayer localStorage d'abord, fallback sur sessionStorage si échec (PC bloquant)
 setPersistence(auth, browserLocalPersistence).then(function(){
   window._fbReady=true;
   window.dispatchEvent(new Event("fb-ready"));
 }).catch(function(e){
-  console.log("Persist:", e);
+  console.log("LocalPersistence échoué, essai session:", e.message);
+  return setPersistence(auth, browserSessionPersistence);
+}).then(function(){
+  window._fbReady=true;
+  window.dispatchEvent(new Event("fb-ready"));
+}).catch(function(e){
+  console.log("Persist total échoué:", e.message);
   window._fbReady=true;
   window.dispatchEvent(new Event("fb-ready"));
 });
@@ -1497,18 +1504,17 @@ function appliquerRole(role){
   }
 
   if(role==='vomieran'){
-    // Hary — Anjarako seulement dans Gestion + consultation Grand Livre
+    // Hary — Anjarako SEULEMENT, pas de Grand Livre
     if(tabGest) tabGest.style.display='';
     if(tabK45)  tabK45.style.display='none';
-    if(tabGL)   tabGL.style.display='';
+    if(tabGL)   tabGL.style.display='none';
     if(tabOps)  tabOps.style.display='none';
     showMain('gest', tabGest);
-    // Aller directement sur l'onglet Anjarako
     setTimeout(function(){
       const anjBtn=document.querySelector('#section-gest .nav-btn:nth-child(2)');
       if(anjBtn) showGestTab('anjarako', anjBtn);
     }, 300);
-    if(window._db){ chargerAnjarako(); chargerTout(); }
+    if(window._db){ chargerAnjarako(); }
     return;
   }
 
@@ -1688,7 +1694,7 @@ async function seConnecter(){
   if(!window._auth || !window._signIn){
     btn.disabled=true; btn.textContent='Chargement...';
     let attente=0;
-    while((!window._auth || !window._signIn) && attente < 150){
+    while((!window._auth || !window._signIn) && attente < 300){
       await new Promise(r=>setTimeout(r,100));
       attente++;
     }
