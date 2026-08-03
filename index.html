@@ -1459,6 +1459,7 @@ function initAuth(){
       currentUser = user;
       const cfg = ROLES_CONFIG[user.email]||{nom:user.email,role:'inconnu',label:'Inconnu'};
       currentRole = cfg.role;
+      window._currentRole = cfg.role; // Pour renderLivre et autres
       document.getElementById('login-screen').style.display='none';
       document.getElementById('app').style.display='block';
       document.getElementById('user-bar').style.display='flex';
@@ -3102,6 +3103,11 @@ async function enregistrer(){
 
 // ── CHARGER HISTORIQUE ────────────────────────────────────────
 async function chargerHistorique(){
+  const _email=window._auth&&window._auth.currentUser?window._auth.currentUser.email:"";
+  const _cfg=ROLES_CONFIG[_email]||{};
+  const _role=_cfg.role||"";
+  const canEditK45=_role==="secretaire"||_role==="diacre"||_role==="diacre_journal";
+
   const db=window._db; const fs=window._fs;
   if(!db) return;
   const liste=document.getElementById('hist-liste');
@@ -3307,9 +3313,12 @@ function renderLivre(livre){
   const initBanque=parseFloat(document.getElementById(livre+'-init-banque')?.value)||0;
 
   let soldeCaisse=initCaisse, soldeBanque=initBanque;
-  // Peut supprimer : secretaire + diacre seulement
-  const currentRole=(window._currentRole||'');
+  // Rôle depuis Firebase Auth ou window._currentRole
+  const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  const userCfg=ROLES_CONFIG[userEmail]||{};
+  const currentRole=userCfg.role||window._currentRole||'';
   const canDelete=currentRole==='secretaire'||currentRole==='diacre';
+  const canModify=canDelete||currentRole==='tresoriere';
   el.innerHTML=list.map(function(e){
     const isE=e.es==='E';
     const src=e.source||'caisse';
