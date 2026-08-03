@@ -2827,7 +2827,7 @@ function exporterDashWA(){
 
 
 // ── AUTHENTIFICATION ────────────────────────────────────────────
-const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}};
+const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}};
 
 // ── FIREBASE READY ────────────────────────────────────────────
 let db = null, fs = null;
@@ -3315,7 +3315,7 @@ function renderLivre(livre){
       +(e.horsbudget?'<span style="color:var(--orange)">ℹ️ Hors budget</span>':'')
       +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
       +'</div>'
-      +(canDelete?'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" '+'style="background:none;border:none;color:var(--rouge);font-size:11px;cursor:pointer;margin-top:4px">✕ Supprimer</button>':'')
+      +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).join('');
 }
@@ -3480,6 +3480,37 @@ async function enregistrerK45(){
     alert('✅ Écriture K45 enregistrée !');
   }catch(e){alert('Erreur : '+e.message);}
 }
+
+// ── MODIFIER ÉCRITURE GRAND LIVRE ──────────────────────────
+function modifierEcritureGL(btn){
+  var db=window._db, fs=window._fs;
+  var id=btn.getAttribute('data-id');
+  var livre=btn.getAttribute('data-livre');
+  var ec=null;
+  if(GL[livre]) GL[livre].forEach(function(e){if(e._id===id)ec=e;});
+  if(!ec){alert('Écriture introuvable.');return;}
+
+  var date=prompt('Date (AAAA-MM-JJ):',ec.date||'');
+  if(!date)return;
+  var montant=prompt('Montant (FCFA):',ec.montant||0);
+  if(!montant)return;
+  var libelle=prompt('Libellé:',ec.libelle||'');
+  var page=prompt('N° Page:',ec.page||'');
+
+  var updates={date:date,montant:parseInt(montant)||0,libelle:libelle||'',page:page||'',updatedAt:new Date().toISOString()};
+
+  (async function(){
+    try{
+      if(db&&fs) await fs.updateDoc(fs.doc(db,'grandlivre_'+livre,id),updates);
+      var idx=-1;
+      GL[livre].forEach(function(e,i){if(e._id===id)idx=i;});
+      if(idx>=0) GL[livre][idx]=Object.assign({},GL[livre][idx],updates);
+      renderLivre(livre);renderSoldes(livre);renderSynth();
+      alert('Écriture mise à jour !');
+    }catch(e){alert('Erreur : '+e.message);}
+  })();
+}
+
 // ── SUPPRESSION ÉCRITURE GL ──────────────────────────────────────
 async function supprimerEcritureGL(btn){
   const db=window._db,fs=window._fs;
