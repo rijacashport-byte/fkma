@@ -1683,17 +1683,17 @@ async function seConnecter(){
     err.style.color='red'; err.textContent='Email non autorisé : '+email; return;
   }
 
-  // Si Firebase pas encore prêt → attendre jusqu'à 10 secondes
+  // Attendre Firebase si pas encore prêt (max 15 secondes)
   if(!window._auth || !window._signIn){
-    err.style.color='orange'; err.textContent='Connexion en cours…';
     btn.disabled=true; btn.textContent='Chargement...';
     let attente=0;
-    while((!window._auth || !window._signIn) && attente < 100){
+    while((!window._auth || !window._signIn) && attente < 150){
       await new Promise(r=>setTimeout(r,100));
       attente++;
     }
     if(!window._auth || !window._signIn){
-      err.style.color='red'; err.textContent='Firebase non disponible — vérifier votre connexion internet.';
+      err.style.color='orange';
+      err.textContent='Firebase lent — réessayez dans quelques secondes.';
       btn.disabled=false; btn.textContent='Se connecter';
       return;
     }
@@ -1702,18 +1702,34 @@ async function seConnecter(){
   btn.disabled=true; btn.textContent='Connexion...';
   err.style.color='orange'; err.textContent='Vérification...';
 
-  try{
-    await window._signIn(window._auth, email, pwd);
-  } catch(e){
-    btn.disabled=false; btn.textContent='Se connecter';
-    if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')
-      err.style.color='red', err.textContent='Mot de passe incorrect.';
-    else if(e.code==='auth/user-not-found')
-      err.style.color='red', err.textContent='Email introuvable.';
-    else if(e.code==='auth/network-request-failed')
-      err.style.color='red', err.textContent='Pas de connexion internet.';
-    else
-      err.style.color='red', err.textContent='Erreur : '+e.message;
+  // Réessayer jusqu'à 3 fois en cas d'erreur réseau temporaire
+  let tentative=0;
+  while(tentative < 3){
+    try{
+      await window._signIn(window._auth, email, pwd);
+      return; // Succès
+    } catch(e){
+      tentative++;
+      if(e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'){
+        err.style.color='red'; err.textContent='Mot de passe incorrect.';
+        btn.disabled=false; btn.textContent='Se connecter';
+        return;
+      } else if(e.code==='auth/user-not-found'){
+        err.style.color='red'; err.textContent='Email introuvable.';
+        btn.disabled=false; btn.textContent='Se connecter';
+        return;
+      } else if(e.code==='auth/network-request-failed' && tentative < 3){
+        err.style.color='orange'; err.textContent='Tentative '+tentative+'/3...';
+        await new Promise(r=>setTimeout(r,2000)); // Attendre 2s avant de réessayer
+      } else {
+        err.style.color='red';
+        err.textContent=e.code==='auth/network-request-failed'
+          ? 'Connexion Firebase échouée — vérifier internet puis réessayer.'
+          : 'Erreur : '+e.message;
+        btn.disabled=false; btn.textContent='Se connecter';
+        return;
+      }
+    }
   }
 }
 
