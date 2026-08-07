@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, writeBatch }
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, writeBatch, runTransaction }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -15,7 +15,7 @@ const app  = initializeApp({
 const db   = getFirestore(app);
 const auth = getAuth(app);
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,writeBatch};
+window._fs={collection,addDoc,getDocs,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,writeBatch,runTransaction};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._onAuth=onAuthStateChanged;

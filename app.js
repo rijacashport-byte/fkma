@@ -718,6 +718,35 @@ async function logModification(action, cible, details){
   }catch(e){ console.log('logModification:',e.message); }
 }
 
+// ── NUMÉROTATION SÉQUENTIELLE DES ÉCRITURES ─────────────────────
+// Attribue un numéro unique et croissant (n°1, n°2, n°3...) à chaque
+// nouvel enregistrement, par type. Utilise une transaction Firebase pour
+// garantir qu'aucun numéro n'est donné deux fois, même si deux personnes
+// enregistrent exactement en même temps sur deux appareils différents.
+async function reserverNumeros(type, n){
+  try{
+    if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+    if(!_db) return Array(n).fill(null);
+    const ref=_fs.doc(_db,'compteurs',type);
+    const debut=await _fs.runTransaction(_db, async function(tx){
+      const snap=await tx.get(ref);
+      const actuel=snap.exists()?(snap.data().valeur||0):0;
+      tx.set(ref,{valeur:actuel+n},{merge:true});
+      return actuel;
+    });
+    const numeros=[];
+    for(let i=1;i<=n;i++) numeros.push(debut+i);
+    return numeros;
+  }catch(e){
+    console.log('Numérotation ('+type+'):',e.message);
+    return Array(n).fill(null);
+  }
+}
+async function prochainNumero(type){
+  const nums=await reserverNumeros(type,1);
+  return nums[0];
+}
+
 // ── AFFICHAGE HISTORIQUE DES MODIFICATIONS ─────────────────────
 async function chargerHistoriqueModifs(){
   const zone=document.getElementById('historique-modifs-liste');
@@ -767,14 +796,14 @@ async function enregistrerRakitra(){
   if(_db){try{
     // Sauvegarder dans collection rakitra
     const col=_fs.collection(_db,'rakitra');
-    const snap=await _fs.getDocs(col);let xId=null;
-    snap.forEach(function(ds){if(ds.data().date===d.date)xId=ds.id;});
-    if(xId)await _fs.updateDoc(_fs.doc(_db,'rakitra',xId),d);
-    else await _fs.addDoc(col,d);
+    const snap=await _fs.getDocs(col);let xId=null,ancienNumero=null;
+    snap.forEach(function(ds){if(ds.data().date===d.date){xId=ds.id;ancienNumero=ds.data().numero;}});
+    if(xId){ d.numero=ancienNumero; await _fs.updateDoc(_fs.doc(_db,'rakitra',xId),d); }
+    else { d.numero=await prochainNumero('rakitra'); await _fs.addDoc(col,d); }
     // Écriture automatique dans le Grand Livre Fiangonana
     await ecrireGrandLivreFiang(d);
-    logModification('creation','Rakitra du '+d.date, fmt(d.totalRakitra||0)+' F');
-    alert('✅ Rakitra du '+d.date+' enregistré !');
+    logModification('creation','Rakitra n°'+(d.numero||'?')+' du '+d.date, fmt(d.totalRakitra||0)+' F');
+    alert('✅ Rakitra n°'+(d.numero||'?')+' du '+d.date+' enregistré !');
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
   else alert('✅ Rakitra enregistré localement.');
 }
@@ -901,14 +930,14 @@ async function enregistrerAnjarako(){
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{
     const col=_fs.collection(_db,'anjarako');
-    const snap=await _fs.getDocs(col);let xId=null;
-    snap.forEach(function(ds){if(ds.data().date===date)xId=ds.id;});
-    if(xId)await _fs.updateDoc(_fs.doc(_db,'anjarako',xId),rec);
-    else await _fs.addDoc(col,rec);
+    const snap=await _fs.getDocs(col);let xId=null,ancienNumero=null;
+    snap.forEach(function(ds){if(ds.data().date===date){xId=ds.id;ancienNumero=ds.data().numero;}});
+    if(xId){ rec.numero=ancienNumero; await _fs.updateDoc(_fs.doc(_db,'anjarako',xId),rec); }
+    else { rec.numero=await prochainNumero('anjarako'); await _fs.addDoc(col,rec); }
     // Écriture automatique dans le Grand Livre Anjarako
     await ecrireGrandLivreAnj(rec);
-    logModification('creation','Anjarako du '+date, fmt(total)+' F');
-    alert('✅ Anjarako du '+date+' enregistré !');
+    logModification('creation','Anjarako n°'+(rec.numero||'?')+' du '+date, fmt(total)+' F');
+    alert('✅ Anjarako n°'+(rec.numero||'?')+' du '+date+' enregistré !');
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
   else alert('✅ Anjarako enregistré localement.');
 }
@@ -1006,9 +1035,10 @@ async function ajouterDepense(livre){
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
   const now=new Date().toISOString();
+  const numeroDep=await prochainNumero('depenses');
 
   const rec={
-    id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur,source,
+    id:Date.now(),numero:numeroDep,livre,date,montant,cat,piece,page,desc,auteur,source,
     createdBy:userEmail,createdByNom:userNom,createdAt:now
   };
 
@@ -1023,7 +1053,9 @@ async function ajouterDepense(livre){
       await _fs.addDoc(_fs.collection(_db,'depenses'),rec);
       // Écriture automatique dans le Grand Livre Fiangonana
       if(livre==='fiang'){
+        const numeroGL=await prochainNumero('grandlivre_fiang');
         const glRec={
+          numero:numeroGL,
           date,montant,es:'S',source,
           rubrique:cat||'DEP',
           libelle:desc||CATEGORIES_BUDGET[cat]||cat||'Dépense',
@@ -1047,8 +1079,8 @@ async function ajouterDepense(livre){
   document.getElementById(p+'-desc').value='';
   afficherDepenses(livre);
   if(firebaseOK){
-    logModification('creation','Dépense '+(livre==='fiang'?'Fiangonana':'Anjarako'), desc+' — '+fmt(montant)+' F');
-    alert('✅ Dépense enregistrée !');
+    logModification('creation','Dépense n°'+numeroDep+' — '+(livre==='fiang'?'Fiangonana':'Anjarako'), desc+' — '+fmt(montant)+' F');
+    alert('✅ Dépense n°'+numeroDep+' enregistrée !');
   }
 }
 async function supprimerDepense(id){
@@ -1078,7 +1110,7 @@ function afficherDepenses(livre){
   if(!all.length){lEl.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div>';return;}
   lEl.innerHTML=all.map(d=>`<div class="depense-item">
     <div class="depense-top">
-      <span style="font-size:11px;color:var(--texte2)">${d.date}</span>
+      <span style="font-size:11px;color:var(--texte2)">${d.numero?'n°'+d.numero+' · ':''}${d.date}</span>
       <span class="depense-cat">${d.cat||'—'}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
       <button onclick="supprimerDepense(${d.id})" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
@@ -1189,10 +1221,10 @@ function exporterExcelAnjarako(){
 function exporterExcelDepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);const wb=XLSX.utils.book_new();
   const rows=[['VOLA MIVAOKA — '+(livre==='fiang'?'FIANGONANA':'ANJARAKO')],[],
-    ['Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
-  all.forEach(d=>rows.push([d.date,d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
-  rows.push([],[,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
-  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
+    ['N°','Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
+  all.forEach(d=>rows.push([d.numero||'',d.date,d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
+  rows.push([],[,,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:6},{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
 }
 
@@ -1228,6 +1260,8 @@ async function ecrireGrandLivreFiang(d){
   // existantes restent intactes. Avant, une coupure entre les deux étapes
   // pouvait effacer une journée entière sans rien réécrire.
   try{
+    const numeros=await reserverNumeros('grandlivre_fiang', ecritures.length);
+    ecritures.forEach(function(ec,i){ ec.numero=numeros[i]; });
     const existing=await _fs.getDocs(col);
     const toDelete=[];
     existing.forEach(function(ds){if(ds.data().date===d.date&&ds.data().source==='caisse'&&!ds.data().transfert)toDelete.push(ds.ref);});
@@ -1248,12 +1282,13 @@ async function ecrireGrandLivreAnj(rec){
   // Écriture ATOMIQUE (voir explication dans ecrireGrandLivreFiang ci-dessus) :
   // suppression des anciennes écritures auto + ajout de la nouvelle, tout ou rien.
   try{
+    const numeroGL=await prochainNumero('grandlivre_anj');
     const existing=await _fs.getDocs(col);
     const toDelete=[];
     existing.forEach(function(ds){if(ds.data().date===rec.date&&ds.data().auto===true)toDelete.push(ds.ref);});
     const batch=_fs.writeBatch(_db);
     toDelete.forEach(function(ref){batch.delete(ref);});
-    batch.set(_fs.doc(col),{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true});
+    batch.set(_fs.doc(col),{...base,numero:numeroGL,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true});
     await batch.commit();
   }catch(e){
     alert('⚠️ Échec de l\'enregistrement du Grand Livre Anjarako. Rien n\'a été modifié, tes données précédentes sont intactes. Vérifie ta connexion et réessaie.\n\nDétail : '+e.message);
@@ -1848,9 +1883,10 @@ async function enregistrer(){
       logModification('modification','Fiche Journal K45 du '+d.date, d.type||'');
       alert('✅ Fiche mise à jour dans Firebase !');
     } else {
+      d.numero=await prochainNumero('journal_k45');
       await fs.addDoc(colRef, d);
-      logModification('creation','Fiche Journal K45 du '+d.date, d.type||'');
-      alert('✅ Nouvelle page enregistrée dans Firebase !');
+      logModification('creation','Fiche Journal K45 n°'+d.numero+' du '+d.date, d.type||'');
+      alert('✅ Nouvelle page n°'+d.numero+' enregistrée dans Firebase !');
     }
     chargerHistorique();
   } catch(err){
@@ -1884,7 +1920,7 @@ async function chargerHistorique(){
       html+=`<div class="hist-item">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="flex:1">
-            <div class="hist-date">Page ${n--} · ${dateStr}</div>
+            <div class="hist-date">${d.numero?'Page n°'+d.numero:'Page'} · ${dateStr}</div>
             <div class="hist-type">${d.type||'—'} · ${d.lieu||'—'}</div>
             <div class="hist-meta">
               ${d.presences?`<span>👥 ${d.presences}</span>`:''}
@@ -2135,7 +2171,7 @@ function renderLivre(livre){
     const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
-      +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+'</span>'
+      +'<span class="edate">'+(e.numero?'n°'+e.numero+' · ':'')+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
       +(e.rubrique?'<div class="erub">'+e.rubrique+'</div>':'')
@@ -2220,11 +2256,12 @@ async function faireTransfert(){
   if(!date||!montant){alert('Date et montant requis.');return;}
   const base={date,page,montant,comment,piece,transfert:true,savedAt:new Date().toISOString()};
   try{
+    const [numS,numE]=await reserverNumeros('grandlivre_'+livre,2);
     // Sortie caisse
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'});
+    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,numero:numS,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'});
     // Entrée banque
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'});
-    logModification('creation','Transfert Caisse→Banque ('+livre+')', fmt(montant)+' F du '+date);
+    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,numero:numE,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'});
+    logModification('creation','Transfert Caisse→Banque n°'+numS+'/'+numE+' ('+livre+')', fmt(montant)+' F du '+date);
     alert('✅ Transfert enregistré !');
     ['tr-date','tr-montant','tr-page','tr-comment','tr-piece'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     await chargerTout();
@@ -2241,13 +2278,15 @@ async function enregistrerOpBancaire(){
   const comment=document.getElementById('ob-comment').value;
   if(!date||!montant||!nature){alert('Date, montant et nature requis.');return;}
   try{
+    const numeroOb=await prochainNumero('grandlivre_'+livre);
     await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
+      numero:numeroOb,
       date,montant,es:obES,source:'banque',rubrique:nature,
       libelle:document.getElementById('ob-nature').options[document.getElementById('ob-nature').selectedIndex].text,
       comment,opbancaire:true,savedAt:new Date().toISOString()
     });
-    logModification('creation','Opération bancaire ('+livre+')', fmt(montant)+' F du '+date);
-    alert('✅ Opération bancaire enregistrée !');
+    logModification('creation','Opération bancaire n°'+numeroOb+' ('+livre+')', fmt(montant)+' F du '+date);
+    alert('✅ Opération bancaire n°'+numeroOb+' enregistrée !');
     ['ob-date','ob-montant','ob-comment'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     await chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
@@ -2304,6 +2343,7 @@ async function enregistrerK45(){
     savedAt:new Date().toISOString()
   };
   try{
+    rec.numero=await prochainNumero('grandlivre_k45');
     const docRef=await fs.addDoc(fs.collection(db,'grandlivre_k45'),rec);
     GL['k45'].push({...rec,_id:docRef.id});
     GL['k45'].sort((a,b)=>a.date.localeCompare(b.date));
@@ -2313,8 +2353,8 @@ async function enregistrerK45(){
     });
     document.getElementById('k45-rubrique').value='';
     setK45ES('E');
-    logModification('creation','Écriture Grand Livre K45', (rec.libelle||rec.rubrique)+' — '+fmt(montant)+' F');
-    alert('✅ Écriture K45 enregistrée !');
+    logModification('creation','Écriture Grand Livre K45 n°'+rec.numero, (rec.libelle||rec.rubrique)+' — '+fmt(montant)+' F');
+    alert('✅ Écriture K45 n°'+rec.numero+' enregistrée !');
   }catch(e){alert('Erreur : '+e.message);}
 }
 
@@ -2372,26 +2412,26 @@ async function supprimerEcritureGL(btn){
 // ── EXPORT EXCEL ──────────────────────────────────────────────
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,6,1),'','','Solde initial','','',initC,'',initC]);
+  const rows=[['N°','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
+  rows.push(['',new Date(2026,6,1),'','','Solde initial','','',initC,'',initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,6,1),'Solde initial','','','',initB]);
+  const rows=[['N°','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2399,26 +2439,26 @@ function buildSheetBanqueRakitra(){
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,6,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  const rows=[['N°','Date','Page','Libellé','Entrée','Sortie','Solde']];
+  rows.push(['',new Date(2026,6,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numero||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,6,1),'Solde initial','','','',initB]);
+  const rows=[['N°','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
