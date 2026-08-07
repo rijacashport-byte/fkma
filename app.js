@@ -1311,7 +1311,6 @@ async function chargerDepenses(){
   if(!_db)return;
   try{
     const snap=await _fs.getDocs(_fs.collection(_db,'depenses'));
-    if(snap.empty)return;
     const deps=[];
     snap.forEach(function(ds){deps.push(ds.data());});
     deps.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
@@ -1324,7 +1323,6 @@ async function chargerAnjarako(){
   if(!_db)return;
   try{
     const snap=await _fs.getDocs(_fs.collection(_db,'anjarako'));
-    if(snap.empty)return;
     const hist=[];
     snap.forEach(function(ds){hist.push(ds.data());});
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
@@ -1338,7 +1336,6 @@ async function chargerRakitra(){
   if(!_db)return;
   try{
     const snap=await _fs.getDocs(_fs.collection(_db,'rakitra'));
-    if(snap.empty)return;
     const hist=[];
     snap.forEach(function(ds){hist.push(ds.data());});
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
@@ -1353,7 +1350,6 @@ async function chargerCultes(){
   if(!_db)return;
   try{
     const snap=await _fs.getDocs(_fs.collection(_db,'journal_k45'));
-    if(snap.empty)return;
     const hist=[];
     snap.forEach(function(ds){hist.push(ds.data());});
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
