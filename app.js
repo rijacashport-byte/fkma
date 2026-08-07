@@ -1453,6 +1453,8 @@ function renderDashboard(){
   const soldeKpi=document.getElementById('kpi-solde').closest('.kpi');
   if(soldeKpi)soldeKpi.style.borderTopColor=solde>=0?'var(--cyan)':'var(--rouge)';
   renderDashFinances();
+  renderDashPresences();
+  renderDashCultes();
 }
 
 function renderDashFinances(){
