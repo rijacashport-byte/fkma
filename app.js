@@ -913,7 +913,7 @@ function setSrcDep(livre,src,btn){
   document.getElementById(p+'-src-banque').classList.toggle('actif',src==='banque');
 }
 
-function ajouterDepense(livre){
+async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
   const date=document.getElementById(p+'-date').value;
   const montant=parseInt(document.getElementById(p+'-montant').value)||0;
@@ -941,10 +941,11 @@ function ajouterDepense(livre){
   dep.push(rec);dep.sort((a,b)=>b.date.localeCompare(a.date));save(SK_DEP,dep);
 
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  let firebaseOK=false;
   if(_db){
     try{
-      // Sauvegarder dans collection depenses
-      _fs.addDoc(_fs.collection(_db,'depenses'),rec).catch(e=>console.log('FB dep:',e.message));
+      // Sauvegarder dans collection depenses — on ATTEND le résultat réel
+      await _fs.addDoc(_fs.collection(_db,'depenses'),rec);
       // Écriture automatique dans le Grand Livre Fiangonana
       if(livre==='fiang'){
         const glRec={
@@ -955,9 +956,13 @@ function ajouterDepense(livre){
           createdBy:userEmail,createdByNom:userNom,createdAt:now,
           savedAt:now,depenseId:rec.id
         };
-        _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec).catch(e=>console.log('GL dep:',e.message));
+        await _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec);
       }
-    }catch(e){console.log('FB dep:',e.message);}
+      firebaseOK=true;
+    }catch(e){
+      console.log('FB dep:',e.message);
+      alert('⚠️ La dépense est enregistrée sur cet appareil, mais PAS encore envoyée à Firebase (problème de connexion). Elle sera visible sur les autres appareils seulement après une nouvelle tentative réussie.\n\nDétail : '+e.message);
+    }
   }
 
   // Reset formulaire
@@ -966,7 +971,7 @@ function ajouterDepense(livre){
   if(document.getElementById(p+'-page'))document.getElementById(p+'-page').value='';
   document.getElementById(p+'-desc').value='';
   afficherDepenses(livre);
-  alert('✅ Dépense enregistrée !');
+  if(firebaseOK) alert('✅ Dépense enregistrée !');
 }
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
@@ -976,7 +981,10 @@ async function supprimerDepense(id){
     const col=_fs.collection(_db,'depenses');
     const snap=await _fs.getDocs(col);
     for(const ds of snap.docs){if(ds.data().id===id){await _fs.deleteDoc(ds.ref);break;}}
-  }catch(e){console.log('Firebase delete:',e.message);}}
+  }catch(e){
+    console.log('Firebase delete:',e.message);
+    alert('⚠️ Supprimé sur cet appareil, mais la suppression n\'a pas pu être envoyée à Firebase (problème de connexion). Elle réapparaîtra peut-être sur les autres appareils. Réessaie plus tard.');
+  }}
   afficherDepenses('fiang');afficherDepenses('anj');
 }
 function afficherDepenses(livre){
