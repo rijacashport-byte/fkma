@@ -914,7 +914,6 @@ function calculerAnjTotal(){
   mettreAJourBannerAnj();
 }
 // ── VOLA MIVAOKA ─────────────────────────────────────────────
-async 
 // ── SOURCE DÉPENSE ──────────────────────────────────────────
 const srcDep={fiang:'caisse',anj:'caisse'};
 function setSrcDep(livre,src,btn){
