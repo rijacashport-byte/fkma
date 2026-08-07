@@ -31,7 +31,15 @@ function initAuth(){
       currentUser = user;
       // Charger la liste des comptes depuis Firebase (une seule fois, mise en cache)
       await chargerRolesConfig();
-      const cfg = ROLES_CONFIG[user.email]||{nom:user.email,role:'inconnu',label:'Inconnu'};
+      if(!ROLES_CONFIG[user.email]){
+        // Compte authentifié par Firebase mais absent de la collection "roles" :
+        // on refuse l'accès et on déconnecte proprement, avec un message clair.
+        const err=document.getElementById('login-err');
+        if(err){ err.style.color='red'; err.textContent='Ce compte existe mais n\'a pas encore de rôle attribué. Contacte l\'administrateur.'; }
+        if(window._signOut) window._signOut(auth);
+        return;
+      }
+      const cfg = ROLES_CONFIG[user.email];
       currentRole = cfg.role;
       window._currentRole = cfg.role; // Pour renderLivre et autres
       document.getElementById('login-screen').style.display='none';
@@ -258,9 +266,9 @@ async function seConnecter(){
   if(!email || !pwd){
     err.style.color='red'; err.textContent='Remplir email et mot de passe.'; return;
   }
-  if(!ROLES_CONFIG[email]){
-    err.style.color='red'; err.textContent='Email non autorisé : '+email; return;
-  }
+  // Note : on ne peut pas vérifier ROLES_CONFIG ici — cette liste vient de Firebase
+  // et ne peut être lue qu'une fois connecté (sécurité). La vérification du droit
+  // d'accès se fait juste après la connexion réussie, plus bas.
 
   // Attendre Firebase si pas encore prêt (max 15 secondes)
   if(!window._auth || !window._signIn){
