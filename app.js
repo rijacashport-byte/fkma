@@ -152,7 +152,11 @@ function showGestTab(tab, btn){
     const el=document.getElementById('tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
-  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();}
+  if(tab==='dashboard'){
+    dashAnnee=new Date().getFullYear();
+    renderDashboard();
+    if(window._db){ chargerRakitra().then(renderDashboard); chargerCultes().then(renderDashboard); }
+  }
   if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
@@ -872,8 +876,8 @@ function calculerAnjMoisCourant(){
   const mc7=mc.substring(0,7);
   let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+(h.total||0),0)
     +(parseInt(document.getElementById('anj-total')?.value)||0);
-  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+(h.enveloppes||[]).length,0)
-    +enveloppesJour.length;
+  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+((h.enveloppes||[]).length+(h.nbDirect||0)),0)
+    +enveloppesJour.length+(envMode==='nb'?(parseInt(document.getElementById('env-nb-direct')?.value)||0):0);
   const pctM=obj>0?Math.min((cumulM/obj)*100,150):0;
   const pctE=objE>0?Math.min((cumulE/objE)*100,150):0;
   const lm=document.getElementById('anj-pct-label');const bm=document.getElementById('anj-pct-bar');
@@ -1281,6 +1285,36 @@ async function chargerAnjarako(){
     save(SK_ANJ_H,hist);
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
 }
+
+// Manquait jusqu'ici : le Rakitra (Fiangonana) n'était jamais synchronisé
+// depuis Firebase vers le stockage local utilisé par le Tableau de bord.
+async function chargerRakitra(){
+  if(!_db)return;
+  try{
+    const snap=await _fs.getDocs(_fs.collection(_db,'rakitra'));
+    if(snap.empty)return;
+    const hist=[];
+    snap.forEach(function(ds){hist.push(ds.data());});
+    hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+    save(SK_RAKITRA,hist);
+  }catch(e){console.log('Erreur chargement rakitra:',e.message);}
+}
+
+// Manquait jusqu'ici : les cultes (Journal K45) n'étaient jamais synchronisés
+// depuis Firebase — c'est pour ça que le Tableau de bord (cultes, présences)
+// restait toujours vide même quand des cultes étaient bien enregistrés.
+async function chargerCultes(){
+  if(!_db)return;
+  try{
+    const snap=await _fs.getDocs(_fs.collection(_db,'journal_k45'));
+    if(snap.empty)return;
+    const hist=[];
+    snap.forEach(function(ds){hist.push(ds.data());});
+    hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+    save(SK_CULTES,hist);
+  }catch(e){console.log('Erreur chargement cultes:',e.message);}
+}
+
 
 // ── MODIFIER SAISIE EXISTANTE ─────────────────────────────────
 async function peuplerHistSelect(){
@@ -2012,6 +2046,9 @@ function showGLTab(tab,btn){
 async function chargerTout(){
   const db=window._db,fs=window._fs;
   if(!db)return;
+  await chargerSoldesInitiaux();
+  await chargerRakitra();
+  await chargerCultes();
   for(const livre of ['fiang','anj','k45']){
     try{
       const snap=await fs.getDocs(fs.collection(db,'grandlivre_'+livre));
@@ -2024,6 +2061,51 @@ async function chargerTout(){
   }
   renderSynth();
 }
+
+// ── SOLDES INITIAUX (passation du 1er juillet 2026) ─────────────
+// Enregistrés une seule fois dans Firebase pour ne pas avoir à les
+// retaper à chaque ouverture de l'appli ou sur un autre appareil.
+async function chargerSoldesInitiaux(){
+  try{
+    const db=window._db,fs=window._fs;
+    if(!db) return;
+    const ref=fs.doc(db,'config','soldes_initiaux');
+    const snap=await fs.getDocs(fs.query(fs.collection(db,'config')));
+    let data=null;
+    snap.forEach(ds=>{if(ds.id==='soldes_initiaux')data=ds.data();});
+    if(!data) return; // rien enregistré encore, on garde les champs à 0
+    const map={
+      'fiang-init-caisse':data.fiangCaisse,
+      'fiang-init-banque':data.fiangBanque,
+      'anj-init-caisse':data.anjCaisse,
+      'anj-init-banque':data.anjBanque
+    };
+    Object.keys(map).forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&map[id]!==undefined) el.value=map[id];
+    });
+  }catch(e){ console.log('Soldes initiaux:',e.message); }
+}
+async function sauvegarderSoldesInitiaux(){
+  try{
+    const db=window._db,fs=window._fs;
+    if(!db) return;
+    const data={
+      fiangCaisse:parseFloat(document.getElementById('fiang-init-caisse')?.value)||0,
+      fiangBanque:parseFloat(document.getElementById('fiang-init-banque')?.value)||0,
+      anjCaisse:parseFloat(document.getElementById('anj-init-caisse')?.value)||0,
+      anjBanque:parseFloat(document.getElementById('anj-init-banque')?.value)||0
+    };
+    await fs.setDoc(fs.doc(db,'config','soldes_initiaux'),data);
+    logModification('modification','Soldes initiaux (passation 1er juillet 2026)',
+      'Caisse Fiang: '+fmt(data.fiangCaisse)+' | Banque Fiang: '+fmt(data.fiangBanque)+
+      ' | Caisse Anj: '+fmt(data.anjCaisse)+' | Banque Anj: '+fmt(data.anjBanque));
+  }catch(e){
+    console.log('Sauvegarde soldes initiaux:',e.message);
+    alert('⚠️ Le solde initial est enregistré sur cet appareil, mais pas encore synchronisé avec Firebase. Réessaie plus tard.');
+  }
+}
+
 
 // ── RENDU LISTE ───────────────────────────────────────────────
 function renderLivre(livre){
@@ -2289,7 +2371,7 @@ async function supprimerEcritureGL(btn){
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
   const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
+  rows.push([new Date(2026,6,1),'','','Solde initial','','',initC,'',initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
@@ -2302,7 +2384,7 @@ function buildSheetRakitra(){
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
   const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  rows.push([new Date(2026,6,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
@@ -2316,7 +2398,7 @@ function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
   const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  rows.push([new Date(2026,6,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
@@ -2329,7 +2411,7 @@ function buildSheetAnjarako(){
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
   const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  rows.push([new Date(2026,6,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
