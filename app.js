@@ -408,30 +408,20 @@ function toggleFiainamFandraisana(){
 }
 
 let nFaits=0;
-function ajouterFait(){
-  nFaits++;const id=`fait_${nFaits}`;
-  const div=document.createElement('div');
-  div.className='fait-item';div.id=id;
-  div.innerHTML=`<div class="fait-top">
-    <select id="${id}_type" style="flex:1;border:1.5px solid var(--gris2);border-radius:6px;padding:7px 9px;font-size:13px;font-family:'Inter',sans-serif">
-      ${FAITS_TYPES.map(f=>`<option value="${f.id}">${f.label}</option>`).join('')}
-    </select>
-    <button class="btn-del-fait" onclick="document.getElementById('${id}').remove()">✕</button>
-  </div>
-  <input type="text" id="${id}_noms" placeholder="Nom(s) des personnes concernées…">
-  <input type="text" id="${id}_note" placeholder="Note complémentaire…" style="margin-top:5px">`;
-  document.getElementById('faits-liste').appendChild(div);
-}
+// (l'ancienne version de ajouterFait() qui était ici a été supprimée le 07/08/2026 —
+// elle était écrasée par la version plus bas et créait une incohérence avec snapFaits())
 
 function snapFaits(){
   const faits=[];
-  document.querySelectorAll('[id^="fait_"][id$="_type"]').forEach(sel=>{
-    const base=sel.id.replace('_type','');
+  document.querySelectorAll('.fc').forEach(div=>{
+    const base=div.id.replace('fait-','');
+    const sel=document.getElementById(base+'-type');
+    if(!sel) return;
     faits.push({
       type:sel.value,
       label:FAITS_TYPES.find(f=>f.id===sel.value)?.label||sel.value,
-      noms:document.getElementById(base+'_noms')?.value||'',
-      note:document.getElementById(base+'_note')?.value||''
+      noms:document.getElementById(base+'-noms')?.value||'',
+      note:document.getElementById(base+'-note')?.value||''
     });
   });
   return faits;
