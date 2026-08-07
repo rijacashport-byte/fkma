@@ -60,11 +60,12 @@ function appliquerRole(role){
   if(tabOps) tabOps.style.display='none';
 
   if(role==='diacre_journal'){
-    // Nataly — Journal K45 seulement
-    if(tabGest) tabGest.style.display='none';
+    // Nataly — Journal K45 (principal) + Gestion Rakitra (décision réunion)
+    if(tabGest) tabGest.style.display='';
     if(tabGL)   tabGL.style.display='none';
     if(tabK45)  tabK45.style.display='';
     showMain('k45', tabK45);
+    if(window._db){ chargerTout(); }
     return;
   }
 

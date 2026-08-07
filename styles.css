@@ -464,6 +464,10 @@ body.role-controleur .nav-btn:nth-child(4),
 body.role-vomieran .nav-btn:nth-child(1),
 body.role-vomieran .nav-btn:nth-child(3),
 body.role-vomieran .nav-btn:nth-child(4) { display: none !important; }
+/* Diacre_journal : Rakitra seulement dans Gestion (décision réunion), pas Anjarako/Vola/Dashboard */
+body.role-diacre_journal .nav-btn:nth-child(2),
+body.role-diacre_journal .nav-btn:nth-child(3),
+body.role-diacre_journal .nav-btn:nth-child(4) { display: none !important; }
 /* Vomieran : lecture seule dans Grand Livre */
 body.role-vomieran #section-gl .btn,
 body.role-vomieran #section-gl input,
