@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FKMA">
+<meta name="theme-color" content="#1a6b3c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>FKMA Abidjan — Gestion · Journal · Grand Livre</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="module" src="firebase-init.js"></script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+
+<div id="login-screen">
+  <img class="login-logo" src="logo-fkma.jpg" alt="FKMA">
+  <div class="login-titre">FKMA Abidjan</div>
+  <div class="login-sub">Gestion · Journal K45 · Grand Livre</div>
+  <div class="login-form">
+    <input class="login-inp" type="email" id="login-email" placeholder="Adresse e-mail" autocomplete="email">
+    <input class="login-inp" type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password">
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn" onclick="seConnecter()">Se connecter</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;padding:10px;padding-bottom:80px;">
+
+<div class="entete">
+  <img class="logo" src="logo-fkma.jpg" alt="FKMA">
+  <div><h1>FKMA Abidjan</h1><p>Système de gestion · K45 2026</p></div>
+</div>
+<div class="user-bar" id="user-bar" style="display:none">
+  <div class="user-info">
+    <div class="user-avatar" id="user-avatar">R</div>
+    <div><div class="user-nom" id="user-nom">—</div><div class="user-role" id="user-role">—</div></div>
+  </div>
+  <button class="btn-deco" onclick="seDeconnecter()">Déconnexion</button>
+</div>
+<div class="main-tabs" id="main-nav">
+  <button class="main-tab actif" id="mnav-gest" onclick="showMain('gest',this)">🙏<br>Gestion</button>
+  <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)">📖<br>Journal</button>
+  <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)">📒<br>Grand Livre</button>
+  <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none">🏦<br>Opérations</button>
+</div>
+
+<div class="fb-status" id="fb-status">
+  <div class="fb-dot" id="fb-dot"></div>
+  <span id="fb-txt">Connexion Firebase…</span>
+</div>
+
+
+<div id="section-gest" style="display:block">
+<div class="nav-tabs">
+  <button class="nav-btn actif" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
+  <button class="nav-btn" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
+  <button class="nav-btn" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
+  <button class="nav-btn" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
+</div>
+<div id="tab-rakitra">
+
+  <div class="card">
+    <div class="card-titre">📅 Date du culte</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
+      <div class="champ full" style="grid-column:1/-1">
+        <label>📅 Date</label>
+        <input type="date" id="rak-date-input" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+      </div>
+      <div class="champ">
+        <label>📄 N° Page livre</label>
+        <input type="number" id="rak-page" min="1" placeholder="Ex: 12" inputmode="numeric"
+          style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+      </div>
+      <div class="champ" style="grid-column:2/4">
+        <label>🔤 Lettrage</label>
+        <input type="text" id="rak-lettrage" placeholder="Ex: A, B, C…"
+          style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;text-transform:uppercase;">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toggle-row">
+      <span class="lbl">🍷 Culte avec Raki-pandraisana ?</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-raki-pandraisana" onchange="toggleRakiPandraisana()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titre">🙏 Rakitra — Billets</div>
+    <table class="tbl"><thead><tr><th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th></tr></thead>
+    <tbody id="tbody-billets"></tbody>
+    <tfoot><tr><td colspan="2">TOTAL BILLETS</td><td id="tfoot-billets">0 FCFA</td></tr></tfoot></table>
+  </div>
+
+  <div class="card">
+    <div class="card-titre">🙏 Rakitra — Pièces</div>
+    <table class="tbl"><thead><tr><th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th></tr></thead>
+    <tbody id="tbody-pieces"></tbody>
+    <tfoot><tr><td colspan="2">TOTAL PIÈCES</td><td id="tfoot-pieces">0 FCFA</td></tr></tfoot></table>
+  </div>
+
+  <div id="zone-raki-pandraisana" style="display:none">
+    <div class="card" style="border-left:4px solid var(--bleu)">
+      <div class="card-titre" style="color:var(--bleu)">🍷 Raki-pandraisana — Billets</div>
+      <table class="tbl"><thead><tr><th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th></tr></thead>
+      <tbody id="tbody-billets-rp"></tbody>
+      <tfoot><tr><td colspan="2">TOTAL BILLETS</td><td id="tfoot-billets-rp">0 FCFA</td></tr></tfoot></table>
+    </div>
+    <div class="card" style="border-left:4px solid var(--bleu)">
+      <div class="card-titre" style="color:var(--bleu)">🍷 Raki-pandraisana — Pièces</div>
+      <table class="tbl"><thead><tr><th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th></tr></thead>
+      <tbody id="tbody-pieces-rp"></tbody>
+      <tfoot><tr><td colspan="2">TOTAL PIÈCES</td><td id="tfoot-pieces-rp">0 FCFA</td></tr></tfoot></table>
+    </div>
+  </div>
+
+  <div class="total-banner vert">
+    <div class="total-label">Total Rakitra du culte</div>
+    <div class="total-montant" id="total-rakitra-affichage">0 <span>FCFA</span></div>
+    <div class="subtotaux">
+      <div class="st-col"><div class="st-val" id="sb-rakitra">0 F</div><div class="st-lab">🙏 Rakitra</div></div>
+      <div class="st-col" id="col-rp" style="display:none"><div class="st-val" id="sb-rp">0 F</div><div class="st-lab">🍷 Raki-pand.</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--violet)">
+    <div class="card-titre" style="color:var(--violet)">🎁 Raki-pisaorana (offrandes spéciales)</div>
+    <div id="raki-liste"></div>
+    <button class="btn-add-item" style="border-color:var(--violet);color:var(--violet)" onclick="ajouterRaki()">➕ Ajouter une offrande</button>
+    <div id="raki-total-row" style="display:none;justify-content:space-between;align-items:center;padding:8px 10px;background:#f5eef8;border-radius:7px;margin-top:8px">
+      <span style="font-size:12px;font-weight:600;color:var(--violet)">Total Raki-pisaorana</span>
+      <span style="font-size:16px;font-weight:700;color:var(--violet)" id="raki-total-val">0 FCFA</span>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--or)">
+    <div class="card-titre" style="color:var(--or)">🏦 Réception — Trésorier</div>
+    <div class="grid2">
+      <div class="champ"><label>👤 Nom du trésorier</label><input type="text" id="tres-nom" placeholder="Nom complet"></div>
+      <div class="champ"><label>📅 Date réception</label><input type="date" id="tres-date"></div>
+      <div class="champ full"><label>✍️ Observations</label><input type="text" id="tres-obs" placeholder="Remarques…"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titre">🙏 Diacres du comptage</div>
+    <div class="grid2" id="diacres-grille"></div>
+    <button class="btn-add-item" style="border-color:var(--vert);color:var(--vert)" onclick="ajouterDiacre()">➕ Ajouter un diacre</button>
+  </div>
+
+  <div class="card">
+    <div class="card-titre">📝 Observations</div>
+    <div class="champ"><textarea id="observations" placeholder="Billets froissés, remarques…"></textarea></div>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-pdf"   onclick="exportPDF()"><span>📄</span> PDF</button>
+    <button class="btn btn-excel" onclick="exportExcelRakitra()"><span>📊</span> Excel</button>
+    <button class="btn btn-wa"    onclick="partagerWARakitra()"><span>💬</span> WhatsApp</button>
+    <button class="btn btn-vert btn-full" onclick="enregistrerRakitra()"><span>💾</span> Enregistrer</button>
+  </div>
+
+</div><!-- /rakitra -->
+
+<!-- ═══ ONGLET 3 : ANJARAKO ═══ -->
+<div id="tab-anjarako" style="display:none">
+
+
+
+  <div class="card">
+    <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
+
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="anj-mode-btn-billets" onclick="showAnjMode('billets')">🟠 Billetage</button>
+      <button class="sub-btn" id="anj-mode-btn-total" onclick="showAnjMode('total')">💰 Montant direct</button>
+    </div>
+
+    <!-- Mode billetage -->
+    <div id="anj-zone-billets">
+      <table class="tbl"><thead><tr>
+        <th>Coupure</th><th style="width:75px">Qté</th><th style="width:95px">Sous-total</th>
+      </tr></thead>
+      <tbody id="anj-tbody-billets"></tbody>
+      <tfoot><tr><td colspan="2">TOTAL BILLETS</td><td id="anj-tfoot-billets">0 FCFA</td></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- Mode montant direct -->
+    <div id="anj-zone-total" style="display:none">
+      <div class="champ">
+        <label>💰 Montant total (FCFA)</label>
+        <input type="number" id="anj-total-direct" min="0" placeholder="0"
+          inputmode="numeric" oninput="calculerAnjTotal()">
+      </div>
+    </div>
+
+    <!-- Toujours visible : total calculé -->
+    <div style="background:var(--gris1);border-radius:8px;padding:8px 12px;margin-top:10px;
+      display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--vert)">Total Anjarako</span>
+      <span style="font-size:18px;font-weight:700;color:var(--vert)" id="anj-total-affiche">0 FCFA</span>
+    </div>
+    <input type="hidden" id="anj-total" value="0">
+  </div>
+
+  <div class="card">
+    <div class="card-titre">📨 Enveloppes</div>
+
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="env-mode-btn-carte" onclick="showEnvMode('carte')">📇 Par n° carte</button>
+      <button class="sub-btn" id="env-mode-btn-nb" onclick="showEnvMode('nb')">🔢 Nombre direct</button>
+    </div>
+
+    <!-- Mode par carte -->
+    <div id="env-zone-carte">
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ carte-wrap">
+          <label>📇 N° de carte</label>
+          <input type="number" id="env-carte" min="1" placeholder="Ex: 47" inputmode="numeric"
+            oninput="rechercherCarte(this.value)" onblur="fermerSugCarte()">
+          <div class="carte-sug" id="carte-sug"></div>
+        </div>
+        <div class="champ">
+          <label>📆 Mois payé</label>
+          <input type="month" id="env-mois">
+        </div>
+      </div>
+      <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
+      <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
+    </div>
+
+    <!-- Mode nombre direct -->
+    <div id="env-zone-nb" style="display:none">
+      <div class="champ" style="margin-bottom:9px">
+        <label>🔢 Nombre d'enveloppes reçues</label>
+        <input type="number" id="env-nb-direct" min="0" placeholder="Ex: 23"
+          inputmode="numeric" oninput="mettreAJourBannerAnj()">
+      </div>
+      <div class="champ">
+        <label>📆 Mois payé (optionnel)</label>
+        <input type="month" id="env-mois-direct">
+      </div>
+      <div style="background:#fff8e7;border-left:3px solid var(--or);border-radius:0 7px 7px 0;
+        padding:7px 10px;font-size:11px;color:#8a6200;margin-top:8px">
+        💡 Les numéros de cartes ne seront pas enregistrés — juste le nombre total.
+      </div>
+    </div>
+  </div>
+
+  <div class="total-banner orange">
+    <div class="total-label">Collecte Anjarako du dimanche</div>
+    <div class="total-montant" id="anj-banner-total">0 <span>FCFA</span></div>
+    <div class="subtotaux">
+      <div class="st-col"><div class="st-val" id="anj-nb-env-disp">0</div><div class="st-lab">Enveloppes</div></div>
+      <div class="st-col"><div class="st-val" id="anj-moy-disp">—</div><div class="st-lab">Moy./env.</div></div>
+      <div class="st-col"><div class="st-val" id="anj-pct-disp">—</div><div class="st-lab">% actifs</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-titre">
+      <span>📋 Enveloppes du dimanche</span>
+      <span id="env-count" style="background:var(--orange);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
+    </div>
+    <div id="liste-enveloppes"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div></div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--orange)">
+    <div class="card-titre" style="color:var(--orange)">📊 Objectifs mensuels (cumul)</div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div class="champ"><label>🎯 Objectif montant (FCFA)</label><input type="number" id="anj-objectif" value="1100000" inputmode="numeric" oninput="calculerAnjMoisCourant()"></div>
+      <div class="champ"><label>📊 Objectif enveloppes</label><input type="number" id="anj-obj-env" value="90" inputmode="numeric" oninput="calculerAnjMoisCourant()"></div>
+    </div>
+    <div style="font-size:11px;color:var(--texte2);margin-bottom:5px;display:flex;justify-content:space-between">
+      <span>% Objectif montant (cumul mois)</span><span id="anj-pct-label">0%</span>
+    </div>
+    <div style="height:10px;background:var(--gris2);border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <div id="anj-pct-bar" class="pct-fill" style="width:0%"></div>
+    </div>
+    <div style="font-size:11px;color:var(--texte2);margin-bottom:5px;display:flex;justify-content:space-between">
+      <span>% Enveloppes rendues (cumul mois)</span><span id="anj-env-label">0%</span>
+    </div>
+    <div style="height:10px;background:var(--gris2);border-radius:10px;overflow:hidden">
+      <div id="anj-env-bar" class="pct-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-wa"    onclick="partagerWAAnjarako()"><span>💬</span> WhatsApp</button>
+    <button class="btn btn-excel" onclick="exporterExcelAnjarako()"><span>📊</span> Excel</button>
+    <button class="btn btn-vert btn-full" onclick="enregistrerAnjarako()"><span>💾</span> Enregistrer</button>
+    <button class="btn btn-gris btn-full" onclick="resetAnjarako()"><span>🔄</span> Réinitialiser</button>
+  </div>
+
+</div><!-- /anjarako -->
+
+<!-- ═══ ONGLET 4 : VOLA MIVAOKA ═══ -->
+<div id="tab-vola" style="display:none">
+
+  <div class="sub-nav">
+    <button class="sub-btn actif" id="vola-btn-fiang" onclick="showVolaTab('fiang')">📖 Livre Fiangonana</button>
+    <button class="sub-btn" id="vola-btn-anj" onclick="showVolaTab('anj')">📖 Livre Anjarako</button>
+  </div>
+
+  <!-- LIVRE FIANGONANA -->
+  <div id="vola-fiang">
+    <div class="card">
+      <div class="card-titre" style="color:var(--vert)">➕ Nouvelle dépense — Fiangonana</div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ"><label>📅 Date</label><input type="date" id="vf-date"></div>
+        <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:9px">
+        <button class="src-toggle-btn actif" id="vf-src-caisse" onclick="setSrcDep('fiang','caisse',this)">💵 Caisse</button>
+        <button class="src-toggle-btn" id="vf-src-banque" onclick="setSrcDep('fiang','banque',this)">🏦 SIB Rakitra</button>
+      </div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ">
+          <label>🔢 N° Pièce / Reçu</label>
+          <input type="text" id="vf-piece" placeholder="Ex: P-001, R-045…">
+        </div>
+        <div class="champ">
+          <label>📄 N° Page du livre</label>
+          <input type="number" id="vf-page" min="1" placeholder="Ex: 12" inputmode="numeric">
+        </div>
+        <div class="champ full">
+          <label>📂 Ligne budgétaire</label>
+          <select id="vf-cat" style="-webkit-appearance:none">
+            <option value="">— Choisir —</option>
+            <optgroup label="C1 — Fitandremana">
+              <option value="C1.1">C1.1 — Ezaka Pst Andria</option>
+              <option value="C1.2">C1.2 — Kojakoja fitandremana Pst Rakotoniaina</option>
+            </optgroup>
+            <optgroup label="C2 — Sampana">
+              <option value="C2.1">C2.1 — Sekoly Alahady</option>
+            </optgroup>
+            <optgroup label="C3 — Fitoriana">
+              <option value="C3.1">C3.1 — Mpitoriteny ivelany</option>
+              <option value="C3.2">C3.2 — Fanampiana asa fitoriana</option>
+              <option value="C3.3">C3.3 — Fanampiana Fiangonana / SAMUEL</option>
+            </optgroup>
+            <optgroup label="C4 — Fiaraha-miasa">
+              <option value="C4.1">C4.1 — Moissons "Les Béatitudes"</option>
+              <option value="C4.2">C4.2 — Anjara fikarakarana ny fiangonana</option>
+              <option value="C4.3">C4.3 — Mpanadio trano</option>
+              <option value="C4.4">C4.4 — Fanofana trano ivelany</option>
+            </optgroup>
+            <optgroup label="C5 — Asa anatiny">
+              <option value="C5.1">C5.1 — Famangiana - Tsodrano</option>
+              <option value="C5.2">C5.2 — Asa vavolombelona</option>
+              <option value="C5.3">C5.3 — Fisintonanan'ny Fiangonana</option>
+              <option value="C5.4.1">C5.4.1 — Fiofanan'ny Mpitandrina</option>
+              <option value="C5.5">C5.5 — Divay sy mofo Fandraisana</option>
+            </optgroup>
+            <optgroup label="C6 — Fampitaovana">
+              <option value="C6.1">C6.1 — Fampitaovana</option>
+              <option value="C6.2">C6.2 — Banky</option>
+              <option value="C6.3">C6.3 — Samihafa</option>
+              <option value="C6.5">C6.5 — Prise en charge sanitaire Mpitandrina</option>
+              <option value="C6.6">C6.6 — Tranokala www.fkma.ci</option>
+            </optgroup>
+            <optgroup label="C7">
+              <option value="C7.1">C7.1 — Raki-pisaorana & fanomezana</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="champ" style="margin-bottom:9px"><label>📝 Description / Commentaire</label><input type="text" id="vf-desc" placeholder="Détail de la dépense…"></div>
+      <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="vf-auteur" placeholder="Nom du responsable"></div>
+      <button class="btn btn-vert" onclick="ajouterDepense('fiang')"><span>➕</span> Enregistrer</button>
+    </div>
+    <div class="total-banner rouge">
+      <div class="total-label">Total dépenses Fiangonana</div>
+      <div class="total-montant" id="vf-total">0 <span>FCFA</span></div>
+    </div>
+    <div class="card">
+      <div class="card-titre" style="color:var(--rouge)">📋 Historique — Fiangonana</div>
+      <div id="vf-liste"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-excel" onclick="exporterExcelDepenses('fiang')"><span>📊</span> Excel</button>
+      <button class="btn btn-wa"    onclick="partagerWADepenses('fiang')"><span>💬</span> WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- LIVRE ANJARAKO -->
+  <div id="vola-anj" style="display:none">
+    <div class="card">
+      <div class="card-titre" style="color:var(--orange)">➕ Nouvelle sortie — Anjarako</div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ"><label>📅 Date</label><input type="date" id="va-date"></div>
+        <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:9px">
+        <button class="src-toggle-btn actif" id="va-src-caisse" onclick="setSrcDep('anj','caisse',this)">💵 Caisse</button>
+        <button class="src-toggle-btn" id="va-src-banque" onclick="setSrcDep('anj','banque',this)">🏦 SIB Anjarako</button>
+      </div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ">
+          <label>🔢 N° Pièce / Reçu</label>
+          <input type="text" id="va-piece" placeholder="Ex: P-001, R-045…">
+        </div>
+        <div class="champ">
+          <label>📄 N° Page du livre</label>
+          <input type="number" id="va-page" min="1" placeholder="Ex: 12" inputmode="numeric">
+        </div>
+      </div>
+      <div class="champ" style="margin-bottom:9px">
+        <label>📂 Catégorie</label>
+        <input type="text" id="va-cat" list="cat-anj" placeholder="Ex: Aide membre…">
+        <datalist id="cat-anj">
+          <option>Aide à un membre</option><option>Projet communautaire</option>
+          <option>Frais administratifs</option><option>Autre</option>
+        </datalist>
+      </div>
+      <div class="champ" style="margin-bottom:9px"><label>📝 Description</label><input type="text" id="va-desc" placeholder="Détail…"></div>
+      <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="va-auteur" placeholder="Nom du responsable"></div>
+      <button class="btn btn-or" onclick="ajouterDepense('anj')"><span>➕</span> Enregistrer</button>
+    </div>
+    <div class="total-banner orange">
+      <div class="total-label">Total sorties Anjarako</div>
+      <div class="total-montant" id="va-total">0 <span>FCFA</span></div>
+    </div>
+    <div class="card">
+      <div class="card-titre" style="color:var(--orange)">📋 Historique — Anjarako</div>
+      <div id="va-liste"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune sortie</div></div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-excel" onclick="exporterExcelDepenses('anj')"><span>📊</span> Excel</button>
+      <button class="btn btn-wa"    onclick="partagerWADepenses('anj')"><span>💬</span> WhatsApp</button>
+    </div>
+  </div>
+
+</div><!-- /vola -->
+
+<!-- ═══ ONGLET 5 : DASHBOARD ═══ -->
+<div id="tab-dashboard" style="display:none">
+
+  <div style="background:linear-gradient(135deg,var(--bleu),#3a52b8);border-radius:10px;padding:14px 16px;margin-bottom:10px;color:white">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700">📊 Tableau de bord FKMA</div>
+    <div style="font-size:11px;opacity:.8;margin-top:3px">Vue annuelle consolidée</div>
+  </div>
+
+  <div class="yr-row">
+    <button class="yr-btn" onclick="changerAnnee(-1)">◀</button>
+    <div class="yr-label" id="dash-annee-label"></div>
+    <button class="yr-btn" onclick="changerAnnee(1)">▶</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi kv"><div class="kpi-icon">🙏</div><div class="kpi-val" id="kpi-rakitra">0 F</div><div class="kpi-lab">Total Rakitra</div></div>
+    <div class="kpi kb"><div class="kpi-icon">📨</div><div class="kpi-val" id="kpi-anjarako">0 F</div><div class="kpi-lab">Total Anjarako</div></div>
+    <div class="kpi ko"><div class="kpi-icon">🎁</div><div class="kpi-val" id="kpi-raki-pis">0 F</div><div class="kpi-lab">Raki-pisaorana</div></div>
+    <div class="kpi kr"><div class="kpi-icon">💸</div><div class="kpi-val" id="kpi-depenses">0 F</div><div class="kpi-lab">Total Dépenses</div></div>
+    <div class="kpi kc"><div class="kpi-icon">💰</div><div class="kpi-val" id="kpi-solde">0 F</div><div class="kpi-lab">Solde net</div></div>
+    <div class="kpi kp"><div class="kpi-icon">👥</div><div class="kpi-val" id="kpi-presences">0</div><div class="kpi-lab">Total présences</div></div>
+  </div>
+
+  <div class="dtab-row">
+    <button class="dtab actif" onclick="showDtab('finances',this)">💰 Finances</button>
+    <button class="dtab" onclick="showDtab('presences',this)">👥 Présences</button>
+    <button class="dtab" onclick="showDtab('cultes',this)">⛪ Cultes</button>
+    <button class="dtab" onclick="showDtab('historique',this)">🔄 Modifier</button>
+  </div>
+
+  <div id="dtab-finances">
+    <div class="card">
+      <div class="card-titre">💰 Finances — mois par mois</div>
+      <div style="overflow-x:auto">
+        <table class="dtbl">
+          <thead><tr><th>Mois</th><th>Rakitra</th><th>R-pand.</th><th>Anjarako</th><th>Dép.</th><th>Solde</th></tr></thead>
+          <tbody id="dash-tbody-fin"></tbody>
+          <tfoot><tr id="dash-tfoot-fin"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="dtab-presences" style="display:none">
+    <div class="card">
+      <div class="card-titre">👥 Présences — mois par mois</div>
+      <div style="overflow-x:auto">
+        <table class="dtbl">
+          <thead><tr><th>Mois</th><th>Cultes</th><th>Total</th><th>Moy./culte</th><th>Fandraisana</th><th>Mpandray</th></tr></thead>
+          <tbody id="dash-tbody-pres"></tbody>
+          <tfoot><tr id="dash-tfoot-pres"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="dtab-cultes" style="display:none">
+    <div class="card">
+      <div class="card-titre">⛪ Tous les cultes</div>
+      <div style="overflow-x:auto">
+        <table class="dtbl">
+          <thead><tr><th>Date</th><th>Type</th><th>Prédicateur</th><th>Présences</th><th>Rakitra</th></tr></thead>
+          <tbody id="dash-tbody-cultes"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="dtab-historique" style="display:none">
+    <div class="card">
+      <div class="card-titre">🔄 Modifier une saisie existante</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--texte2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">📅 Sélectionner une date</div>
+        <select id="hist-select-date" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;background:white" onchange="chargerSaisieDate(this.value)">
+          <option value="">— Choisir une date —</option>
+        </select>
+      </div>
+      <div id="hist-actions" style="display:none;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-bleu" onclick="chargerRakitraHist()"><span>🙏</span> Recharger ce Rakitra</button>
+        <button class="btn btn-or"   onclick="chargerAnjHist()"><span>📨</span> Recharger cet Anjarako</button>
+      </div>
+      <div id="hist-info" style="font-size:12px;color:var(--texte2);margin-top:8px;padding:8px 10px;background:var(--gris1);border-radius:7px;display:none"></div>
+    </div>
+  </div>
+
+  <div class="btns" style="margin-top:4px">
+    <button class="btn btn-excel" onclick="exporterDashExcel()"><span>📊</span> Excel année</button>
+    <button class="btn btn-wa"    onclick="exporterDashWA()"><span>💬</span> WA bilan</button>
+    <button class="btn btn-gris btn-full" onclick="exporterJSON()"><span>📦</span> Exporter toutes les données (JSON)</button>
+    <button class="btn btn-gris btn-full" onclick="importerJSON()"><span>📂</span> Importer des données (JSON)</button>
+  </div>
+  <input type="file" id="json-import-inp" accept=".json" style="display:none" onchange="lireJSON(this)">
+
+</div><!-- /dashboard -->
+
+<div class="footer"><strong>FKMA Abidjan</strong> · Système de gestion · Côte d'Ivoire · FCFA</div>
+
+</div>
+
+<div id="section-k45" style="display:none">
+<div class="tabs">
+  <button class="tab-btn actif" onclick="showK45Tab('saisie',this)">✏️<br>Saisie</button>
+  <button class="tab-btn" onclick="showK45Tab('historique',this)">📖<br>Historique</button>
+</div>
+
+<!-- ══ SAISIE ══ -->
+<div id="k45-tab-saisie">
+
+  <div class="card" style="border-left:4px solid var(--or)">
+    <div class="ctit"><i class="ti ti-calendar"></i>Informations du culte</div>
+    <div class="g2">
+      <div class="ch">
+        <label>Date</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="ch">
+        <label>Type de culte</label>
+        <input type="text" id="f-type" list="tl" placeholder="Ex: Culte dimanche">
+        <datalist id="tl">
+          <option>Culte du dimanche matin</option>
+          <option>Alahady Fandraisana</option>
+          <option>Culte de jeûne</option>
+          <option>Alahady Manga</option>
+          <option>Culte de Pâques</option>
+          <option>Culte de Noël</option>
+          <option>Fanokanana Diakona</option>
+          <option>Culte K45</option>
+        </datalist>
+      </div>
+      <div class="ch full">
+        <label>Lieu</label>
+        <input type="text" id="f-lieu" list="ll" value="Temple Béatitude Plateau">
+        <datalist id="ll">
+          <option>Temple Béatitude Plateau</option>
+          <option>CELAF Riviera 3</option>
+          <option>ICTJ Angré</option>
+          <option>Salle CORAIL</option>
+        </datalist>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--bleu)">
+    <div class="ctit"><i class="ti ti-users"></i>Présences</div>
+    <div class="tr" style="margin-bottom:8px">
+      <span class="lb">Alahady Fandraisana ?</span>
+      <label class="sw"><input type="checkbox" id="tog-f" onchange="toggleFandr()"><span class="sl"></span></label>
+    </div>
+    <div id="zone-pres">
+      <div class="ch">
+        <label>Isan'olona (total présents)</label>
+        <input type="number" id="f-pres" min="0" placeholder="0" inputmode="numeric">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--or)">
+    <div class="ctit"><i class="ti ti-microphone"></i>Intervenants</div>
+    <div class="ch">
+      <label>Mpitarika</label>
+      <div class="acw"><input type="text" id="f-mpitarika" placeholder="Chercher un nom…" autocomplete="off"><div class="acl" id="acl-mpitarika"></div></div>
+    </div>
+    <div class="ch">
+      <label>Mitory teny (prédicateur)</label>
+      <div class="acw"><input type="text" id="f-mitory" placeholder="Chercher un nom…" autocomplete="off"><div class="acl" id="acl-mitory"></div></div>
+    </div>
+    <div class="ch">
+      <label>Vavaka fitsilovala</label>
+      <div class="acw"><input type="text" id="f-vavaka" placeholder="Chercher un nom…" autocomplete="off"><div class="acl" id="acl-vavaka"></div></div>
+    </div>
+    <div class="ch">
+      <label>Mpamaky teny (1 ou 3 lecteurs)</label>
+      <div class="tw" id="tw-mpamaky">
+        <div class="acw" style="flex:1;min-width:120px;position:relative">
+          <input class="tinp" id="f-mpamaky-inp" placeholder="Ajouter un lecteur…" autocomplete="off">
+          <div class="acl" id="acl-mpamaky"></div>
+        </div>
+      </div>
+    </div>
+    <div class="ch" style="margin-top:4px">
+      <label>Thème du mois</label>
+      <input type="text" id="f-theme" placeholder="Ex: Ny finoana mahavonjy">
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--vert)">
+    <div class="ctit"><i class="ti ti-book"></i>Sermon</div>
+    <div class="ch">
+      <label>Titre / thème du sermon</label>
+      <input type="text" id="f-sermon" placeholder="Ex: Ny famonjena avy amin'ny fahasoavana">
+    </div>
+    <div class="ch">
+      <label>Référence biblique</label>
+      <input type="text" id="f-ref" placeholder="Ex: Efesiana 2:8-9">
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--violet)">
+    <div class="ctit"><i class="ti ti-camera"></i>Photo du culte</div>
+    <div class="g2">
+      <div class="ch">
+        <label>🔢 Numéro photo</label>
+        <input type="text" id="f-photo-num" placeholder="Ex: IMG_001">
+      </div>
+      <div class="ch">
+        <label>📝 Légende</label>
+        <input type="text" id="f-photo-cap" placeholder="Description…">
+      </div>
+    </div>
+    <div class="note" style="margin-top:6px;margin-bottom:0">
+      <i class="ti ti-info-circle" style="vertical-align:-1px;margin-right:4px"></i>
+      La photo est gardée sur le PC de Rija. Note ici son numéro de fichier (ex: IMG_001).
+    </div>
+  </div>
+
+  <div class="card" style="border-left:4px solid var(--violet)">
+    <div class="ctit"><i class="ti ti-star"></i>Faits marquants</div>
+    <div id="faits-liste"></div>
+    <button class="btn-add" onclick="ajouterFait()"><i class="ti ti-plus"></i> Ajouter un fait marquant</button>
+  </div>
+
+  <!-- APERÇU -->
+  <div class="ap">
+    <div class="aph">
+      <div class="apd" id="ap-date">—</div>
+      <div class="aps" id="ap-type">Aperçu de la page du journal</div>
+    </div>
+    <div class="apb" id="ap-body"><div class="apvide">Remplis le formulaire ✍️</div></div>
+  </div>
+
+  <button class="btn bv" onclick="enregistrer()"><i class="ti ti-device-floppy"></i> Enregistrer dans Firebase</button>
+  <button class="btn bwa" onclick="envoyerWA()"><i class="ti ti-brand-whatsapp"></i> Préparer message diacres</button>
+
+</div><!-- /saisie -->
+
+<!-- ══ HISTORIQUE ══ -->
+<div id="k45-tab-historique" style="display:none">
+  <div class="card">
+    <div class="ctit"><i class="ti ti-book"></i>Journal K45 — toutes les pages</div>
+    <div id="hist-liste"><div class="apvide">Chargement…</div></div>
+  </div>
+</div>
+
+</div>
+
+<div id="section-gl" style="display:none">
+<div class="tabs">
+  <button class="tab-btn actif" onclick="showGLTab('fiang',this)">📗<br>Fiangonana</button>
+  <button class="tab-btn" onclick="showGLTab('anj',this)">📘<br>Anjarako</button>
+  <button class="tab-btn" onclick="showGLTab('k45',this)">📙<br>K45</button>
+  
+  <button class="tab-btn" onclick="showGLTab('synth',this)">📊<br>Synthèse</button>
+</div>
+
+<!-- ══ FIANGONANA ══ -->
+<div id="gl-tab-fiang">
+  <!-- Soldes initiaux -->
+  <div class="card">
+    <div class="ctit">🏁 Soldes initiaux 2026</div>
+    <div class="g2">
+      <div class="ch"><label>💵 Caisse initiale</label>
+        <input type="number" id="fiang-init-caisse" value="0" inputmode="numeric" oninput="renderFiang()">
+      </div>
+      <div class="ch"><label>🏦 Banque SIB initiale</label>
+        <input type="number" id="fiang-init-banque" value="0" inputmode="numeric" oninput="renderFiang()">
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:0">💡 Ces montants correspondent au solde au 1er janvier 2026. À renseigner lors de la passation.</div>
+  </div>
+
+  <!-- Soldes actuels -->
+  <div class="card">
+    <div class="ctit">💰 Soldes Fiangonana</div>
+    <div class="solrow"><span class="sollab">💵 Caisse Rakitra</span><span class="solval" id="fiang-sol-caisse">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB Rakitra</span><span class="solval" id="fiang-sol-banque">0 FCFA</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL</span><span class="solval" id="fiang-sol-total">0 FCFA</span></div>
+  </div>
+
+  <!-- Export -->
+  <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel — Fiangonana</button>
+
+  <!-- Historique -->
+  <div class="card">
+    <div class="ctit">📋 Livre de caisse — Fiangonana</div>
+    <div id="fiang-liste"><div class="vide">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- ══ ANJARAKO ══ -->
+<div id="gl-tab-anj" style="display:none">
+  <div class="card">
+    <div class="ctit">🏁 Soldes initiaux 2026</div>
+    <div class="g2">
+      <div class="ch"><label>💵 Caisse initiale</label>
+        <input type="number" id="anj-init-caisse" value="0" inputmode="numeric" oninput="renderAnj()">
+      </div>
+      <div class="ch"><label>🏦 Banque SIB initiale</label>
+        <input type="number" id="anj-init-banque" value="0" inputmode="numeric" oninput="renderAnj()">
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:0">💡 Solde au 1er janvier 2026 — à renseigner lors de la passation.</div>
+  </div>
+
+  <div class="card">
+    <div class="ctit">💰 Soldes Anjarako</div>
+    <div class="solrow"><span class="sollab">💵 Caisse Anjarako</span><span class="solval" id="anj-sol-caisse">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB Anjarako</span><span class="solval" id="anj-sol-banque">0 FCFA</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL</span><span class="solval" id="anj-sol-total">0 FCFA</span></div>
+  </div>
+
+  <button class="btn bb" onclick="exporterExcel('anj')">📊 Exporter Excel — Anjarako</button>
+
+  <div class="card">
+    <div class="ctit">📋 Livre Anjarako</div>
+    <div id="anj-liste"><div class="vide">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- ══ K45 ══ -->
+<div id="gl-tab-k45" style="display:none">
+  <div class="note">📙 Livre K45 — Hors budget Fiangonana · Dans SIB Rakitra</div>
+
+  <div class="card">
+    <div class="ctit">💰 Solde K45</div>
+    <div class="solrow"><span class="sollab">📙 K45 (dans SIB Rakitra)</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
+  </div>
+
+  <!-- Formulaire saisie K45 (Rija + PL seulement) -->
+  <div class="card" id="k45-form-zone">
+    <div class="ctit">➕ Nouvelle écriture K45</div>
+    <div class="es-toggle">
+      <button class="es-btn e actif" id="k45-es-e" onclick="setK45ES('E')">⬆️ Entrée</button>
+      <button class="es-btn s" id="k45-es-s" onclick="setK45ES('S')">⬇️ Sortie</button>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>📅 Date</label><input type="date" id="k45-date"></div>
+      <div class="ch"><label>📄 N° Page</label><input type="number" id="k45-page" min="1" placeholder="Ex: 5" inputmode="numeric"></div>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="k45-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>🔤 Lettrage</label><input type="text" id="k45-lettrage" placeholder="A, B…" style="text-transform:uppercase"></div>
+    </div>
+    <div class="ch">
+      <label>📂 Rubrique</label>
+      <select id="k45-rubrique">
+        <option value="">— Choisir —</option>
+        <optgroup label="Entrées K45">
+          <option value="K45-E1">Raki-pandraisana</option>
+          <option value="K45-E2">Don / Contribution extérieure</option>
+          <option value="K45-E3">Cotisations membres</option>
+          <option value="K45-E4">Vente t-shirts / produits K45</option>
+          <option value="K45-E5">Vente billets événement</option>
+          <option value="K45-E6">Subvention</option>
+          <option value="K45-E7">Autre entrée K45</option>
+        </optgroup>
+        <optgroup label="Sorties K45">
+          <option value="K45-S1">Dépenses événement K45</option>
+          <option value="K45-S2">Communication K45</option>
+          <option value="K45-S3">Logistique K45</option>
+          <option value="K45-S4">Restauration K45</option>
+          <option value="K45-S5">Achat t-shirts / produits</option>
+          <option value="K45-S6">Autre sortie K45</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="ch"><label>📝 Libellé</label><input type="text" id="k45-libelle" placeholder="Description…"></div>
+    <div class="g2">
+      <div class="ch"><label>🔢 N° Pièce</label><input type="text" id="k45-piece" placeholder="Ex: P-001"></div>
+      <div class="ch"><label>✍️ Saisi par</label><input type="text" id="k45-saispar" placeholder="Nom"></div>
+    </div>
+    <button class="btn bo" id="k45-save-btn" onclick="enregistrerK45()">
+      💾 Enregistrer écriture K45
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="ctit">📋 Historique K45</div>
+    <div id="k45-liste"><div class="vide">Chargement…</div></div>
+  </div>
+</div>
+
+<!-- ══ OPÉRATIONS BANCAIRES (Ando) ══ -->
+<div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+<div id="gl-tab-synth" style="display:none">
+  <div class="card">
+    <div class="ctit">📊 Vue globale</div>
+    <div class="solrow"><span class="sollab">📗 Fiangonana total</span><span class="solval" id="syn-fiang">0 F</span></div>
+    <div class="solrow"><span class="sollab">📘 Anjarako total</span><span class="solval" id="syn-anj">0 F</span></div>
+    <div class="solrow"><span class="sollab">📙 K45</span><span class="solval" id="syn-k45">0 F</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL GÉNÉRAL</span><span class="solval" id="syn-tot">0 F</span></div>
+  </div>
+  <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (4 feuilles)</button>
+</div>
+
+
+  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+</div>
+
+<div id="section-ops" style="display:none">
+  <div class="note" style="margin-bottom:10px">
+    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
+  </div>
+  
+
+  <!-- Transfert Caisse → Banque -->
+  <div class="card">
+    <div class="ctit">🔄 Transfert Caisse → Banque</div>
+    <div class="note">Quand tu verses de la caisse à la SIB — double écriture automatique.</div>
+
+    <div class="g2">
+      <div class="ch"><label>📂 Livre</label>
+        <select id="tr-livre">
+          <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
+          <option value="anj">📘 Anjarako (SIB Anjarako)</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>📄 N° Page livre</label><input type="number" id="tr-page" min="1" placeholder="Ex: 12" inputmode="numeric"></div>
+    </div>
+    <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
+    <div class="ch"><label>🔢 N° Bordereau</label><input type="text" id="tr-piece" placeholder="Ex: BV-001"></div>
+    <button class="btn bv" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
+  </div>
+
+  <!-- Opérations bancaires directes (frais, agios…) -->
+  <div class="card">
+    <div class="ctit">🏦 Opération bancaire directe</div>
+    <div class="note">Frais bancaires, agios, timbres, chèques — opérations sur le relevé SIB.</div>
+
+    <div class="es-toggle">
+      <button class="es-btn e actif" id="ob-es-e" onclick="setObES('E')">⬆️ Crédit</button>
+      <button class="es-btn s" id="ob-es-s" onclick="setObES('S')">⬇️ Débit</button>
+    </div>
+
+    <div class="g2">
+      <div class="ch"><label>📂 Compte</label>
+        <select id="ob-livre">
+          <option value="fiang">📗 SIB Rakitra</option>
+          <option value="anj">📘 SIB Anjarako</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
+    </div>
+    <div class="ch">
+      <label>📂 Nature</label>
+      <select id="ob-nature">
+        <option value="">— Choisir —</option>
+        <option value="AGI">Agios</option>
+        <option value="FRB">Frais bancaires</option>
+        <option value="TIM">Timbre</option>
+        <option value="CHQ">Chèque payé</option>
+        <option value="RET">Retrait espèces</option>
+        <option value="EXT">Extrait de compte</option>
+        <option value="AUT">Autre</option>
+      </select>
+    </div>
+    <div class="g2">
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
+    </div>
+    <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
+  </div>
+
+  <!-- Rapprochement bancaire -->
+  <div class="card">
+    <div class="ctit">✅ Rapprochement bancaire</div>
+    <div class="note">Compare le solde dans l'appli avec le relevé bancaire réel.</div>
+    <div class="g2">
+      <div class="ch"><label>📂 Compte</label>
+        <select id="rp-livre">
+          <option value="fiang">📗 SIB Rakitra</option>
+          <option value="anj">📘 SIB Anjarako</option>
+        </select>
+      </div>
+      <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
+    </div>
+    <div class="ch"><label>💰 Solde relevé SIB (FCFA)</label>
+      <input type="number" id="rp-solde-reel" placeholder="Solde selon relevé bancaire" inputmode="numeric">
+    </div>
+    <button class="btn bo" onclick="faireRapprochement()">✅ Calculer l'écart</button>
+    <div id="rp-resultat" style="display:none;margin-top:10px;background:var(--gris1);border-radius:8px;padding:12px">
+      <div class="rappr-row"><span>Solde théorique (appli)</span><span id="rp-theo">0 F</span></div>
+      <div class="rappr-row"><span>Solde réel (relevé SIB)</span><span id="rp-reel">0 F</span></div>
+      <div class="rappr-row" style="font-weight:700;font-size:14px"><span>Écart</span><span id="rp-ecart">0 F</span></div>
+      <div id="rp-msg" style="margin-top:8px;font-size:12px;text-align:center;padding:6px;border-radius:6px"></div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /app -->
+
+</div>
+
+
+  <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+</div>
+</div><!-- /app -->
+
+<script src="app.js"></script>
+</body>
+</html>
