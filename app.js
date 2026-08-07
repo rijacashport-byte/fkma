@@ -26,9 +26,11 @@ const MEMBRES = [{"isa": 1, "nom": "ACHI Axel", "genre": "Lahy", "mpandray": fal
 function initAuth(){
   const auth = window._auth;
   if(!auth){ setTimeout(initAuth,200); return; }
-  window._onAuth(auth, function(user){
+  window._onAuth(auth, async function(user){
     if(user){
       currentUser = user;
+      // Charger la liste des comptes depuis Firebase (une seule fois, mise en cache)
+      await chargerRolesConfig();
       const cfg = ROLES_CONFIG[user.email]||{nom:user.email,role:'inconnu',label:'Inconnu'};
       currentRole = cfg.role;
       window._currentRole = cfg.role; // Pour renderLivre et autres
@@ -1633,7 +1635,24 @@ const CATEGORIES_BUDGET = {
   "C7.1":"Raki-pisaorana & fanomezana"
 };
 
-const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}};
+// Liste des comptes (nom, rôle, libellé) — chargée depuis Firebase (collection "roles"),
+// plus besoin de modifier ce fichier pour ajouter quelqu'un.
+let ROLES_CONFIG = {};
+let _rolesConfigCharge = false;
+async function chargerRolesConfig(){
+  if(_rolesConfigCharge) return; // déjà chargé, on ne recharge pas à chaque connexion
+  try{
+    if(!window._db) return;
+    const snap=await window._fs.getDocs(window._fs.collection(window._db,'roles'));
+    const cfg={};
+    snap.forEach(function(ds){
+      const d=ds.data();
+      cfg[ds.id]={nom:d.nom||ds.id, role:d.role||'inconnu', label:d.label||d.role||'Inconnu'};
+    });
+    ROLES_CONFIG=cfg;
+    _rolesConfigCharge=true;
+  }catch(e){ console.log('Chargement des comptes:',e.message); }
+}
 
 // ── FIREBASE READY ────────────────────────────────────────────
 let db = null, fs = null;
