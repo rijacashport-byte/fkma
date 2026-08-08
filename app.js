@@ -168,7 +168,12 @@ function showGestTab(tab, btn){
     renderDashboard();
     if(window._db){ chargerRakitra().then(renderDashboard); chargerCultes().then(renderDashboard); }
   }
-  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
+  if(tab==='anjarako'){
+    const rakDate=document.getElementById('rak-date-input');
+    const anjDate=document.getElementById('anj-date-display');
+    if(rakDate&&anjDate) anjDate.value=rakDate.value;
+    calculerAnjMoisCourant();afficherEnveloppesJour();
+  }
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
 
@@ -407,6 +412,7 @@ function syncDateLabel(){}
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('rak-date-input') && (document.getElementById('rak-date-input').valueAsDate=new Date());
+  document.getElementById('anj-date-display') && (document.getElementById('anj-date-display').valueAsDate=new Date());
   document.getElementById('tres-date').valueAsDate=new Date();
   document.getElementById('vf-date').valueAsDate=new Date();
   document.getElementById('va-date').valueAsDate=new Date();
@@ -629,6 +635,60 @@ function calculerRepartition(rakiId){
   calculerRaki();
 }
 
+// ── FORMATAGE EN DIRECT DES MONTANTS (séparateurs de milliers) ──
+// Affiche "150 000" pendant la saisie au lieu de "150000". La valeur réelle
+// (sans espaces) est retrouvée avec valeurMontant() au moment de lire le champ.
+function formaterMontant(input){
+  const pos=input.selectionStart;
+  const avant=input.value.length;
+  const chiffres=input.value.replace(/[^0-9]/g,'');
+  input.value=chiffres?Number(chiffres).toLocaleString('fr-FR'):'';
+  const diff=input.value.length-avant;
+  const nouvellePos=Math.max(0,(pos||0)+diff);
+  try{input.setSelectionRange(nouvellePos,nouvellePos);}catch(e){}
+}
+function valeurMontant(id){
+  const el=document.getElementById(id);
+  if(!el) return 0;
+  return parseInt((el.value||'').replace(/[^0-9]/g,''))||0;
+}
+
+function onChangementDateRakitra(){
+  const rakDate=document.getElementById('rak-date-input');
+  const anjDate=document.getElementById('anj-date-display');
+  if(anjDate) anjDate.value=rakDate.value;
+  const dejaRempli=[...document.querySelectorAll('#tbody-billets .qty-input, #tbody-pieces .qty-input')].some(el=>el.value);
+  if(dejaRempli){
+    if(confirm('Changer de date va vider la billeterie et les autres champs déjà remplis (page, offrandes…), pour ne pas mélanger avec le jour précédent. Continuer ?')){
+      reinitialiserFormulaireRakitra();
+    }
+  }
+}
+
+// ── RÉINITIALISATION DU FORMULAIRE RAKITRA ───────────────────
+// Vide la billeterie et les champs de saisie (page, lettrage, observations,
+// offrandes, raki-pandraisana) — appelée après un enregistrement réussi ou
+// quand on change la date, pour éviter de mélanger les chiffres d'un jour
+// avec ceux du jour suivant.
+function reinitialiserFormulaireRakitra(){
+  document.querySelectorAll('#tbody-billets .qty-input, #tbody-pieces .qty-input, #tbody-billets-rp .qty-input, #tbody-pieces-rp .qty-input')
+    .forEach(function(el){el.value='';});
+  const page=document.getElementById('rak-page'); if(page) page.value='';
+  const lettrage=document.getElementById('rak-lettrage'); if(lettrage) lettrage.value='';
+  const obs=document.getElementById('observations'); if(obs) obs.value='';
+  // Offrandes (raki)
+  document.getElementById('raki-liste').innerHTML='';
+  nRaki=0;
+  // Raki-pandraisana : décocher et vider
+  const toggleRP=document.getElementById('toggle-raki-pandraisana');
+  if(toggleRP){ toggleRP.checked=false; toggleRakiPandraisana(); }
+  // Diacres : remettre 2 champs vides comme au démarrage
+  document.getElementById('diacres-grille').innerHTML='';
+  nd=0; ajouterDiacre(); ajouterDiacre();
+  calculerRaki();
+  calculerRakitra();
+}
+
 function calculerRaki(){
   let tot=0;
   // Ne compter que les montants totaux des offrandesraki (raki_N_m)
@@ -815,8 +875,9 @@ async function enregistrerRakitra(){
     await ecrireGrandLivreFiang(d);
     logModification('creation','Rakitra n°'+(d.numero||'?')+' du '+d.date, fmt(d.totalRakitra||0)+' F');
     alert('✅ Rakitra n°'+(d.numero||'?')+' du '+d.date+' enregistré !');
+    reinitialiserFormulaireRakitra();
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
-  else alert('✅ Rakitra enregistré localement.');
+  else { alert('✅ Rakitra enregistré localement.'); reinitialiserFormulaireRakitra(); }
 }
 
 // ── DIACRES ──────────────────────────────────────────────────
@@ -1030,7 +1091,7 @@ function setSrcDep(livre,src,btn){
 async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
   const date=document.getElementById(p+'-date').value;
-  const montant=parseInt(document.getElementById(p+'-montant').value)||0;
+  const montant=valeurMontant(p+'-montant');
   const cat=document.getElementById(p+'-cat')?.value?.trim()||'';
   const piece=document.getElementById(p+'-piece')?.value.trim()||'';
   const page=document.getElementById(p+'-page')?.value||'';
@@ -2273,7 +2334,7 @@ async function faireTransfert(){
   if(!db){alert('Firebase non connecté.');return;}
   const livre=document.getElementById('tr-livre').value;
   const date=document.getElementById('tr-date').value;
-  const montant=parseInt(document.getElementById('tr-montant').value)||0;
+  const montant=valeurMontant('tr-montant');
   const page=document.getElementById('tr-page').value;
   const comment=document.getElementById('tr-comment').value;
   const piece=document.getElementById('tr-piece').value;
@@ -2297,7 +2358,7 @@ async function enregistrerOpBancaire(){
   if(!db){alert('Firebase non connecté.');return;}
   const livre=document.getElementById('ob-livre').value;
   const date=document.getElementById('ob-date').value;
-  const montant=parseInt(document.getElementById('ob-montant').value)||0;
+  const montant=valeurMontant('ob-montant');
   const nature=document.getElementById('ob-nature').value;
   const comment=document.getElementById('ob-comment').value;
   if(!date||!montant||!nature){alert('Date, montant et nature requis.');return;}
@@ -2353,7 +2414,7 @@ async function enregistrerK45(){
   const db=window._db,fs=window._fs;
   if(!db){alert('Firebase non connecté.');return;}
   const date=document.getElementById('k45-date').value;
-  const montant=parseInt(document.getElementById('k45-montant').value)||0;
+  const montant=valeurMontant('k45-montant');
   const rubrique=document.getElementById('k45-rubrique').value;
   if(!date||!montant||!rubrique){alert('Date, montant et rubrique requis.');return;}
   const rec={

@@ -72,7 +72,7 @@
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px">
       <div class="champ full" style="grid-column:1/-1">
         <label>📅 Date</label>
-        <input type="date" id="rak-date-input" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+        <input type="date" id="rak-date-input" onchange="onChangementDateRakitra()" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
       </div>
       <div class="champ">
         <label>📄 N° Page livre</label>
@@ -176,6 +176,16 @@
 
 <!-- ═══ ONGLET 3 : ANJARAKO ═══ -->
 <div id="tab-anjarako" style="display:none">
+
+  <div class="card">
+    <div class="card-titre">📅 Date du culte</div>
+    <div class="champ full">
+      <label>📅 Date</label>
+      <input type="date" id="anj-date-display" onchange="document.getElementById('rak-date-input').value=this.value"
+        style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+    </div>
+    <div class="note" style="margin-bottom:0">💡 C'est la même date que celle utilisée pour le Rakitra du même culte.</div>
+  </div>
 
 
 
@@ -320,7 +330,7 @@
       <div class="card-titre" style="color:var(--vert)">➕ Nouvelle dépense — Fiangonana</div>
       <div class="grid2" style="margin-bottom:9px">
         <div class="champ"><label>📅 Date</label><input type="date" id="vf-date"></div>
-        <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="champ"><label>💰 Montant (FCFA)</label><input type="text" id="vf-montant" placeholder="0" inputmode="numeric" oninput="formaterMontant(this)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:9px">
         <button class="src-toggle-btn actif" id="vf-src-caisse" onclick="setSrcDep('fiang','caisse',this)">💵 Caisse</button>
@@ -401,7 +411,7 @@
       <div class="card-titre" style="color:var(--orange)">➕ Nouvelle sortie — Anjarako</div>
       <div class="grid2" style="margin-bottom:9px">
         <div class="champ"><label>📅 Date</label><input type="date" id="va-date"></div>
-        <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
+        <div class="champ"><label>💰 Montant (FCFA)</label><input type="text" id="va-montant" placeholder="0" inputmode="numeric" oninput="formaterMontant(this)"></div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:9px">
         <button class="src-toggle-btn actif" id="va-src-caisse" onclick="setSrcDep('anj','caisse',this)">💵 Caisse</button>
@@ -791,7 +801,7 @@
       <div class="ch"><label>📄 N° Page</label><input type="number" id="k45-page" min="1" placeholder="Ex: 5" inputmode="numeric"></div>
     </div>
     <div class="g2">
-      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="k45-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="text" id="k45-montant" placeholder="0" inputmode="numeric" oninput="formaterMontant(this)"></div>
       <div class="ch"><label>🔤 Lettrage</label><input type="text" id="k45-lettrage" placeholder="A, B…" style="text-transform:uppercase"></div>
     </div>
     <div class="ch">
@@ -872,7 +882,7 @@
       <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
     </div>
     <div class="g2">
-      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="text" id="tr-montant" placeholder="0" inputmode="numeric" oninput="formaterMontant(this)"></div>
       <div class="ch"><label>📄 N° Page livre</label><input type="number" id="tr-page" min="1" placeholder="Ex: 12" inputmode="numeric"></div>
     </div>
     <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
@@ -913,7 +923,7 @@
       </select>
     </div>
     <div class="g2">
-      <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
+      <div class="ch"><label>💰 Montant (FCFA)</label><input type="text" id="ob-montant" placeholder="0" inputmode="numeric" oninput="formaterMontant(this)"></div>
       <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
     </div>
     <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
