@@ -1092,6 +1092,12 @@ function setSrcDep(livre,src,btn){
   document.getElementById(p+'-src-caisse').classList.toggle('actif',src==='caisse');
   document.getElementById(p+'-src-banque').classList.toggle('actif',src==='banque');
 }
+let srcK45='caisse';
+function setSrcK45(src,btn){
+  srcK45=src;
+  document.getElementById('k45-src-caisse').classList.toggle('actif',src==='caisse');
+  document.getElementById('k45-src-banque').classList.toggle('actif',src==='banque');
+}
 
 async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
@@ -1397,7 +1403,7 @@ async function ecrireRakiPandraisana45(d){
     const batch=_fs.writeBatch(_db);
     toDelete.forEach(function(ref){batch.delete(ref);});
     batch.set(_fs.doc(col),{
-      numero,date:d.date,montant:d.totalRP,es:'E',source:'k45',
+      numero,date:d.date,montant:d.totalRP,es:'E',source:'caisse',
       page:d.page||'',lettrage:d.lettrage||'',
       rubrique:'K45-E1',libelle:'Raki-pandraisana',
       autoRakiPandraisana:true,savedAt:new Date().toISOString()
@@ -2241,7 +2247,9 @@ async function chargerSoldesInitiaux(){
       'fiang-init-caisse':data.fiangCaisse,
       'fiang-init-banque':data.fiangBanque,
       'anj-init-caisse':data.anjCaisse,
-      'anj-init-banque':data.anjBanque
+      'anj-init-banque':data.anjBanque,
+      'k45-init-caisse':data.k45Caisse,
+      'k45-init-banque':data.k45Banque
     };
     Object.keys(map).forEach(id=>{
       const el=document.getElementById(id);
@@ -2257,12 +2265,15 @@ async function sauvegarderSoldesInitiaux(){
       fiangCaisse:parseFloat(document.getElementById('fiang-init-caisse')?.value)||0,
       fiangBanque:parseFloat(document.getElementById('fiang-init-banque')?.value)||0,
       anjCaisse:parseFloat(document.getElementById('anj-init-caisse')?.value)||0,
-      anjBanque:parseFloat(document.getElementById('anj-init-banque')?.value)||0
+      anjBanque:parseFloat(document.getElementById('anj-init-banque')?.value)||0,
+      k45Caisse:parseFloat(document.getElementById('k45-init-caisse')?.value)||0,
+      k45Banque:parseFloat(document.getElementById('k45-init-banque')?.value)||0
     };
     await fs.setDoc(fs.doc(db,'config','soldes_initiaux'),data);
     logModification('modification','Soldes initiaux (passation 1er juillet 2026)',
       'Caisse Fiang: '+fmt(data.fiangCaisse)+' | Banque Fiang: '+fmt(data.fiangBanque)+
-      ' | Caisse Anj: '+fmt(data.anjCaisse)+' | Banque Anj: '+fmt(data.anjBanque));
+      ' | Caisse Anj: '+fmt(data.anjCaisse)+' | Banque Anj: '+fmt(data.anjBanque)+
+      ' | Caisse K45: '+fmt(data.k45Caisse)+' | Banque K45: '+fmt(data.k45Banque));
   }catch(e){
     console.log('Sauvegarde soldes initiaux:',e.message);
     alert('⚠️ Le solde initial est enregistré sur cet appareil, mais pas encore synchronisé avec Firebase. Réessaie plus tard.');
@@ -2336,12 +2347,6 @@ function renderSoldes(livre){
     const el=document.getElementById(id);
     if(el){el.textContent=fmt(val)+' FCFA';el.className='solval '+(val>=0?'spos':'sneg');}
   };
-  if(livre==='k45'){
-    let k45=0;
-    list.forEach(e=>k45+=(e.es==='E'?1:-1)*(e.montant||0));
-    setEl('k45-sol-total',k45);
-    return;
-  }
   setEl(livre+'-sol-caisse',caisse);
   setEl(livre+'-sol-banque',banque);
   setEl(livre+'-sol-total',tot);
@@ -2356,8 +2361,7 @@ function renderSynth(){
     (GL[livre]||[]).forEach(e=>{const s=e.source||'caisse';const m=e.montant||0;const sg=e.es==='E'?1:-1;if(s==='banque')b+=sg*m;else c+=sg*m;});
     return c+b;
   };
-  const tf=calc('fiang'),ta=calc('anj');
-  let tk45=0;(GL['k45']||[]).forEach(e=>tk45+=(e.es==='E'?1:-1)*(e.montant||0));
+  const tf=calc('fiang'),ta=calc('anj'),tk45=calc('k45');
   const set=(id,v)=>{const el=document.getElementById(id);if(el){el.textContent=fmt(v)+' F';el.style.color=v>=0?'var(--vert)':'var(--rouge)';}};
   set('syn-fiang',tf);set('syn-anj',ta);set('syn-k45',tk45);set('syn-tot',tf+ta);
 }
@@ -2458,7 +2462,7 @@ async function enregistrerK45(){
   const rubrique=document.getElementById('k45-rubrique').value;
   if(!date||!montant||!rubrique){alert('Date, montant et rubrique requis.');return;}
   const rec={
-    date,montant,es:k45ES,source:'k45',
+    date,montant,es:k45ES,source:srcK45,
     page:document.getElementById('k45-page').value||'',
     lettrage:document.getElementById('k45-lettrage').value.toUpperCase()||'',
     rubrique,
@@ -2478,7 +2482,8 @@ async function enregistrerK45(){
     });
     document.getElementById('k45-rubrique').value='';
     setK45ES('E');
-    logModification('creation','Écriture Grand Livre K45 n°'+rec.numero, (rec.libelle||rec.rubrique)+' — '+fmt(montant)+' F');
+    setSrcK45('caisse');
+    logModification('creation','Écriture Grand Livre K45 n°'+rec.numero, (rec.libelle||rec.rubrique)+' — '+fmt(montant)+' F ('+srcK45+')');
     alert('✅ Écriture K45 n°'+rec.numero+' enregistrée !');
   }catch(e){alert('Erreur : '+e.message);}
 }
@@ -2588,16 +2593,30 @@ function buildSheetBanqueAnjarako(){
   return rows;
 }
 
-// Grand Livre K45 (hors budget Fiangonana — dans SIB Rakitra)
+// Grand Livre K45 (hors budget Fiangonana — Caisse)
 function buildSheetK45(){
+  const initC=parseFloat(document.getElementById('k45-init-caisse')?.value)||0;
   const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Entrée','Sortie','Solde']];
-  let solde=0;
-  (GL['k45']||[]).forEach(function(e){
+  rows.push(['',new Date(2026,6,1),'','','Solde initial','',initC,'',initC]);
+  let solde=initC;
+  (GL['k45']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
     rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
-  rows.push([],['','','','','TOTAL','','','',solde]);
+  return rows;
+}
+// Grand Livre K45 — Banque (SIB)
+function buildSheetBanqueK45(){
+  const initB=parseFloat(document.getElementById('k45-init-banque')?.value)||0;
+  const rows=[['N°','Date','Libellé','Rubrique','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
+  let solde=initB;
+  (GL['k45']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
+    const mnt=e.montant||0;const isE=e.es==='E';
+    solde+=isE?mnt:-mnt;
+    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+  });
   return rows;
 }
 
@@ -2606,7 +2625,7 @@ function exporterExcel(livre){
   if(livre==='fiang'){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-    if((GL['k45']||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45');
+    if((GL['k45']||[]).length){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45 Caisse');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueK45()),'K45 Banque');}
   } else {
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
@@ -2618,7 +2637,7 @@ function exporterExcelComplet(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-  if((GL['k45']||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45');
+  if((GL['k45']||[]).length){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45 Caisse');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueK45()),'K45 Banque');}
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');

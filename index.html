@@ -784,9 +784,25 @@
 <div id="gl-tab-k45" style="display:none">
   <div class="note">📙 Livre K45 — Hors budget Fiangonana · Dans SIB Rakitra</div>
 
+  <!-- Soldes initiaux K45 -->
+  <div class="card">
+    <div class="ctit">🏁 Soldes initiaux K45</div>
+    <div class="g2">
+      <div class="ch"><label>💵 Caisse initiale</label>
+        <input type="number" id="k45-init-caisse" value="0" inputmode="numeric" onchange="sauvegarderSoldesInitiaux();renderSoldes('k45');renderSynth()">
+      </div>
+      <div class="ch"><label>🏦 Banque initiale</label>
+        <input type="number" id="k45-init-banque" value="0" inputmode="numeric" onchange="sauvegarderSoldesInitiaux();renderSoldes('k45');renderSynth()">
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:0">💡 À renseigner une seule fois (généralement 0 si le K45 démarre tout neuf).</div>
+  </div>
+
   <div class="card">
     <div class="ctit">💰 Solde K45</div>
-    <div class="solrow"><span class="sollab">📙 K45 (dans SIB Rakitra)</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">💵 Caisse K45</span><span class="solval" id="k45-sol-caisse">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB K45</span><span class="solval" id="k45-sol-banque">0 FCFA</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
   </div>
 
   <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel (Rakitra + K45)</button>
@@ -797,6 +813,10 @@
     <div class="es-toggle">
       <button class="es-btn e actif" id="k45-es-e" onclick="setK45ES('E')">⬆️ Entrée</button>
       <button class="es-btn s" id="k45-es-s" onclick="setK45ES('S')">⬇️ Sortie</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:9px">
+      <button class="src-toggle-btn actif" id="k45-src-caisse" onclick="setSrcK45('caisse',this)">💵 Caisse</button>
+      <button class="src-toggle-btn" id="k45-src-banque" onclick="setSrcK45('banque',this)">🏦 SIB Rakitra</button>
     </div>
     <div class="g2">
       <div class="ch"><label>📅 Date</label><input type="date" id="k45-date"></div>
@@ -879,6 +899,7 @@
         <select id="tr-livre">
           <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
           <option value="anj">📘 Anjarako (SIB Anjarako)</option>
+          <option value="k45">📙 K45 (SIB Rakitra)</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
