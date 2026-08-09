@@ -1551,8 +1551,64 @@ async function chargerRakitraHist(){
   if(document.getElementById('tres-nom')) document.getElementById('tres-nom').value=rak.tresNom||'';
   if(document.getElementById('tres-obs')) document.getElementById('tres-obs').value=rak.tresObs||'';
   if(document.getElementById('observations')) document.getElementById('observations').value=rak.obs||'';
+
+  // Raki-pandraisana : cocher si besoin et restaurer les billets/pièces
+  const toggleRP=document.getElementById('toggle-raki-pandraisana');
+  const avaitRP=!!(rak.rpOn && (rak.totalRP>0 || rak.rpb>0 || rak.rpp>0));
+  if(toggleRP){
+    toggleRP.checked=avaitRP;
+    toggleRakiPandraisana();
+    if(avaitRP){
+      BILLETS.forEach(function(b){
+        const el=document.getElementById('rpb_'+b.v);
+        const found=rak.lrpb?rak.lrpb.find(function(x){return x.v===b.v;}):null;
+        if(el) el.value=found&&found.q>0?found.q:'';
+      });
+      PIECES.forEach(function(p){
+        const el=document.getElementById('rpp_'+p.v);
+        const found=rak.lrpp?rak.lrpp.find(function(x){return x.v===p.v;}):null;
+        if(el) el.value=found&&found.q>0?found.q:'';
+      });
+    }
+  }
+
+  // Raki-pisaorana (offrandes + répartition)
+  document.getElementById('raki-liste').innerHTML='';
+  nRaki=0;
+  (rak.rakis||[]).forEach(function(r){
+    ajouterRaki();
+    const id='raki_'+nRaki;
+    document.getElementById(id+'_m').value=r.montant||'';
+    document.getElementById(id+'_v').value=r.verset||'';
+    document.getElementById(id+'_lignes').innerHTML='';
+    (r.repartition&&r.repartition.length?r.repartition:[{dest:'',montant:0}]).forEach(function(rep){
+      ajouterLigneDest(id);
+      const lid=id+'_l'+nLigne;
+      const selEl=document.getElementById(lid+'_dest');
+      const estConnu=DEST_DEFAUT.includes(rep.dest);
+      if(selEl) selEl.value=estConnu?rep.dest:'Autre';
+      if(!estConnu&&rep.dest){
+        const autreEl=document.getElementById(lid+'_autre');
+        if(autreEl){autreEl.style.display='';autreEl.value=rep.dest;}
+      }
+      const mEl=document.getElementById(lid+'_m');
+      if(mEl) mEl.value=rep.montant||'';
+    });
+    calculerRepartition(id);
+  });
+
+  // Diacres
+  document.getElementById('diacres-grille').innerHTML='';
+  nd=0;
+  if(rak.diacres&&rak.diacres.length){
+    rak.diacres.forEach(function(nom){ ajouterDiacre(nom); });
+  } else {
+    ajouterDiacre(); ajouterDiacre();
+  }
+
   calculerRakitra();
-  alert('✅ Rakitra du '+rak.date+' rechargé — modifie et enregistre.');
+  calculerRaki();
+  alert('✅ Rakitra du '+rak.date+' rechargé en entier (y compris Raki-pandraisana, offrandes et diacres) — vérifie puis enregistre.');
 }
 
 async function chargerAnjHist(){
