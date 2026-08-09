@@ -1380,30 +1380,31 @@ async function ecrireGrandLivreAnj(rec){
   }
 }
 
-// ── LIVRE SÉPARÉ : RAKI-PANDRAISANA 45e ANNIVERSAIRE ────────────
-// Séparation TEMPORAIRE demandée le temps de l'événement : ces montants
-// sont hors budget normal, donc dans leur propre collection Firebase,
-// avec leur propre numérotation. Le total affiché à l'écran (bandeau,
-// message WhatsApp) reste inchangé — il vient directement de la saisie
-// du formulaire, pas de cette collection.
-// À la fin de l'événement : soit on arrête simplement de cocher
-// "Raki-pandraisana" dans le formulaire, soit on demande de retirer
-// complètement cette fonction si elle n'est plus utile.
+// ── RAKI-PANDRAISANA → GRAND LIVRE K45 ──────────────────────────
+// Le Raki-pandraisana est hors budget Fiangonana, donc écrit comme une
+// Entrée dans le Grand Livre K45 (rubrique K45-E1, déjà prévue), qui
+// existe déjà précisément pour ce genre de montant hors budget normal.
+// On tague ces écritures pour ne remplacer que les siennes lors d'une
+// re-saisie du même jour, sans toucher aux écritures K45 manuelles.
 async function ecrireRakiPandraisana45(d){
   if(!_db || !(d.rpOn && d.totalRP>0)) return;
-  const col=_fs.collection(_db,'raki_pandraisana_45eme');
-  const base={date:d.date,page:d.page||'',lettrage:d.lettrage||'',savedAt:new Date().toISOString()};
+  const col=_fs.collection(_db,'grandlivre_k45');
   try{
-    const numero=await prochainNumero('raki_pandraisana_45eme');
+    const numero=await prochainNumero('grandlivre_k45');
     const existing=await _fs.getDocs(col);
     const toDelete=[];
-    existing.forEach(function(ds){if(ds.data().date===d.date)toDelete.push(ds.ref);});
+    existing.forEach(function(ds){if(ds.data().date===d.date&&ds.data().autoRakiPandraisana===true)toDelete.push(ds.ref);});
     const batch=_fs.writeBatch(_db);
     toDelete.forEach(function(ref){batch.delete(ref);});
-    batch.set(_fs.doc(col),{...base,numero,es:'E',libelle:'Raki-pandraisana (45e anniversaire)',montant:d.totalRP});
+    batch.set(_fs.doc(col),{
+      numero,date:d.date,montant:d.totalRP,es:'E',source:'k45',
+      page:d.page||'',lettrage:d.lettrage||'',
+      rubrique:'K45-E1',libelle:'Raki-pandraisana',
+      autoRakiPandraisana:true,savedAt:new Date().toISOString()
+    });
     await batch.commit();
   }catch(e){
-    alert('⚠️ Échec de l\'enregistrement du Raki-pandraisana (45e). Rien n\'a été modifié. Vérifie ta connexion et réessaie.\n\nDétail : '+e.message);
+    alert('⚠️ Échec de l\'enregistrement du Raki-pandraisana dans le Grand Livre K45. Rien n\'a été modifié. Vérifie ta connexion et réessaie.\n\nDétail : '+e.message);
     throw e;
   }
 }
@@ -2188,7 +2189,6 @@ majApercu();
 
 // fmt défini dans les utilitaires Gestion
 let GL={fiang:[],anj:[],k45:[]};
-let RAKIPAND45=[]; // Livre séparé Raki-pandraisana 45e anniversaire (temporaire)
 let obES='S';
 
 // ── AUTH ─────────────────────────────────────────────────────
@@ -2222,12 +2222,6 @@ async function chargerTout(){
       renderSoldes(livre);
     }catch(e){console.log('GL '+livre+':',e.message);}
   }
-  try{
-    const snapRP=await fs.getDocs(fs.collection(db,'raki_pandraisana_45eme'));
-    RAKIPAND45=[];
-    snapRP.forEach(ds=>RAKIPAND45.push({...ds.data(),_id:ds.id}));
-    RAKIPAND45.sort((a,b)=>a.date.localeCompare(b.date));
-  }catch(e){console.log('Raki-pandraisana 45e:',e.message);}
   renderSynth();
 }
 
@@ -2594,16 +2588,16 @@ function buildSheetBanqueAnjarako(){
   return rows;
 }
 
-// Livre séparé Raki-pandraisana 45e anniversaire — hors budget, temporaire
-function buildSheetRakiPandraisana45(){
-  const rows=[['🎉 RAKI-PANDRAISANA — 45e ANNIVERSAIRE (hors budget)'],[],
-    ['N°','Date','Page','Libellé','Montant','Cumul']];
-  let cumul=0;
-  (RAKIPAND45||[]).forEach(function(e){
-    cumul+=e.montant||0;
-    rows.push([e.numero||'',e.date,e.page||'',e.libelle||'',e.montant||0,cumul]);
+// Grand Livre K45 (hors budget Fiangonana — dans SIB Rakitra)
+function buildSheetK45(){
+  const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Entrée','Sortie','Solde']];
+  let solde=0;
+  (GL['k45']||[]).forEach(function(e){
+    const mnt=e.montant||0;const isE=e.es==='E';
+    solde+=isE?mnt:-mnt;
+    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
-  rows.push([],['','','','TOTAL',cumul]);
+  rows.push([],['','','','','TOTAL','','','',solde]);
   return rows;
 }
 
@@ -2612,7 +2606,7 @@ function exporterExcel(livre){
   if(livre==='fiang'){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-    if((RAKIPAND45||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakiPandraisana45()),'Raki-pandraisana 45e');
+    if((GL['k45']||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45');
   } else {
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
@@ -2624,7 +2618,7 @@ function exporterExcelComplet(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-  if((RAKIPAND45||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakiPandraisana45()),'Raki-pandraisana 45e');
+  if((GL['k45']||[]).length) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');
