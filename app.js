@@ -398,7 +398,7 @@ function showVolaTab(tab){
 function showDtab(tab,btn){
   document.querySelectorAll('.dtab').forEach(b=>b.classList.remove('actif'));
   btn.classList.add('actif');
-  ['finances','presences','cultes'].forEach(t=>{
+  ['finances','presences','cultes','historique'].forEach(t=>{
     document.getElementById('dtab-'+t).style.display=t===tab?'':'none';
   });
   if(tab==='finances')  renderDashFinances();
