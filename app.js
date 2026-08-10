@@ -2598,13 +2598,13 @@ async function supprimerEcritureGL(btn){
 // ── EXPORT EXCEL ──────────────────────────────────────────────
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['N°','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push(['',new Date(2026,6,1),'','','Solde initial','','',initC,'',initC]);
+  const rows=[['N°','Date','Page','E/S','Rubriques Budget','Libellé','Commentaires','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'','','','Solde initial','','',initC,initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numero||'',e.date,e.page||'',e.es,e.rubrique||'',e.libelle||'',e.comment||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2625,13 +2625,13 @@ function buildSheetBanqueRakitra(){
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['N°','Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push(['',new Date(2026,6,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  const rows=[['N°','Date','Page','Libellé','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'','Solde initial caisse+banque','',initC+initB,initC+initB]);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numero||'',e.date,e.page||'',e.libelle||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2652,13 +2652,13 @@ function buildSheetBanqueAnjarako(){
 // Grand Livre K45 (hors budget Fiangonana — Caisse)
 function buildSheetK45(){
   const initC=parseFloat(document.getElementById('k45-init-caisse')?.value)||0;
-  const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Entrée','Sortie','Solde']];
-  rows.push(['',new Date(2026,6,1),'','','Solde initial','',initC,'',initC]);
+  const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,6,1),'','','Solde initial','','',initC,initC]);
   let solde=initC;
   (GL['k45']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
