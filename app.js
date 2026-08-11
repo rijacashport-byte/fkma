@@ -1310,7 +1310,7 @@ function exporterExcelDepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);const wb=XLSX.utils.book_new();
   const rows=[['VOLA MIVAOKA — '+(livre==='fiang'?'FIANGONANA':'ANJARAKO')],[],
     ['N°','Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
-  all.forEach(d=>rows.push([d.numero||'',d.date,d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
+  all.forEach(d=>rows.push([d.numero||'',fmtDateExcel(d.date),d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
   rows.push([],[,,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:6},{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
@@ -1800,6 +1800,45 @@ const CATEGORIES_BUDGET = {
   "C6.5":"Prise en charge sanitaire Mpitandrina",
   "C6.6":"Tranokala www.fkma.ci",
   "C7.1":"Raki-pisaorana & fanomezana"
+};
+
+// ── BUDGET 2026 (TETIBOLA) ───────────────────────────────────────
+// Montants approuvés, repris du fichier TETIBOLA_FKMA_2026 fourni.
+// Sous-codes fusionnés dans leur code parent (ex: C6.1.1 → C6.1).
+// Montants absents du fichier d'origine mis à 0 (à confirmer plus tard).
+const BUDGET_2026_ENTREES = {
+  "B1.1":{libelle:"Rakitra alahady \"tsotra\"",budget:7260000},
+  "B1.2":{libelle:"Rakitra alitara",budget:900000},
+  "B2":{libelle:"Raki-pisaorana & fanomezana ary fara-rakitra",budget:700000},
+  "B3":{libelle:"Rakitra samihafa",budget:450000},
+  "B4":{libelle:"Rakitra Herinandro Masina, Andro Fiakarana ary Krismasy",budget:350000},
+  "B5":{libelle:"Hetsika farimbona",budget:0},
+  "B6":{libelle:"Rakitra 26 jona",budget:0},
+  "B7":{libelle:"Fanampiana manokana rakitra",budget:150000},
+  "B8":{libelle:"SAMUEL / CENTENAIRE EM-CI",budget:0}
+};
+const BUDGET_2026_DEPENSES = {
+  "C1.1":{libelle:CATEGORIES_BUDGET["C1.1"],budget:600000},
+  "C1.2":{libelle:CATEGORIES_BUDGET["C1.2"],budget:1080000},
+  "C2.1":{libelle:CATEGORIES_BUDGET["C2.1"],budget:500000},
+  "C3.1":{libelle:CATEGORIES_BUDGET["C3.1"],budget:250000},
+  "C3.2":{libelle:CATEGORIES_BUDGET["C3.2"]+" (+ TAFO EM-CI)",budget:1600000},
+  "C3.3":{libelle:CATEGORIES_BUDGET["C3.3"],budget:0},
+  "C4.1":{libelle:CATEGORIES_BUDGET["C4.1"],budget:500000},
+  "C4.2":{libelle:CATEGORIES_BUDGET["C4.2"],budget:800000},
+  "C4.3":{libelle:CATEGORIES_BUDGET["C4.3"],budget:200000},
+  "C4.4":{libelle:CATEGORIES_BUDGET["C4.4"],budget:360000},
+  "C5.1":{libelle:CATEGORIES_BUDGET["C5.1"],budget:900000},
+  "C5.2":{libelle:CATEGORIES_BUDGET["C5.2"],budget:200000},
+  "C5.3":{libelle:CATEGORIES_BUDGET["C5.3"],budget:1350000},
+  "C5.4.1":{libelle:CATEGORIES_BUDGET["C5.4.1"],budget:300000},
+  "C5.5":{libelle:CATEGORIES_BUDGET["C5.5"],budget:0},
+  "C6.1":{libelle:CATEGORIES_BUDGET["C6.1"],budget:0},
+  "C6.2":{libelle:CATEGORIES_BUDGET["C6.2"],budget:80000},
+  "C6.3":{libelle:CATEGORIES_BUDGET["C6.3"],budget:65000},
+  "C6.5":{libelle:CATEGORIES_BUDGET["C6.5"],budget:600000},
+  "C6.6":{libelle:CATEGORIES_BUDGET["C6.6"],budget:35000},
+  "C7.1":{libelle:CATEGORIES_BUDGET["C7.1"],budget:0}
 };
 
 // Liste des comptes (nom, rôle, libellé) — chargée depuis Firebase (collection "roles"),
@@ -2596,15 +2635,71 @@ async function supprimerEcritureGL(btn){
 }
 
 // ── EXPORT EXCEL ──────────────────────────────────────────────
+// Convertit une date "AAAA-MM-JJ" (format Firebase) en texte "JJ/MM/AAAA" pour Excel
+function fmtDateExcel(dateStr){
+  if(!dateStr) return '';
+  const parts=String(dateStr).split('-');
+  if(parts.length!==3) return dateStr;
+  const [y,m,d]=parts;
+  return d+'/'+m+'/'+y;
+}
+
+// ── FEUILLE BUDGET (TETIBOLA) — se met à jour automatiquement ──
+// Calcule le "Réalisé" en additionnant les vraies écritures du Grand
+// Livre Fiangonana (grandlivre_fiang) par rubrique, à chaque export.
+function buildSheetBudget(){
+  const rows=[['🎯 SUIVI BUDGET 2026 (TETIBOLA) — mis à jour au '+fmtDateExcel(new Date().toISOString().slice(0,10))],[],
+    ['Code','Libellé','Budget 2026','Réalisé','Écart','%']];
+
+  function realise(code, sensAttendu){
+    let tot=0;
+    (GL['fiang']||[]).forEach(function(e){
+      if(e.rubrique===code && e.es===sensAttendu) tot+=e.montant||0;
+    });
+    return tot;
+  }
+
+  let totBudgetE=0,totRealiseE=0,totBudgetS=0,totRealiseS=0;
+
+  rows.push(['MIDITRA (Entrées)','','','','','']);
+  Object.keys(BUDGET_2026_ENTREES).forEach(function(code){
+    const info=BUDGET_2026_ENTREES[code];
+    const r=realise(code,'E');
+    const ecart=info.budget-r;
+    const pct=info.budget?Math.round((r/info.budget)*100):(r>0?'—':0);
+    totBudgetE+=info.budget; totRealiseE+=r;
+    rows.push([code,info.libelle,info.budget,r,ecart,pct===0?0:(pct+'%')]);
+  });
+  rows.push(['B','TOTALY MIDITRA',totBudgetE,totRealiseE,totBudgetE-totRealiseE,
+    totBudgetE?Math.round((totRealiseE/totBudgetE)*100)+'%':'']);
+  rows.push([],[]);
+
+  rows.push(['MIVOAKA (Dépenses)','','','','','']);
+  Object.keys(BUDGET_2026_DEPENSES).forEach(function(code){
+    const info=BUDGET_2026_DEPENSES[code];
+    const r=realise(code,'S');
+    const ecart=info.budget-r;
+    const pct=info.budget?Math.round((r/info.budget)*100):(r>0?'—':0);
+    totBudgetS+=info.budget; totRealiseS+=r;
+    rows.push([code,info.libelle,info.budget,r,ecart,pct===0?0:(pct+'%')]);
+  });
+  rows.push(['C','TOTALY MIVOAKA',totBudgetS,totRealiseS,totBudgetS-totRealiseS,
+    totBudgetS?Math.round((totRealiseS/totBudgetS)*100)+'%':'']);
+  rows.push([]);
+  rows.push(['','SOLDE (Entrées − Dépenses)',totBudgetE-totBudgetS,totRealiseE-totRealiseS,'','']);
+
+  return rows;
+}
+
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['N°','Date','Page','E/S','Rubriques Budget','Libellé','Commentaires','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'','','','Solde initial','','',initC,initC]);
+  const rows=[['N°','Date','Page','E/S','Rubriques Budget','Libellé','Commentaires','Entrée','Sortie','Solde']];
+  rows.push(['',fmtDateExcel('2026-07-01'),'','','','Solde initial','','',initC,initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.es,e.rubrique||'',e.libelle||'',e.comment||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.page||'',e.es,e.rubrique||'',e.libelle||'',e.comment||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
@@ -2612,12 +2707,12 @@ function buildSheetRakitra(){
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
   const rows=[['N°','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
+  rows.push(['',fmtDateExcel('2026-07-01'),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2625,13 +2720,13 @@ function buildSheetBanqueRakitra(){
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['N°','Date','Page','Libellé','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'','Solde initial caisse+banque','',initC+initB,initC+initB]);
+  const rows=[['N°','Date','Page','Libellé','Entrée','Sortie','Solde']];
+  rows.push(['',fmtDateExcel('2026-07-01'),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.libelle||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
@@ -2639,12 +2734,12 @@ function buildSheetAnjarako(){
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
   const rows=[['N°','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
+  rows.push(['',fmtDateExcel('2026-07-01'),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2652,13 +2747,13 @@ function buildSheetBanqueAnjarako(){
 // Grand Livre K45 (hors budget Fiangonana — Caisse)
 function buildSheetK45(){
   const initC=parseFloat(document.getElementById('k45-init-caisse')?.value)||0;
-  const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'','','Solde initial','','',initC,initC]);
+  const rows=[['N°','Date','Page','E/S','Libellé','Rubrique','Entrée','Sortie','Solde']];
+  rows.push(['',fmtDateExcel('2026-07-01'),'','','Solde initial','','',initC,initC]);
   let solde=initC;
   (GL['k45']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.page||'',e.es,e.libelle||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
@@ -2666,12 +2761,12 @@ function buildSheetK45(){
 function buildSheetBanqueK45(){
   const initB=parseFloat(document.getElementById('k45-init-banque')?.value)||0;
   const rows=[['N°','Date','Libellé','Rubrique','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,6,1),'Solde initial','','','',initB]);
+  rows.push(['',fmtDateExcel('2026-07-01'),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['k45']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numero||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numero||'',fmtDateExcel(e.date),e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -2679,6 +2774,7 @@ function buildSheetBanqueK45(){
 function exporterExcel(livre){
   const wb=XLSX.utils.book_new();
   if(livre==='fiang'){
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBudget()),'Budget 2026');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
     if((GL['k45']||[]).length){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45 Caisse');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueK45()),'K45 Banque');}
@@ -2691,6 +2787,7 @@ function exporterExcel(livre){
 
 function exporterExcelComplet(){
   const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBudget()),'Budget 2026');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
   if((GL['k45']||[]).length){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetK45()),'K45 Caisse');XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueK45()),'K45 Banque');}
