@@ -1166,6 +1166,67 @@ async function ajouterDepense(livre){
     alert('✅ Dépense n°'+numeroDep+' enregistrée !');
   }
 }
+// ── MODIFIER UNE DÉPENSE EXISTANTE ───────────────────────────
+// Corrige une dépense déjà enregistrée (date, montant, catégorie,
+// description, pièce, page) sans la supprimer — garde son numéro.
+// Répare aussi automatiquement l'écriture liée dans le Grand Livre
+// Fiangonana, pour que les deux restent toujours cohérents.
+async function modifierDepense(id){
+  const dep=load(SK_DEP);
+  const d=dep.find(x=>x.id===id);
+  if(!d){alert('Dépense introuvable.');return;}
+
+  const date=prompt('Date (AAAA-MM-JJ) :',d.date||'');
+  if(date===null)return;
+  const montant=prompt('Montant (FCFA) :',d.montant||0);
+  if(montant===null)return;
+  const cat=prompt('Rubrique budget (ex: C4.4) :',d.cat||'');
+  if(cat===null)return;
+  const desc=prompt('Description :',d.desc||'');
+  if(desc===null)return;
+  const piece=prompt('N° Pièce :',d.piece||'');
+  if(piece===null)return;
+  const page=prompt('N° Page :',d.page||'');
+  if(page===null)return;
+
+  d.date=date; d.montant=parseInt(montant)||0; d.cat=cat.trim();
+  d.desc=desc.trim(); d.piece=piece.trim(); d.page=page;
+  save(SK_DEP,dep);
+
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(_db){
+    try{
+      // Mettre à jour le document "depenses"
+      const colDep=_fs.collection(_db,'depenses');
+      const snapDep=await _fs.getDocs(colDep);
+      let refDep=null;
+      snapDep.forEach(function(ds){if(ds.data().id===id)refDep=ds.ref;});
+      if(refDep) await _fs.updateDoc(refDep,d);
+
+      // Réparer l'écriture liée dans le Grand Livre Fiangonana (si elle existe)
+      if(d.livre==='fiang'){
+        const colGL=_fs.collection(_db,'grandlivre_fiang');
+        const snapGL=await _fs.getDocs(colGL);
+        let refGL=null;
+        snapGL.forEach(function(ds){if(ds.data().depenseId===id)refGL=ds.ref;});
+        if(refGL){
+          await _fs.updateDoc(refGL,{
+            date:d.date,montant:d.montant,
+            rubrique:d.cat||'DEP',
+            libelle:d.desc||CATEGORIES_BUDGET[d.cat]||d.cat||'Dépense',
+            piece:d.piece,page:d.page
+          });
+        }
+      }
+      logModification('modification','Dépense n°'+(d.numero||'?')+' modifiée', (d.desc||d.cat)+' — '+fmt(d.montant)+' F');
+      alert('✅ Dépense n°'+(d.numero||'?')+' corrigée (Grand Livre mis à jour aussi).');
+    }catch(e){
+      alert('⚠️ Corrigé sur cet appareil, mais pas envoyé à Firebase. Vérifie ta connexion et réessaie.\n\nDétail : '+e.message);
+    }
+  }
+  afficherDepenses(d.livre);
+}
+
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
   const depAvant=load(SK_DEP).find(d=>d.id===id);
@@ -1196,6 +1257,7 @@ function afficherDepenses(livre){
       <span style="font-size:11px;color:var(--texte2)">${d.numero?'n°'+d.numero+' · ':''}${d.date}</span>
       <span class="depense-cat">${d.cat||'—'}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
+      <button onclick="modifierDepense(${d.id})" style="background:none;border:none;color:var(--bleu);cursor:pointer;font-size:15px">✏️</button>
       <button onclick="supprimerDepense(${d.id})" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
     </div>
         <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${d.page}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${d.piece}</span>`:''}</div>
