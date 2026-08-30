@@ -1579,6 +1579,9 @@ function appliquerRole(role){
   // Cacher tout par défaut
   if(tabOps) tabOps.style.display='none';
 
+  // Le sous-onglet "Suivi paiements" (Anjarako) n'est visible que pour la Secrétaire et le Diacre
+  updateSuiviAnjVisibility(role);
+
   if(role==='diacre_journal'){
     // Nataly — Journal K45 seulement
     if(tabGest) tabGest.style.display='none';
@@ -1620,13 +1623,28 @@ function appliquerRole(role){
     if(tabGL)   tabGL.style.display='';
     if(tabOps)  tabOps.style.display=''; // Opérations visibles
     showMain('gest', tabGest);
-    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); }
+    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerMembresAnj(); chargerTout(); }
     return;
   }
 
   // Défaut
   showMain('gest', tabGest);
   if(window._db){ chargerDepenses(); chargerAnjarako(); }
+}
+
+// ── VISIBILITÉ "SUIVI PAIEMENTS" ANJARAKO — Secrétaire + Diacre uniquement ──
+function updateSuiviAnjVisibility(role){
+  const btn = document.getElementById('anj-sec-btn-suivi');
+  if(!btn) return;
+  const autorise = (role==='secretaire' || role==='diacre');
+  btn.style.display = autorise ? '' : 'none';
+  if(!autorise){
+    // Si on était sur le Suivi paiements, on revient à la saisie du jour
+    const secU = document.getElementById('anj-section-suivi');
+    if(secU && secU.style.display!=='none'){
+      showAnjSection('saisie');
+    }
+  }
 }
 
 window.addEventListener('fb-ready', function(){
