@@ -1729,7 +1729,7 @@ function lireJSON(inp){
       if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
       if(data.membres)  msg += '  👥 Membres  : ' + data.membres.length  + ' entrée(s)\n';
       if(data.depenses) msg += '  💸 Dépenses : ' + data.depenses.length + ' entrée(s)\n';
-      msg += NL+'⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).'+NL+'Continuer ?';
+      msg += '\n⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).\nContinuer ?';
       if(!confirm(msg)) return;
       // Fusionner sans doublons (clé = date)
       function fusionner(sk, nouv, cle){
