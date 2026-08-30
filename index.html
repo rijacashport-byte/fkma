@@ -830,7 +830,10 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   <div class="card">
     <div class="card-titre">
       <span>👥 Membres Anjarako</span>
-      <span id="mb-count" style="background:var(--vert);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <span id="mb-count" style="background:var(--vert);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
+        <button type="button" id="mb-toggle-btn" onclick="toggleListeAnj('liste-membres-anj', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
+      </span>
     </div>
     <div class="grid2" style="margin-bottom:9px">
       <div class="champ">
@@ -866,10 +869,16 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       <div id="suivi-bar" class="pct-fill" style="width:0%"></div>
     </div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--rouge);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">❌ N'ont pas encore payé</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:11px;font-weight:700;color:var(--rouge);text-transform:uppercase;letter-spacing:.4px">❌ N'ont pas encore payé</span>
+      <button type="button" onclick="toggleListeAnj('liste-impayes', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
+    </div>
     <div id="liste-impayes"></div>
 
-    <div style="font-size:11px;font-weight:700;color:var(--vert);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px">✅ Ont payé</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px">
+      <span style="font-size:11px;font-weight:700;color:var(--vert);text-transform:uppercase;letter-spacing:.4px">✅ Ont payé</span>
+      <button type="button" onclick="toggleListeAnj('liste-payes', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
+    </div>
     <div id="liste-payes"></div>
 
     <button class="btn btn-wa btn-full" style="margin-top:10px" onclick="partagerImpayesWA()"><span>💬</span> Partager la liste des impayés</button>
@@ -2441,6 +2450,15 @@ function showAnjSection(section){
     renderSuiviMois();
     renderSyntheseMensuelleAnj();
   }
+}
+
+// -- Réduire / afficher une liste (membres, payés, impayés) --
+function toggleListeAnj(id, btn){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const estReduit=el.style.display==='none';
+  el.style.display=estReduit?'':'none';
+  if(btn)btn.textContent=estReduit?'▾ Réduire':'▸ Afficher';
 }
 
 // -- Membres --
