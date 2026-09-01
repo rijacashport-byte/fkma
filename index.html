@@ -846,6 +846,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       </div>
     </div>
     <button class="btn-add-item" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter le membre</button>
+    <button class="btn btn-gris btn-full" style="margin-top:8px" onclick="resynchroniserMembresAnj()"><span>🔄</span> Resynchroniser vers Firebase</button>
     <div id="liste-membres-anj" style="margin-top:10px"></div>
   </div>
 
@@ -2547,6 +2548,28 @@ async function chargerMembresAnj(){
     save(SK_ANJ_M,membres);
     renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();
   }catch(e){console.log('Erreur chargement membres anjarako:',e.message);}
+}
+
+// Renvoie vers Firebase les membres présents en local mais jamais confirmés côté serveur
+// (utile si un import a échoué silencieusement à cause des permissions Firestore)
+async function resynchroniserMembresAnj(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('❌ Non connecté à Firebase pour le moment. Réessayez dans quelques secondes.');return;}
+  const membres=load(SK_ANJ_M);
+  const aEnvoyer=membres.filter(m=>!m._id);
+  if(!aEnvoyer.length){alert('✅ Tous les membres sont déjà synchronisés avec Firebase.');return;}
+  if(!confirm('Envoyer '+aEnvoyer.length+' membre(s) vers Firebase ?'))return;
+  let ok=0, echec=0;
+  for(const rec of aEnvoyer){
+    try{
+      const ref=await _fs.addDoc(_fs.collection(_db,'anj_membres'),{num:rec.num,nom:rec.nom||'',actif:rec.actif!==false});
+      const arr=load(SK_ANJ_M);const idx=arr.findIndex(x=>x.num===rec.num);
+      if(idx>=0){arr[idx]._id=ref.id;save(SK_ANJ_M,arr);}
+      ok++;
+    }catch(e){echec++;console.log('Erreur resync membre',rec.num,':',e.message);}
+  }
+  renderMembresAnj();
+  alert('✅ '+ok+' membre(s) envoyé(s) vers Firebase.'+(echec?(' ⚠️ '+echec+' échec(s) — vérifiez les règles Firestore.'):''));
 }
 
 // -- Qui a payé pour un mois donné --
