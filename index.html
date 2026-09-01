@@ -795,6 +795,42 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div id="liste-enveloppes"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div></div>
   </div>
 
+  <div class="card" style="border-left:4px solid var(--violet)">
+    <div class="card-titre" style="color:var(--violet)">
+      <span>💰 Montants des enveloppes (valopy)</span>
+      <span id="valopy-count" style="background:var(--violet);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
+    </div>
+    <div style="font-size:11px;color:var(--texte2);margin-bottom:10px">
+      🔒 Anonyme — non relié aux numéros de carte, juste pour compter les montants reçus dans chaque enveloppe.
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <button type="button" onclick="ajouterValopy(5000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">5 000 F</button>
+      <button type="button" onclick="ajouterValopy(10000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">10 000 F</button>
+      <button type="button" onclick="ajouterValopy(15000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">15 000 F</button>
+      <button type="button" onclick="ajouterValopy(20000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">20 000 F</button>
+      <button type="button" onclick="ajouterValopy(25000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">25 000 F</button>
+      <button type="button" onclick="ajouterValopy(30000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">30 000 F</button>
+    </div>
+
+    <div class="grid2" style="margin-bottom:9px">
+      <div class="champ">
+        <label>✏️ Autre montant (FCFA)</label>
+        <input type="number" id="valopy-perso" min="1" placeholder="Ex: 7500" inputmode="numeric" onkeydown="if(event.key==='Enter'){event.preventDefault();ajouterValopyPerso();}">
+      </div>
+      <div class="champ" style="display:flex;align-items:flex-end">
+        <button class="btn btn-or btn-full" onclick="ajouterValopyPerso()" type="button"><span>➕</span> Ajouter</button>
+      </div>
+    </div>
+
+    <div id="liste-valopy" style="margin-top:6px"></div>
+
+    <div style="background:var(--gris1);border-radius:8px;padding:8px 12px;margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--violet)">Total valopy</span>
+      <span style="font-size:16px;font-weight:700;color:var(--violet)" id="valopy-total-affiche">0 FCFA</span>
+    </div>
+  </div>
+
   <div class="card" style="border-left:4px solid var(--orange)">
     <div class="card-titre" style="color:var(--orange)">📊 Objectifs mensuels (cumul)</div>
     <div class="grid2" style="margin-bottom:10px">
@@ -1740,7 +1776,7 @@ function showGestTab(tab, btn){
     if(el) el.style.display=t===tab?'':'none';
   });
   if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();}
-  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
+  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();afficherValopyJour();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
 
@@ -2359,6 +2395,49 @@ function pickSug(id,nom){document.getElementById(id).value=nom;hideSug(id);}
 
 // ── ANJARAKO ─────────────────────────────────────────────────
 let enveloppesJour=[];
+let valopyJour=[];
+
+// -- Montants des enveloppes (valopy) — anonyme, non relié aux cartes --
+function ajouterValopy(montant){
+  montant=parseInt(montant);
+  if(!montant||montant<=0)return;
+  valopyJour.push(montant);
+  afficherValopyJour();
+}
+function ajouterValopyPerso(){
+  const inp=document.getElementById('valopy-perso');
+  const val=parseInt(inp.value);
+  if(!val||val<=0){alert('Veuillez saisir un montant valide.');return;}
+  ajouterValopy(val);
+  inp.value='';
+  inp.focus();
+}
+function retirerValopy(montant){
+  const idx=valopyJour.lastIndexOf(montant);
+  if(idx>=0)valopyJour.splice(idx,1);
+  afficherValopyJour();
+}
+function afficherValopyJour(){
+  const compte={};
+  valopyJour.forEach(function(v){compte[v]=(compte[v]||0)+1;});
+  const montantsTries=Object.keys(compte).map(Number).sort((a,b)=>b-a);
+  const cntEl=document.getElementById('valopy-count');
+  if(cntEl)cntEl.textContent=valopyJour.length;
+  const total=valopyJour.reduce((a,b)=>a+b,0);
+  const totEl=document.getElementById('valopy-total-affiche');
+  if(totEl)totEl.textContent=fmt(total)+' FCFA';
+  const el=document.getElementById('liste-valopy');
+  if(!el)return;
+  if(!montantsTries.length){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:12px;font-size:13px">Aucune enveloppe comptée</div>';return;}
+  el.innerHTML=montantsTries.map(function(m){
+    return `<div class="env-item">
+      <div class="env-badge" style="background:var(--violet)">×${compte[m]}</div>
+      <div style="flex:1;font-size:13px;font-weight:600">${fmt(m)} FCFA</div>
+      <div style="font-size:12px;color:var(--texte2);margin-right:8px">= ${fmt(m*compte[m])} F</div>
+      <button class="env-del" onclick="retirerValopy(${m})" type="button">−1</button>
+    </div>`;
+  }).join('');
+}
 
 function rechercherCarte(val){
   const sug=document.getElementById('carte-sug');
@@ -2448,7 +2527,7 @@ async function enregistrerAnjarako(){
   if(!date){alert('Veuillez renseigner la date.');return;}
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
-  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
+  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode,valopy:[...valopyJour]};
   const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
@@ -2469,10 +2548,11 @@ async function enregistrerAnjarako(){
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
   enveloppesJour=[];
+  valopyJour=[];
   document.getElementById('anj-total').value='';
   document.getElementById('env-carte').value='';
   document.getElementById('carte-preview').style.display='none';
-  afficherEnveloppesJour();mettreAJourBannerAnj();
+  afficherEnveloppesJour();mettreAJourBannerAnj();afficherValopyJour();
 }
 
 // ── SUIVI DES PAIEMENTS ANJARAKO ──────────────────────────────
@@ -3256,6 +3336,8 @@ async function chargerAnjHist(){
   if(totalInp) totalInp.value=anj.total||'';
   enveloppesJour=[...(anj.enveloppes||[])];
   afficherEnveloppesJour();
+  valopyJour=[...(anj.valopy||[])];
+  afficherValopyJour();
   alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
 }
 // ── DASHBOARD ────────────────────────────────────────────────
