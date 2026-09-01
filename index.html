@@ -897,6 +897,45 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <button class="btn btn-excel btn-full" style="margin-top:10px" onclick="exporterSyntheseMensuelleAnj()"><span>📊</span> Exporter Excel</button>
   </div>
 
+  <div class="card">
+    <div class="card-titre">📈 Évolution annuelle Anjarako</div>
+    <div class="grid2" style="margin-bottom:9px">
+      <div class="champ">
+        <label>📅 Année</label>
+        <select id="evo-annee" onchange="renderEvolutionAnnuelleAnj()"></select>
+      </div>
+      <div class="champ">
+        <label>📐 Indicateur</label>
+        <select id="evo-indicateur" onchange="renderEvolutionAnnuelleAnj()">
+          <option value="nbEnv">Nombre d'enveloppes</option>
+          <option value="total">Total collecté (FCFA)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="total-banner vert">
+      <div class="total-label">Sur l'année sélectionnée</div>
+      <div class="total-montant" id="evo-total">0</div>
+      <div class="subtotaux">
+        <div class="st-col"><div class="st-val" id="evo-moyenne">0</div><div class="st-lab">Moyenne mensuelle</div></div>
+        <div class="st-col"><div class="st-val" id="evo-mois-ecoules">0</div><div class="st-lab">Mois écoulés</div></div>
+        <div class="st-col"><div class="st-val" id="evo-mois-max">—</div><div class="st-lab">Meilleur mois</div></div>
+      </div>
+    </div>
+
+    <div id="evo-chart-wrap" style="margin-top:12px;overflow-x:auto"></div>
+
+    <table class="tbl" style="margin-top:12px">
+      <thead><tr id="evo-thead-mois"></tr></thead>
+      <tbody><tr id="evo-tbody-valeurs"></tr></tbody>
+    </table>
+
+    <div style="font-size:10px;color:var(--texte2);margin-top:8px;line-height:1.5">
+      💡 « Moyenne mensuelle » ne compte que les mois déjà écoulés (les mois futurs à 0 ne sont pas inclus dans le calcul).
+    </div>
+    <button class="btn btn-excel btn-full" style="margin-top:10px" onclick="exporterEvolutionAnnuelleAnj()"><span>📊</span> Exporter Excel</button>
+  </div>
+
 </div><!-- /anj-section-suivi -->
 
 </div><!-- /anjarako -->
@@ -2450,6 +2489,7 @@ function showAnjSection(section){
     if(mInp && !mInp.value) mInp.value=moisActuel();
     renderSuiviMois();
     renderSyntheseMensuelleAnj();
+    renderEvolutionAnnuelleAnj();
   }
 }
 
@@ -2680,6 +2720,97 @@ function exporterSyntheseMensuelleAnj(){
   const ws=XLSX.utils.aoa_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb,ws,'Synthese Anjarako');
   XLSX.writeFile(wb,'FKMA_Anjarako_Synthese_Mensuelle.xlsx');
+}
+
+// -- Évolution annuelle (mois par mois, Janvier → Décembre) --
+const MOIS_ABBR=['Janv','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+function remplirSelectAnneesAnj(){
+  const sel=document.getElementById('evo-annee');
+  if(!sel)return;
+  const {parMois}=calculerSyntheseMensuelleAnj();
+  const annees=new Set(Object.keys(parMois).map(mo=>mo.slice(0,4)));
+  annees.add(String(new Date().getFullYear()));
+  const listeAnnees=Array.from(annees).sort().reverse();
+  const valeurActuelle=sel.value;
+  sel.innerHTML=listeAnnees.map(a=>`<option value="${a}">${a}</option>`).join('');
+  sel.value=listeAnnees.includes(valeurActuelle)?valeurActuelle:listeAnnees[0];
+}
+
+function renderEvolutionAnnuelleAnj(){
+  const selA=document.getElementById('evo-annee');
+  if(!selA)return;
+  if(!selA.options.length) remplirSelectAnneesAnj();
+  const annee=selA.value||String(new Date().getFullYear());
+  const indicateur=document.getElementById('evo-indicateur').value; // 'nbEnv' ou 'total'
+  const {parMois}=calculerSyntheseMensuelleAnj();
+
+  const valeurs=[];
+  for(let m=1;m<=12;m++){
+    const cle=annee+'-'+String(m).padStart(2,'0');
+    const d=parMois[cle]||{total:0,nbEnv:0};
+    valeurs.push(indicateur==='total'?d.total:d.nbEnv);
+  }
+
+  const auj=new Date();
+  const anneeActuelle=auj.getFullYear();
+  const moisEcoules = (parseInt(annee)<anneeActuelle) ? 12 : (parseInt(annee)===anneeActuelle ? (auj.getMonth()+1) : 0);
+  const valeursEcoulees=valeurs.slice(0,moisEcoules).filter(v=>v>0 || moisEcoules>0);
+  const totalAnnee=valeurs.reduce((a,b)=>a+b,0);
+  const moyenne = moisEcoules>0 ? Math.round(valeurs.slice(0,moisEcoules).reduce((a,b)=>a+b,0)/moisEcoules) : 0;
+
+  let idxMax=-1, max=-1;
+  valeurs.forEach((v,i)=>{ if(v>max){max=v;idxMax=i;} });
+
+  const suffixe = indicateur==='total' ? ' F' : '';
+  document.getElementById('evo-total').innerHTML = fmt(totalAnnee)+'<span>'+suffixe+'</span>';
+  document.getElementById('evo-moyenne').textContent = fmt(moyenne)+suffixe;
+  document.getElementById('evo-mois-ecoules').textContent = moisEcoules;
+  document.getElementById('evo-mois-max').textContent = (max>0) ? (MOIS_ABBR[idxMax]+' ('+fmt(max)+suffixe+')') : '—';
+
+  // Graphique SVG simple (barres)
+  const largeur=760, hauteur=200, marge=28, largeurBarre=(largeur-marge*2)/12*0.62;
+  const maxEch = Math.max(1, ...valeurs);
+  const y0=hauteur-24;
+  let barres='', labels='';
+  for(let i=0;i<12;i++){
+    const x = marge + i*((largeur-marge*2)/12) + ((largeur-marge*2)/12 - largeurBarre)/2;
+    const h = valeurs[i]>0 ? Math.max(2, (valeurs[i]/maxEch)*(hauteur-56)) : 0;
+    const y = y0-h;
+    const couleur = i===idxMax && max>0 ? 'var(--or)' : 'var(--vert)';
+    barres += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${largeurBarre.toFixed(1)}" height="${h.toFixed(1)}" fill="${couleur}" rx="3"></rect>`;
+    if(valeurs[i]>0){
+      barres += `<text x="${(x+largeurBarre/2).toFixed(1)}" y="${(y-4).toFixed(1)}" font-size="9" text-anchor="middle" fill="var(--texte)">${fmt(valeurs[i])}</text>`;
+    }
+    labels += `<text x="${(x+largeurBarre/2).toFixed(1)}" y="${hauteur-8}" font-size="10" text-anchor="middle" fill="var(--texte2)">${MOIS_ABBR[i]}</text>`;
+  }
+  const svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%;height:auto;min-width:600px">
+    <line x1="${marge}" y1="${y0}" x2="${largeur-marge}" y2="${y0}" stroke="var(--gris2)" stroke-width="1"></line>
+    ${barres}${labels}
+  </svg>`;
+  document.getElementById('evo-chart-wrap').innerHTML = svg;
+
+  // Tableau récap sous le graphique
+  document.getElementById('evo-thead-mois').innerHTML = '<th>Indicateur</th>'+MOIS_ABBR.map(m=>`<th>${m}</th>`).join('')+'<th>Total</th>';
+  document.getElementById('evo-tbody-valeurs').innerHTML = `<td>${indicateur==='total'?'Total (F)':'Enveloppes'}</td>`+valeurs.map(v=>`<td>${fmt(v)}</td>`).join('')+`<td><b>${fmt(totalAnnee)}</b></td>`;
+}
+
+function exporterEvolutionAnnuelleAnj(){
+  const annee=document.getElementById('evo-annee').value;
+  const {parMois}=calculerSyntheseMensuelleAnj();
+  const rows=[['Année '+annee,'Nombre d\'enveloppes','Total collecté (FCFA)']];
+  let totEnv=0, totMontant=0;
+  for(let m=1;m<=12;m++){
+    const cle=annee+'-'+String(m).padStart(2,'0');
+    const d=parMois[cle]||{total:0,nbEnv:0};
+    rows.push([MOIS_FR[m-1],d.nbEnv,d.total]);
+    totEnv+=d.nbEnv; totMontant+=d.total;
+  }
+  rows.push(['TOTAL',totEnv,totMontant]);
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'Evolution '+annee);
+  XLSX.writeFile(wb,'FKMA_Anjarako_Evolution_'+annee+'.xlsx');
 }
 
 
