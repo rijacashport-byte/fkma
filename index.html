@@ -2911,7 +2911,7 @@ function renderEvolutionAnnuelleAnj(){
     }
     labels += `<text x="${(x+largeurBarre/2).toFixed(1)}" y="${hauteur-8}" font-size="10" text-anchor="middle" fill="var(--texte2)">${MOIS_ABBR[i]}</text>`;
   }
-  const svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" style="width:100%;height:auto;min-width:600px">
+  const svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" width="${largeur}" height="${hauteur}" preserveAspectRatio="xMinYMid meet" style="display:block;width:100%;max-width:100%;height:auto;min-width:600px">
     <line x1="${marge}" y1="${y0}" x2="${largeur-marge}" y2="${y0}" stroke="var(--gris2)" stroke-width="1"></line>
     ${barres}${labels}
   </svg>`;
