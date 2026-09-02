@@ -518,7 +518,10 @@ body.role-controleur .nav-btn:nth-child(3),
 body.role-controleur .nav-btn:nth-child(4),
 body.role-vomieran .nav-btn:nth-child(1),
 body.role-vomieran .nav-btn:nth-child(3),
-body.role-vomieran .nav-btn:nth-child(4) { display: none !important; }
+body.role-vomieran .nav-btn:nth-child(4),
+body.role-diacre_journal .nav-btn:nth-child(2),
+body.role-diacre_journal .nav-btn:nth-child(3),
+body.role-diacre_journal .nav-btn:nth-child(4) { display: none !important; }
 /* Vomieran : lecture seule dans Grand Livre */
 body.role-vomieran #section-gl .btn,
 body.role-vomieran #section-gl input,
@@ -1680,11 +1683,16 @@ function appliquerRole(role){
   updateSuiviAnjVisibility(role);
 
   if(role==='diacre_journal'){
-    // Nataly — Journal K45 seulement
-    if(tabGest) tabGest.style.display='none';
+    // Nataly — Journal K45 + Gestion (Rakitra uniquement)
+    if(tabGest) tabGest.style.display='';
     if(tabGL)   tabGL.style.display='none';
     if(tabK45)  tabK45.style.display='';
     showMain('k45', tabK45);
+    setTimeout(function(){
+      const rakBtn=document.querySelector('#section-gest .nav-btn:nth-child(1)');
+      if(rakBtn) showGestTab('rakitra', rakBtn);
+    }, 300);
+    if(window._db){ chargerDepenses(); }
     return;
   }
 
