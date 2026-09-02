@@ -829,6 +829,8 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       <span style="font-size:12px;font-weight:600;color:var(--violet)">Total valopy</span>
       <span style="font-size:16px;font-weight:700;color:var(--violet)" id="valopy-total-affiche">0 FCFA</span>
     </div>
+
+    <div id="valopy-controle" style="margin-top:10px"></div>
   </div>
 
   <div class="card" style="border-left:4px solid var(--orange)">
@@ -1687,7 +1689,7 @@ function appliquerRole(role){
       const anjBtn=document.querySelector('#section-gest .nav-btn:nth-child(2)');
       if(anjBtn) showGestTab('anjarako', anjBtn);
     }, 300);
-    if(window._db){ chargerAnjarako(); }
+    if(window._db){ chargerAnjarako(); chargerMembresAnj(); }
     return;
   }
 
@@ -1714,7 +1716,7 @@ function appliquerRole(role){
 
   // Défaut
   showMain('gest', tabGest);
-  if(window._db){ chargerDepenses(); chargerAnjarako(); }
+  if(window._db){ chargerDepenses(); chargerAnjarako(); chargerMembresAnj(); }
 }
 
 // ── VISIBILITÉ "SUIVI PAIEMENTS" ANJARAKO — Secrétaire + Diacre uniquement ──
@@ -2427,16 +2429,39 @@ function afficherValopyJour(){
   const totEl=document.getElementById('valopy-total-affiche');
   if(totEl)totEl.textContent=fmt(total)+' FCFA';
   const el=document.getElementById('liste-valopy');
+  if(el){
+    if(!montantsTries.length){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:12px;font-size:13px">Aucune enveloppe comptée</div>';}
+    else{
+      el.innerHTML=montantsTries.map(function(m){
+        return `<div class="env-item">
+          <div class="env-badge" style="background:var(--violet)">×${compte[m]}</div>
+          <div style="flex:1;font-size:13px;font-weight:600">${fmt(m)} FCFA</div>
+          <div style="font-size:12px;color:var(--texte2);margin-right:8px">= ${fmt(m*compte[m])} F</div>
+          <button class="env-del" onclick="retirerValopy(${m})" type="button">−1</button>
+        </div>`;
+      }).join('');
+    }
+  }
+  verifierControleValopy();
+}
+
+// -- Contrôle de cohérence : total billetage/direct vs total des enveloppes comptées --
+function verifierControleValopy(){
+  const el=document.getElementById('valopy-controle');
   if(!el)return;
-  if(!montantsTries.length){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:12px;font-size:13px">Aucune enveloppe comptée</div>';return;}
-  el.innerHTML=montantsTries.map(function(m){
-    return `<div class="env-item">
-      <div class="env-badge" style="background:var(--violet)">×${compte[m]}</div>
-      <div style="flex:1;font-size:13px;font-weight:600">${fmt(m)} FCFA</div>
-      <div style="font-size:12px;color:var(--texte2);margin-right:8px">= ${fmt(m*compte[m])} F</div>
-      <button class="env-del" onclick="retirerValopy(${m})" type="button">−1</button>
-    </div>`;
-  }).join('');
+  const totalAnj=parseInt(document.getElementById('anj-total')?.value)||0;
+  const totalValopy=valopyJour.reduce((a,b)=>a+b,0);
+  if(!valopyJour.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--texte2);padding:6px 2px">ℹ️ Ajoutez des enveloppes ci-dessus pour activer le contrôle avec le billetage.</div>';
+    return;
+  }
+  const ecart=totalAnj-totalValopy;
+  if(ecart===0){
+    el.innerHTML=`<div style="background:#e9f7ef;border-left:3px solid var(--vert);border-radius:0 7px 7px 0;padding:8px 11px;font-size:12px;color:var(--vert);font-weight:600">✅ Ça correspond : ${fmt(totalAnj)} F (billetage/montant) = ${fmt(totalValopy)} F (enveloppes comptées).</div>`;
+  }else{
+    const mot = ecart>0 ? 'Il manque' : 'Il y a un excédent de';
+    el.innerHTML=`<div style="background:#fdecea;border-left:3px solid var(--rouge);border-radius:0 7px 7px 0;padding:8px 11px;font-size:12px;color:var(--rouge);font-weight:600">⚠️ Écart de ${fmt(Math.abs(ecart))} F — Billetage/montant : ${fmt(totalAnj)} F, Enveloppes comptées : ${fmt(totalValopy)} F. ${mot} ${fmt(Math.abs(ecart))} F d'enveloppes à vérifier.</div>`;
+  }
 }
 
 function rechercherCarte(val){
@@ -2948,6 +2973,7 @@ function calculerAnjTotal(){
   const affiche = document.getElementById('anj-total-affiche');
   if(affiche) affiche.textContent = fmt(tot)+' FCFA';
   mettreAJourBannerAnj();
+  verifierControleValopy();
 }
 // ── VOLA MIVAOKA ─────────────────────────────────────────────
 // ── SOURCE DÉPENSE ──────────────────────────────────────────
