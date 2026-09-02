@@ -571,7 +571,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 </div>
 
 
-<div id="section-gest" style="display:block">
+<div id="section-gest" style="display:none">
 <div class="nav-tabs">
   <button class="nav-btn actif" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
   <button class="nav-btn" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
@@ -1401,7 +1401,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   <!-- Historique -->
   <div class="card">
     <div class="ctit">📋 Livre de caisse — Fiangonana</div>
-    <div id="fiang-liste"><div class="vide">Chargement…</div></div>
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="fiang-src-btn-caisse" onclick="showGLSource('fiang','caisse',this)">💵 Caisse</button>
+      <button class="sub-btn" id="fiang-src-btn-banque" onclick="showGLSource('fiang','banque',this)">🏦 Banque</button>
+    </div>
+    <div id="fiang-liste-caisse"><div class="vide">Chargement…</div></div>
+    <div id="fiang-liste-banque" style="display:none"><div class="vide">Chargement…</div></div>
   </div>
 </div>
 
@@ -1431,7 +1436,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
   <div class="card">
     <div class="ctit">📋 Livre Anjarako</div>
-    <div id="anj-liste"><div class="vide">Chargement…</div></div>
+    <div class="sub-nav" style="margin-bottom:10px">
+      <button class="sub-btn actif" id="anj-src-btn-caisse" onclick="showGLSource('anj','caisse',this)">💵 Caisse</button>
+      <button class="sub-btn" id="anj-src-btn-banque" onclick="showGLSource('anj','banque',this)">🏦 Banque</button>
+    </div>
+    <div id="anj-liste-caisse"><div class="vide">Chargement…</div></div>
+    <div id="anj-liste-banque" style="display:none"><div class="vide">Chargement…</div></div>
   </div>
 </div>
 
@@ -1714,9 +1724,13 @@ function appliquerRole(role){
     return;
   }
 
-  // Défaut
-  showMain('gest', tabGest);
-  if(window._db){ chargerDepenses(); chargerAnjarako(); chargerMembresAnj(); }
+  // Défaut — rôle non reconnu : AUCUN accès (sécurité), on ne montre rien
+  if(tabGest) tabGest.style.display='none';
+  if(tabK45)  tabK45.style.display='none';
+  if(tabGL)   tabGL.style.display='none';
+  if(tabOps)  tabOps.style.display='none';
+  showMain('none', null);
+  alert('⚠️ Ce compte ('+role+') n\'est associé à aucun rôle connu. Contacte Rija pour faire configurer ton accès.');
 }
 
 // ── VISIBILITÉ "SUIVI PAIEMENTS" ANJARAKO — Secrétaire + Diacre uniquement ──
@@ -3937,6 +3951,28 @@ majApercu();
 let GL={fiang:[],anj:[],k45:[]};
 let obES='S';
 
+// ── LIBELLÉS DES RUBRIQUES (pour affichage "CODE — Nom" au lieu du code seul) ──
+const RUBRIQUE_LABELS = {
+  'C1.1':'Ezaka Pst Andria','C1.2':'Kojakoja fitandremana Pst Rakotoniaina',
+  'C2.1':'Sekoly Alahady',
+  'C3.1':'Mpitoriteny ivelany','C3.2':'Fanampiana asa fitoriana','C3.3':'Fanampiana Fiangonana / SAMUEL',
+  'C4.1':'Moissons "Les Béatitudes"','C4.2':'Anjara fikarakarana ny fiangonana','C4.3':'Mpanadio trano','C4.4':'Fanofana trano ivelany',
+  'C5.1':'Famangiana - Tsodrano','C5.2':'Asa vavolombelona','C5.3':"Fisintonanan'ny Fiangonana",'C5.4.1':"Fiofanan'ny Mpitandrina",'C5.5':'Divay sy mofo Fandraisana',
+  'C6.1':'Fampitaovana','C6.2':'Banky','C6.3':'Samihafa','C6.5':'Prise en charge sanitaire Mpitandrina','C6.6':'Tranokala www.fkma.ci',
+  'C7.1':'Raki-pisaorana & fanomezana',
+  'B1.1':'Rakitra','B2':'Raki-pisaorana',
+  'K45-INFO':'Raki-pandraisana (hors budget)',
+  'ANJ-E1':'Anjarako voaray',
+  'VB':'Virement Caisse ↔ Banque',
+  'AGI':'Agios','FRB':'Frais bancaires','TIM':'Timbre','CHQ':'Chèque payé','RET':'Retrait espèces','EXT':'Extrait de compte','AUT':'Autre (banque)',
+  'K45-E1':'Raki-pandraisana','K45-E2':'Don / Contribution extérieure','K45-E3':'Cotisations membres','K45-E4':'Vente t-shirts / produits K45','K45-E5':'Vente billets événement','K45-E6':'Subvention','K45-E7':'Autre entrée K45',
+  'K45-S1':'Dépenses événement K45','K45-S2':'Communication K45','K45-S3':'Logistique K45','K45-S4':'Restauration K45','K45-S5':'Achat t-shirts / produits','K45-S6':'Autre sortie K45'
+};
+function labelRubrique(code){
+  if(!code) return '';
+  return RUBRIQUE_LABELS[code] ? (code+' — '+RUBRIQUE_LABELS[code]) : code;
+}
+
 // ── AUTH ─────────────────────────────────────────────────────
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -3969,44 +4005,58 @@ async function chargerTout(){
 }
 
 // ── RENDU LISTE ───────────────────────────────────────────────
+function showGLSource(livre,source,btn){
+  const btnC=document.getElementById(livre+'-src-btn-caisse');
+  const btnB=document.getElementById(livre+'-src-btn-banque');
+  if(btnC)btnC.classList.toggle('actif',source==='caisse');
+  if(btnB)btnB.classList.toggle('actif',source==='banque');
+  const elC=document.getElementById(livre+'-liste-caisse');
+  const elB=document.getElementById(livre+'-liste-banque');
+  if(elC)elC.style.display=source==='caisse'?'':'none';
+  if(elB)elB.style.display=source==='banque'?'':'none';
+}
+
 function renderLivre(livre){
-  const el=document.getElementById(livre+'-liste');
+  if(livre==='k45'){
+    renderLivreListe(livre,GL[livre]||[],document.getElementById('k45-liste'),'k45');
+    return;
+  }
+  const list=GL[livre]||[];
+  const listeCaisse=list.filter(e=>(e.source||'caisse')!=='banque');
+  const listeBanque=list.filter(e=>(e.source||'caisse')==='banque');
+  renderLivreListe(livre,listeCaisse,document.getElementById(livre+'-liste-caisse'),'caisse');
+  renderLivreListe(livre,listeBanque,document.getElementById(livre+'-liste-banque'),'banque');
+}
+
+function renderLivreListe(livre,list,el,source){
   if(!el)return;
-  const list=GL[livre];
   if(!list.length){el.innerHTML='<div class="vide">Aucune \u00e9criture pour l\u0027instant — saisis dans Gestion pour voir les données ici</div>';return;}
 
-  const initCaisse=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
-  const initBanque=parseFloat(document.getElementById(livre+'-init-banque')?.value)||0;
-
-  let soldeCaisse=initCaisse, soldeBanque=initBanque;
+  let solde = source==='k45' ? 0 : (parseFloat(document.getElementById(livre+'-init-'+source)?.value)||0);
   // Rôle depuis Firebase Auth ou window._currentRole
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const userCfg=ROLES_CONFIG[userEmail]||{};
   const currentRole=userCfg.role||window._currentRole||'';
   const canDelete=currentRole==='secretaire'||currentRole==='diacre';
-  const canModify=canDelete||currentRole==='tresoriere';
   el.innerHTML=list.map(function(e){
     const isE=e.es==='E';
-    const src=e.source||'caisse';
     const mnt=e.montant||0;
-    if(src==='caisse'||src===livre)soldeCaisse+=(isE?mnt:-mnt);
-    else if(src==='banque')soldeBanque+=(isE?mnt:-mnt);
-    const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
+    solde+=isE?mnt:-mnt;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
       +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
-      +(e.rubrique?'<div class="erub">'+e.rubrique+'</div>':'')
+      +(e.rubrique?'<div class="erub">'+labelRubrique(e.rubrique)+'</div>':'')
       +(e.libelle?'<div style="font-size:12px;margin-bottom:2px">'+e.libelle+'</div>':'')
       +'<div class="emeta">'
-      +'<span>'+(src==='banque'?'🏦 Banque':'💵 Caisse')+'</span>'
+      +(source!=='k45'?'<span>'+(source==='banque'?'🏦 Banque':'💵 Caisse')+'</span>':'')
       +(e.piece?'<span>🔢 '+e.piece+'</span>':'')
       +(e.comment?'<span>💬 '+e.comment+'</span>':'')
       +(e.horsbudget?'<span style="color:var(--orange)">ℹ️ Hors budget</span>':'')
       +(e.createdByNom?'<span style="color:#aaa;font-size:10px">✍️ '+e.createdByNom+'</span>':'')
       +(e.modifiedByNom?'<span style="color:#aaa;font-size:10px"> · ✏️ '+e.modifiedByNom+' ('+((e.modifiedAt||'').slice(0,10))+')</span>':'')
-      +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
+      +'<span style="margin-left:auto;font-weight:600;color:'+(solde>=0?'var(--vert)':'var(--rouge)')+'">Solde progressif: '+fmt(solde)+' F'+(solde<0?' ⚠️':'')+'</span>'
       +'</div>'
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
@@ -4225,53 +4275,52 @@ async function supprimerEcritureGL(btn){
 // ── EXPORT EXCEL ──────────────────────────────────────────────
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
+  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde','Alerte']];
+  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC,initC<0?'⚠️ SOLDE NÉGATIF':'']);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',labelRubrique(e.rubrique),isE?mnt:'',isE?'':mnt,solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
   });
   return rows;
 }
 
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Alerte']];
+  rows.push([new Date(2026,0,1),'Solde initial','','','',initB,initB<0?'⚠️ SOLDE NÉGATIF':'']);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.date,e.libelle||'',labelRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
   });
   return rows;
 }
 
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
-  const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
-  let solde=initC+initB;
-  (GL['anj']||[]).forEach(function(e){
+  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde','Alerte']];
+  rows.push([new Date(2026,0,1),'','Solde initial caisse',initC,'',initC,initC<0?'⚠️ SOLDE NÉGATIF':'']);
+  let solde=initC;
+  (GL['anj']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
   });
   return rows;
 }
 
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Alerte']];
+  rows.push([new Date(2026,0,1),'Solde initial','','','',initB,initB<0?'⚠️ SOLDE NÉGATIF':'']);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.date,e.libelle||'',labelRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
   });
   return rows;
 }
@@ -4279,10 +4328,10 @@ function buildSheetBanqueAnjarako(){
 function exporterExcel(livre){
   const wb=XLSX.utils.book_new();
   if(livre==='fiang'){
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Caisse Rakitra');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
   } else {
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Caisse Anjarako');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   }
   XLSX.writeFile(wb,'FKMA_GrandLivre_'+(livre==='fiang'?'Fiangonana':'Anjarako')+'_2026.xlsx');
@@ -4290,9 +4339,9 @@ function exporterExcel(livre){
 
 function exporterExcelComplet(){
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Caisse Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Caisse Anjarako');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');
 }
