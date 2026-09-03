@@ -518,10 +518,7 @@ body.role-controleur .nav-btn:nth-child(3),
 body.role-controleur .nav-btn:nth-child(4),
 body.role-vomieran .nav-btn:nth-child(1),
 body.role-vomieran .nav-btn:nth-child(3),
-body.role-vomieran .nav-btn:nth-child(4),
-body.role-diacre_journal .nav-btn:nth-child(2),
-body.role-diacre_journal .nav-btn:nth-child(3),
-body.role-diacre_journal .nav-btn:nth-child(4) { display: none !important; }
+body.role-vomieran .nav-btn:nth-child(4) { display: none !important; }
 /* Vomieran : lecture seule dans Grand Livre */
 body.role-vomieran #section-gl .btn,
 body.role-vomieran #section-gl input,
@@ -574,7 +571,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 </div>
 
 
-<div id="section-gest" style="display:none">
+<div id="section-gest" style="display:block">
 <div class="nav-tabs">
   <button class="nav-btn actif" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
   <button class="nav-btn" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
@@ -693,12 +690,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 <!-- ═══ ONGLET 3 : ANJARAKO ═══ -->
 <div id="tab-anjarako" style="display:none">
 
-  <div class="sub-nav">
-    <button class="sub-btn actif" id="anj-sec-btn-saisie" onclick="showAnjSection('saisie')">📇 Saisie du jour</button>
-    <button class="sub-btn" id="anj-sec-btn-suivi" onclick="showAnjSection('suivi')">📊 Suivi paiements</button>
-  </div>
 
-<div id="anj-section-saisie">
 
   <div class="card">
     <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
@@ -798,44 +790,6 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div id="liste-enveloppes"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div></div>
   </div>
 
-  <div class="card" style="border-left:4px solid var(--violet)">
-    <div class="card-titre" style="color:var(--violet)">
-      <span>💰 Montants des enveloppes (valopy)</span>
-      <span id="valopy-count" style="background:var(--violet);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
-    </div>
-    <div style="font-size:11px;color:var(--texte2);margin-bottom:10px">
-      🔒 Anonyme — non relié aux numéros de carte, juste pour compter les montants reçus dans chaque enveloppe.
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-      <button type="button" onclick="ajouterValopy(5000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">5 000 F</button>
-      <button type="button" onclick="ajouterValopy(10000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">10 000 F</button>
-      <button type="button" onclick="ajouterValopy(15000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">15 000 F</button>
-      <button type="button" onclick="ajouterValopy(20000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">20 000 F</button>
-      <button type="button" onclick="ajouterValopy(25000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">25 000 F</button>
-      <button type="button" onclick="ajouterValopy(30000)" style="background:var(--gris1);border:1.5px solid var(--violet);color:var(--violet);border-radius:8px;padding:10px 4px;font-weight:700;font-size:13px;cursor:pointer">30 000 F</button>
-    </div>
-
-    <div class="grid2" style="margin-bottom:9px">
-      <div class="champ">
-        <label>✏️ Autre montant (FCFA)</label>
-        <input type="number" id="valopy-perso" min="1" placeholder="Ex: 7500" inputmode="numeric" onkeydown="if(event.key==='Enter'){event.preventDefault();ajouterValopyPerso();}">
-      </div>
-      <div class="champ" style="display:flex;align-items:flex-end">
-        <button class="btn btn-or btn-full" onclick="ajouterValopyPerso()" type="button"><span>➕</span> Ajouter</button>
-      </div>
-    </div>
-
-    <div id="liste-valopy" style="margin-top:6px"></div>
-
-    <div style="background:var(--gris1);border-radius:8px;padding:8px 12px;margin-top:10px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:12px;font-weight:600;color:var(--violet)">Total valopy</span>
-      <span style="font-size:16px;font-weight:700;color:var(--violet)" id="valopy-total-affiche">0 FCFA</span>
-    </div>
-
-    <div id="valopy-controle" style="margin-top:10px"></div>
-  </div>
-
   <div class="card" style="border-left:4px solid var(--orange)">
     <div class="card-titre" style="color:var(--orange)">📊 Objectifs mensuels (cumul)</div>
     <div class="grid2" style="margin-bottom:10px">
@@ -862,124 +816,6 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <button class="btn btn-vert btn-full" onclick="enregistrerAnjarako()"><span>💾</span> Enregistrer</button>
     <button class="btn btn-gris btn-full" onclick="resetAnjarako()"><span>🔄</span> Réinitialiser</button>
   </div>
-
-</div><!-- /anj-section-saisie -->
-
-<!-- ═══ SUIVI DES PAIEMENTS ANJARAKO ═══ -->
-<div id="anj-section-suivi" style="display:none">
-
-  <div class="card">
-    <div class="card-titre">
-      <span>👥 Membres Anjarako</span>
-      <span style="display:flex;align-items:center;gap:6px">
-        <span id="mb-count" style="background:var(--vert);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
-        <button type="button" id="mb-toggle-btn" onclick="toggleListeAnj('liste-membres-anj', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
-      </span>
-    </div>
-    <div class="grid2" style="margin-bottom:9px">
-      <div class="champ">
-        <label>📇 N° de carte</label>
-        <input type="number" id="mb-num" min="1" placeholder="Ex: 47" inputmode="numeric">
-      </div>
-      <div class="champ">
-        <label>🙍 Nom du membre / famille</label>
-        <input type="text" id="mb-nom" placeholder="Ex: Famille Rakoto">
-      </div>
-    </div>
-    <button class="btn-add-item" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter le membre</button>
-    <button class="btn btn-gris btn-full" style="margin-top:8px" onclick="resynchroniserMembresAnj()"><span>🔄</span> Resynchroniser vers Firebase</button>
-    <div id="liste-membres-anj" style="margin-top:10px"></div>
-  </div>
-
-  <div class="card" style="border-left:4px solid var(--bleu)">
-    <div class="card-titre" style="color:var(--bleu)">📅 Qui a payé — choisir un mois</div>
-    <div class="champ" style="margin-bottom:9px">
-      <label>📆 Mois à vérifier</label>
-      <input type="month" id="suivi-mois" onchange="renderSuiviMois()">
-    </div>
-
-    <div class="total-banner bleu">
-      <div class="total-label">Couverture du mois</div>
-      <div class="total-montant" id="suivi-pct">0<span>%</span></div>
-      <div class="subtotaux">
-        <div class="st-col"><div class="st-val" id="suivi-payes">0</div><div class="st-lab">Ont payé</div></div>
-        <div class="st-col"><div class="st-val" id="suivi-impayes">0</div><div class="st-lab">Impayés</div></div>
-        <div class="st-col"><div class="st-val" id="suivi-anonymes">0</div><div class="st-lab">Env. anonymes</div></div>
-      </div>
-    </div>
-    <div style="height:10px;background:var(--gris2);border-radius:10px;overflow:hidden;margin-bottom:14px">
-      <div id="suivi-bar" class="pct-fill" style="width:0%"></div>
-    </div>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:11px;font-weight:700;color:var(--rouge);text-transform:uppercase;letter-spacing:.4px">❌ N'ont pas encore payé</span>
-      <button type="button" onclick="toggleListeAnj('liste-impayes', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
-    </div>
-    <div id="liste-impayes"></div>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px">
-      <span style="font-size:11px;font-weight:700;color:var(--vert);text-transform:uppercase;letter-spacing:.4px">✅ Ont payé</span>
-      <button type="button" onclick="toggleListeAnj('liste-payes', this)" style="background:none;border:1px solid var(--gris2);border-radius:6px;font-size:10px;padding:2px 7px;cursor:pointer;color:var(--texte2)">▾ Réduire</button>
-    </div>
-    <div id="liste-payes"></div>
-
-    <button class="btn btn-wa btn-full" style="margin-top:10px" onclick="partagerImpayesWA()"><span>💬</span> Partager la liste des impayés</button>
-  </div>
-
-  <div class="card">
-    <div class="card-titre">📊 Synthèse mensuelle Anjarako</div>
-    <table class="tbl">
-      <thead><tr><th>Mois</th><th>Total collecté</th><th>Env.</th><th>Membres à jour</th><th>%</th></tr></thead>
-      <tbody id="tbody-synthese-mensuelle-anj"></tbody>
-    </table>
-    <div style="font-size:10px;color:var(--texte2);margin-top:8px;line-height:1.5">
-      💡 « Total collecté » = argent physiquement reçu ce mois-là. « Membres à jour » = nombre de membres actifs ayant une enveloppe enregistrée pour ce mois (quelle que soit la date de collecte réelle).
-    </div>
-    <button class="btn btn-excel btn-full" style="margin-top:10px" onclick="exporterSyntheseMensuelleAnj()"><span>📊</span> Exporter Excel</button>
-  </div>
-
-  <div class="card">
-    <div class="card-titre">📈 Évolution annuelle Anjarako</div>
-    <div class="grid2" style="margin-bottom:9px">
-      <div class="champ">
-        <label>📅 Année</label>
-        <select id="evo-annee" onchange="renderEvolutionAnnuelleAnj()"></select>
-      </div>
-      <div class="champ">
-        <label>📐 Indicateur</label>
-        <select id="evo-indicateur" onchange="renderEvolutionAnnuelleAnj()">
-          <option value="nbEnv">Nombre d'enveloppes</option>
-          <option value="total">Total collecté (FCFA)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="total-banner vert">
-      <div class="total-label">Sur l'année sélectionnée</div>
-      <div class="total-montant" id="evo-total">0</div>
-      <div class="subtotaux">
-        <div class="st-col"><div class="st-val" id="evo-moyenne">0</div><div class="st-lab">Moyenne mensuelle</div></div>
-        <div class="st-col"><div class="st-val" id="evo-mois-ecoules">0</div><div class="st-lab">Mois écoulés</div></div>
-        <div class="st-col"><div class="st-val" id="evo-mois-max">—</div><div class="st-lab">Meilleur mois</div></div>
-      </div>
-    </div>
-
-    <div id="evo-chart-wrap" style="margin-top:12px;overflow-x:auto"></div>
-
-    <div style="margin-top:12px;overflow-x:auto">
-      <table class="tbl" style="min-width:640px">
-        <thead><tr id="evo-thead-mois"></tr></thead>
-        <tbody><tr id="evo-tbody-valeurs"></tr></tbody>
-      </table>
-    </div>
-
-    <div style="font-size:10px;color:var(--texte2);margin-top:8px;line-height:1.5">
-      💡 « Moyenne mensuelle » ne compte que les mois déjà écoulés (les mois futurs à 0 ne sont pas inclus dans le calcul).
-    </div>
-    <button class="btn btn-excel btn-full" style="margin-top:10px" onclick="exporterEvolutionAnnuelleAnj()"><span>📊</span> Exporter Excel</button>
-  </div>
-
-</div><!-- /anj-section-suivi -->
 
 </div><!-- /anjarako -->
 
@@ -1406,12 +1242,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   <!-- Historique -->
   <div class="card">
     <div class="ctit">📋 Livre de caisse — Fiangonana</div>
-    <div class="sub-nav" style="margin-bottom:10px">
-      <button class="sub-btn actif" id="fiang-src-btn-caisse" onclick="showGLSource('fiang','caisse',this)">💵 Caisse</button>
-      <button class="sub-btn" id="fiang-src-btn-banque" onclick="showGLSource('fiang','banque',this)">🏦 Banque</button>
-    </div>
-    <div id="fiang-liste-caisse"><div class="vide">Chargement…</div></div>
-    <div id="fiang-liste-banque" style="display:none"><div class="vide">Chargement…</div></div>
+    <div id="fiang-liste"><div class="vide">Chargement…</div></div>
   </div>
 </div>
 
@@ -1441,22 +1272,34 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
   <div class="card">
     <div class="ctit">📋 Livre Anjarako</div>
-    <div class="sub-nav" style="margin-bottom:10px">
-      <button class="sub-btn actif" id="anj-src-btn-caisse" onclick="showGLSource('anj','caisse',this)">💵 Caisse</button>
-      <button class="sub-btn" id="anj-src-btn-banque" onclick="showGLSource('anj','banque',this)">🏦 Banque</button>
-    </div>
-    <div id="anj-liste-caisse"><div class="vide">Chargement…</div></div>
-    <div id="anj-liste-banque" style="display:none"><div class="vide">Chargement…</div></div>
+    <div id="anj-liste"><div class="vide">Chargement…</div></div>
   </div>
 </div>
 
 <!-- ══ K45 ══ -->
 <div id="gl-tab-k45" style="display:none">
-  <div class="note">📙 Livre K45 — Hors budget Fiangonana · Dans SIB Rakitra</div>
+  <div class="note">📙 Livre K45 — Hors budget Fiangonana · Événement temporaire</div>
+
+  <!-- Soldes initiaux -->
+  <div class="card">
+    <div class="ctit">🏁 Soldes initiaux K45</div>
+    <div class="g2">
+      <div class="ch"><label>💵 Caisse initiale</label>
+        <input type="number" id="k45-init-caisse" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
+      </div>
+      <div class="ch"><label>🏦 Banque SIB initiale</label>
+        <input type="number" id="k45-init-banque" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
+      </div>
+    </div>
+    <div class="note" style="margin-bottom:0">💡 Normalement 0 pour un événement qui démarre à zéro.</div>
+  </div>
 
   <div class="card">
     <div class="ctit">💰 Solde K45</div>
-    <div class="solrow"><span class="sollab">📙 K45 (dans SIB Rakitra)</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">💵 Caisse K45</span><span class="solval" id="k45-sol-caisse">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB K45 (versé dans SIB Rakitra)</span><span class="solval" id="k45-sol-banque">0 FCFA</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
+    <div class="note" style="margin-bottom:0">⚠️ La ligne "SIB K45" fait partie du même compte bancaire physique que SIB Rakitra — le vrai relevé SIB Rakitra = SIB Rakitra + SIB K45.</div>
   </div>
 
   <!-- Formulaire saisie K45 (Rija + PL seulement) -->
@@ -1533,7 +1376,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
 <div id="section-ops" style="display:none">
   <div class="note" style="margin-bottom:10px">
-    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
+    🏦 Opérations bancaires — SIB Rakitra, SIB Anjarako & SIB K45
   </div>
   
 
@@ -1547,6 +1390,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="tr-livre">
           <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
           <option value="anj">📘 Anjarako (SIB Anjarako)</option>
+          <option value="k45">📙 K45 (SIB K45)</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
@@ -1575,6 +1419,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="ob-livre">
           <option value="fiang">📗 SIB Rakitra</option>
           <option value="anj">📘 SIB Anjarako</option>
+          <option value="k45">📙 SIB K45</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
@@ -1608,6 +1453,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="rp-livre">
           <option value="fiang">📗 SIB Rakitra</option>
           <option value="anj">📘 SIB Anjarako</option>
+          <option value="k45">📙 SIB K45</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
@@ -1681,20 +1527,12 @@ function appliquerRole(role){
   // Cacher tout par défaut
   if(tabOps) tabOps.style.display='none';
 
-  // Le sous-onglet "Suivi paiements" (Anjarako) n'est visible que pour la Secrétaire et le Diacre
-  updateSuiviAnjVisibility(role);
-
   if(role==='diacre_journal'){
-    // Nataly — Journal K45 + Gestion (Rakitra uniquement)
-    if(tabGest) tabGest.style.display='';
+    // Nataly — Journal K45 seulement
+    if(tabGest) tabGest.style.display='none';
     if(tabGL)   tabGL.style.display='none';
     if(tabK45)  tabK45.style.display='';
     showMain('k45', tabK45);
-    setTimeout(function(){
-      const rakBtn=document.querySelector('#section-gest .nav-btn:nth-child(1)');
-      if(rakBtn) showGestTab('rakitra', rakBtn);
-    }, 300);
-    if(window._db){ chargerDepenses(); }
     return;
   }
 
@@ -1709,7 +1547,7 @@ function appliquerRole(role){
       const anjBtn=document.querySelector('#section-gest .nav-btn:nth-child(2)');
       if(anjBtn) showGestTab('anjarako', anjBtn);
     }, 300);
-    if(window._db){ chargerAnjarako(); chargerMembresAnj(); }
+    if(window._db){ chargerAnjarako(); }
     return;
   }
 
@@ -1730,32 +1568,13 @@ function appliquerRole(role){
     if(tabGL)   tabGL.style.display='';
     if(tabOps)  tabOps.style.display=''; // Opérations visibles
     showMain('gest', tabGest);
-    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerMembresAnj(); chargerTout(); }
+    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); }
     return;
   }
 
-  // Défaut — rôle non reconnu : AUCUN accès (sécurité), on ne montre rien
-  if(tabGest) tabGest.style.display='none';
-  if(tabK45)  tabK45.style.display='none';
-  if(tabGL)   tabGL.style.display='none';
-  if(tabOps)  tabOps.style.display='none';
-  showMain('none', null);
-  alert('⚠️ Ce compte ('+role+') n\'est associé à aucun rôle connu. Contacte Rija pour faire configurer ton accès.');
-}
-
-// ── VISIBILITÉ "SUIVI PAIEMENTS" ANJARAKO — Secrétaire + Diacre uniquement ──
-function updateSuiviAnjVisibility(role){
-  const btn = document.getElementById('anj-sec-btn-suivi');
-  if(!btn) return;
-  const autorise = (role==='secretaire' || role==='diacre');
-  btn.style.display = autorise ? '' : 'none';
-  if(!autorise){
-    // Si on était sur le Suivi paiements, on revient à la saisie du jour
-    const secU = document.getElementById('anj-section-suivi');
-    if(secU && secU.style.display!=='none'){
-      showAnjSection('saisie');
-    }
-  }
+  // Défaut
+  showMain('gest', tabGest);
+  if(window._db){ chargerDepenses(); chargerAnjarako(); }
 }
 
 window.addEventListener('fb-ready', function(){
@@ -1802,7 +1621,7 @@ function showGestTab(tab, btn){
     if(el) el.style.display=t===tab?'':'none';
   });
   if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();}
-  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();afficherValopyJour();}
+  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
 
@@ -1858,7 +1677,7 @@ function lireJSON(inp){
       if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
       if(data.membres)  msg += '  👥 Membres  : ' + data.membres.length  + ' entrée(s)\n';
       if(data.depenses) msg += '  💸 Dépenses : ' + data.depenses.length + ' entrée(s)\n';
-      msg += '\n⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).\nContinuer ?';
+      msg += NL+'⚠️ Importer va FUSIONNER avec les données existantes (pas d' + "'" + 'écrasement).'+NL+'Continuer ?';
       if(!confirm(msg)) return;
       // Fusionner sans doublons (clé = date)
       function fusionner(sk, nouv, cle){
@@ -1876,22 +1695,8 @@ function lireJSON(inp){
       fusionner(SK_DEP,     data.depenses, 'id');
       if(data.membres && data.membres.length){
         const em = load(SK_ANJ_M);
-        const nouveaux = [];
-        data.membres.forEach(m => { if(!em.find(e=>e.num===m.num)){ const rec={num:m.num,nom:m.nom||'',actif:m.actif!==false}; em.push(rec); nouveaux.push(rec); } });
+        data.membres.forEach(m => { if(!em.find(e=>e.num===m.num)) em.push(m); });
         save(SK_ANJ_M, em);
-        if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-        if(_db && nouveaux.length){
-          (async()=>{
-            for(const rec of nouveaux){
-              try{
-                const ref=await _fs.addDoc(_fs.collection(_db,'anj_membres'),{num:rec.num,nom:rec.nom,actif:rec.actif});
-                const arr=load(SK_ANJ_M);const idx=arr.findIndex(x=>x.num===rec.num);
-                if(idx>=0){arr[idx]._id=ref.id;save(SK_ANJ_M,arr);}
-              }catch(err){console.log('Erreur sync membre import:',err.message);}
-            }
-            if(document.getElementById('anj-section-suivi')){renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();}
-          })();
-        }
       }
       alert('✅ Importation terminée !\nRechargez la page pour voir les données mises à jour.');
       inp.value = '';
@@ -2019,7 +1824,6 @@ function fbOK(){
   // Charger les données depuis Firebase au démarrage
   chargerDepenses();
   chargerAnjarako();
-  chargerMembresAnj();
 }
 function fbErr(msg){
   document.getElementById('fb-status').style.background='#fdecea';
@@ -2421,72 +2225,6 @@ function pickSug(id,nom){document.getElementById(id).value=nom;hideSug(id);}
 
 // ── ANJARAKO ─────────────────────────────────────────────────
 let enveloppesJour=[];
-let valopyJour=[];
-
-// -- Montants des enveloppes (valopy) — anonyme, non relié aux cartes --
-function ajouterValopy(montant){
-  montant=parseInt(montant);
-  if(!montant||montant<=0)return;
-  valopyJour.push(montant);
-  afficherValopyJour();
-}
-function ajouterValopyPerso(){
-  const inp=document.getElementById('valopy-perso');
-  const val=parseInt(inp.value);
-  if(!val||val<=0){alert('Veuillez saisir un montant valide.');return;}
-  ajouterValopy(val);
-  inp.value='';
-  inp.focus();
-}
-function retirerValopy(montant){
-  const idx=valopyJour.lastIndexOf(montant);
-  if(idx>=0)valopyJour.splice(idx,1);
-  afficherValopyJour();
-}
-function afficherValopyJour(){
-  const compte={};
-  valopyJour.forEach(function(v){compte[v]=(compte[v]||0)+1;});
-  const montantsTries=Object.keys(compte).map(Number).sort((a,b)=>b-a);
-  const cntEl=document.getElementById('valopy-count');
-  if(cntEl)cntEl.textContent=valopyJour.length;
-  const total=valopyJour.reduce((a,b)=>a+b,0);
-  const totEl=document.getElementById('valopy-total-affiche');
-  if(totEl)totEl.textContent=fmt(total)+' FCFA';
-  const el=document.getElementById('liste-valopy');
-  if(el){
-    if(!montantsTries.length){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:12px;font-size:13px">Aucune enveloppe comptée</div>';}
-    else{
-      el.innerHTML=montantsTries.map(function(m){
-        return `<div class="env-item">
-          <div class="env-badge" style="background:var(--violet)">×${compte[m]}</div>
-          <div style="flex:1;font-size:13px;font-weight:600">${fmt(m)} FCFA</div>
-          <div style="font-size:12px;color:var(--texte2);margin-right:8px">= ${fmt(m*compte[m])} F</div>
-          <button class="env-del" onclick="retirerValopy(${m})" type="button">−1</button>
-        </div>`;
-      }).join('');
-    }
-  }
-  verifierControleValopy();
-}
-
-// -- Contrôle de cohérence : total billetage/direct vs total des enveloppes comptées --
-function verifierControleValopy(){
-  const el=document.getElementById('valopy-controle');
-  if(!el)return;
-  const totalAnj=parseInt(document.getElementById('anj-total')?.value)||0;
-  const totalValopy=valopyJour.reduce((a,b)=>a+b,0);
-  if(!valopyJour.length){
-    el.innerHTML='<div style="font-size:11px;color:var(--texte2);padding:6px 2px">ℹ️ Ajoutez des enveloppes ci-dessus pour activer le contrôle avec le billetage.</div>';
-    return;
-  }
-  const ecart=totalAnj-totalValopy;
-  if(ecart===0){
-    el.innerHTML=`<div style="background:#e9f7ef;border-left:3px solid var(--vert);border-radius:0 7px 7px 0;padding:8px 11px;font-size:12px;color:var(--vert);font-weight:600">✅ Ça correspond : ${fmt(totalAnj)} F (billetage/montant) = ${fmt(totalValopy)} F (enveloppes comptées).</div>`;
-  }else{
-    const mot = ecart>0 ? 'Il manque' : 'Il y a un excédent de';
-    el.innerHTML=`<div style="background:#fdecea;border-left:3px solid var(--rouge);border-radius:0 7px 7px 0;padding:8px 11px;font-size:12px;color:var(--rouge);font-weight:600">⚠️ Écart de ${fmt(Math.abs(ecart))} F — Billetage/montant : ${fmt(totalAnj)} F, Enveloppes comptées : ${fmt(totalValopy)} F. ${mot} ${fmt(Math.abs(ecart))} F d'enveloppes à vérifier.</div>`;
-  }
-}
 
 function rechercherCarte(val){
   const sug=document.getElementById('carte-sug');
@@ -2576,7 +2314,7 @@ async function enregistrerAnjarako(){
   if(!date){alert('Veuillez renseigner la date.');return;}
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
-  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode,valopy:[...valopyJour]};
+  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
   const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
@@ -2597,348 +2335,10 @@ async function enregistrerAnjarako(){
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
   enveloppesJour=[];
-  valopyJour=[];
   document.getElementById('anj-total').value='';
   document.getElementById('env-carte').value='';
   document.getElementById('carte-preview').style.display='none';
-  afficherEnveloppesJour();mettreAJourBannerAnj();afficherValopyJour();
-}
-
-// ── SUIVI DES PAIEMENTS ANJARAKO ──────────────────────────────
-function showAnjSection(section){
-  const btnS=document.getElementById('anj-sec-btn-saisie'),btnU=document.getElementById('anj-sec-btn-suivi');
-  if(btnS)btnS.classList.toggle('actif',section==='saisie');
-  if(btnU)btnU.classList.toggle('actif',section==='suivi');
-  const secS=document.getElementById('anj-section-saisie'),secU=document.getElementById('anj-section-suivi');
-  if(secS)secS.style.display=section==='saisie'?'':'none';
-  if(secU)secU.style.display=section==='suivi'?'':'none';
-  if(section==='suivi'){
-    renderMembresAnj();
-    const mInp=document.getElementById('suivi-mois');
-    if(mInp && !mInp.value) mInp.value=moisActuel();
-    renderSuiviMois();
-    renderSyntheseMensuelleAnj();
-    renderEvolutionAnnuelleAnj();
-  }
-}
-
-// -- Réduire / afficher une liste (membres, payés, impayés) --
-function toggleListeAnj(id, btn){
-  const el=document.getElementById(id);
-  if(!el)return;
-  const estReduit=el.style.display==='none';
-  el.style.display=estReduit?'':'none';
-  if(btn)btn.textContent=estReduit?'▾ Réduire':'▸ Afficher';
-}
-
-// -- Membres --
-function renderMembresAnj(){
-  const membres=load(SK_ANJ_M).slice().sort((a,b)=>(a.num||0)-(b.num||0));
-  const cnt=document.getElementById('mb-count');
-  if(cnt)cnt.textContent=membres.filter(m=>m.actif!==false).length;
-  const el=document.getElementById('liste-membres-anj');
-  if(!el)return;
-  if(!membres.length){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucun membre enregistré</div>';return;}
-  el.innerHTML=membres.map(m=>`
-    <div class="env-item" style="${m.actif===false?'opacity:.5':''}">
-      <div class="env-badge" style="background:${m.actif===false?'#999':'var(--vert)'}">${m.num}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${m.nom||'—'}</div>
-        <div style="font-size:11px;color:var(--texte2)">${m.actif===false?'Inactif':'Actif'}</div>
-      </div>
-      <label class="toggle-switch" style="margin-right:4px">
-        <input type="checkbox" ${m.actif!==false?'checked':''} onchange="toggleMembreActifAnj(${m.num})">
-        <span class="toggle-slider"></span>
-      </label>
-      <button class="env-del" onclick="supprimerMembreAnj(${m.num})">✕</button>
-    </div>`).join('');
-}
-
-async function ajouterMembreAnj(){
-  const num=parseInt(document.getElementById('mb-num').value);
-  const nom=document.getElementById('mb-nom').value.trim();
-  if(!num){alert('Veuillez saisir un numéro de carte.');return;}
-  const membres=load(SK_ANJ_M);
-  if(membres.find(m=>m.num===num)){alert('Ce numéro de carte existe déjà.');return;}
-  const rec={num,nom,actif:true};
-  membres.push(rec);membres.sort((a,b)=>(a.num||0)-(b.num||0));
-  save(SK_ANJ_M,membres);
-  document.getElementById('mb-num').value='';
-  document.getElementById('mb-nom').value='';
-  renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();
-  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db){
-    try{
-      const ref=await _fs.addDoc(_fs.collection(_db,'anj_membres'),rec);
-      const arr=load(SK_ANJ_M);const idx=arr.findIndex(m=>m.num===num);
-      if(idx>=0){arr[idx]._id=ref.id;save(SK_ANJ_M,arr);}
-    }catch(e){console.log('Erreur Firestore ajout membre:',e.message);}
-  }
-}
-
-async function toggleMembreActifAnj(num){
-  const membres=load(SK_ANJ_M);
-  const idx=membres.findIndex(m=>m.num===num);
-  if(idx<0)return;
-  membres[idx].actif=membres[idx].actif===false?true:false;
-  save(SK_ANJ_M,membres);
-  renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();
-  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db && membres[idx]._id){
-    try{await _fs.updateDoc(_fs.doc(_db,'anj_membres',membres[idx]._id),{actif:membres[idx].actif});}
-    catch(e){console.log('Erreur maj membre:',e.message);}
-  }
-}
-
-async function supprimerMembreAnj(num){
-  if(!confirm('Supprimer ce membre du suivi Anjarako ?'))return;
-  const membres=load(SK_ANJ_M);
-  const idx=membres.findIndex(m=>m.num===num);
-  if(idx<0)return;
-  const id=membres[idx]._id;
-  membres.splice(idx,1);
-  save(SK_ANJ_M,membres);
-  renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();
-  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db && id){
-    try{await _fs.deleteDoc(_fs.doc(_db,'anj_membres',id));}
-    catch(e){console.log('Erreur suppr membre:',e.message);}
-  }
-}
-
-async function chargerMembresAnj(){
-  if(!_db)return;
-  try{
-    const snap=await _fs.getDocs(_fs.collection(_db,'anj_membres'));
-    if(snap.empty)return;
-    const membres=[];
-    snap.forEach(function(ds){membres.push(Object.assign({_id:ds.id},ds.data()));});
-    membres.sort((a,b)=>(a.num||0)-(b.num||0));
-    save(SK_ANJ_M,membres);
-    renderMembresAnj();renderSuiviMois();renderSyntheseMensuelleAnj();
-  }catch(e){console.log('Erreur chargement membres anjarako:',e.message);}
-}
-
-// Renvoie vers Firebase les membres présents en local mais jamais confirmés côté serveur
-// (utile si un import a échoué silencieusement à cause des permissions Firestore)
-async function resynchroniserMembresAnj(){
-  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(!_db){alert('❌ Non connecté à Firebase pour le moment. Réessayez dans quelques secondes.');return;}
-  const membres=load(SK_ANJ_M);
-  const aEnvoyer=membres.filter(m=>!m._id);
-  if(!aEnvoyer.length){alert('✅ Tous les membres sont déjà synchronisés avec Firebase.');return;}
-  if(!confirm('Envoyer '+aEnvoyer.length+' membre(s) vers Firebase ?'))return;
-  let ok=0, echec=0;
-  for(const rec of aEnvoyer){
-    try{
-      const ref=await _fs.addDoc(_fs.collection(_db,'anj_membres'),{num:rec.num,nom:rec.nom||'',actif:rec.actif!==false});
-      const arr=load(SK_ANJ_M);const idx=arr.findIndex(x=>x.num===rec.num);
-      if(idx>=0){arr[idx]._id=ref.id;save(SK_ANJ_M,arr);}
-      ok++;
-    }catch(e){echec++;console.log('Erreur resync membre',rec.num,':',e.message);}
-  }
-  renderMembresAnj();
-  alert('✅ '+ok+' membre(s) envoyé(s) vers Firebase.'+(echec?(' ⚠️ '+echec+' échec(s) — vérifiez les règles Firestore.'):''));
-}
-
-// -- Qui a payé pour un mois donné --
-function getMoisPayeMapAnj(){
-  const hist=load(SK_ANJ_H);
-  const map={};
-  hist.forEach(function(h){
-    (h.enveloppes||[]).forEach(function(e){
-      if(!e.mois)return;
-      if(!map[e.mois])map[e.mois]={cartes:new Set(),anonymes:0};
-      map[e.mois].cartes.add(e.carte);
-    });
-    if(h.nbDirect && h.moisDirect){
-      if(!map[h.moisDirect])map[h.moisDirect]={cartes:new Set(),anonymes:0};
-      map[h.moisDirect].anonymes+=h.nbDirect;
-    }
-  });
-  return map;
-}
-
-function renderSuiviMois(){
-  const inp=document.getElementById('suivi-mois');
-  if(!inp)return;
-  let mois=inp.value;
-  if(!mois){mois=moisActuel();inp.value=mois;}
-  const map=getMoisPayeMapAnj();
-  const paidSet=map[mois]?map[mois].cartes:new Set();
-  const anonymes=map[mois]?map[mois].anonymes:0;
-  const membres=load(SK_ANJ_M).filter(m=>m.actif!==false).sort((a,b)=>(a.num||0)-(b.num||0));
-  const payeurs=membres.filter(m=>paidSet.has(m.num));
-  const impayeurs=membres.filter(m=>!paidSet.has(m.num));
-  const pct=membres.length?Math.round((payeurs.length/membres.length)*100):0;
-  document.getElementById('suivi-pct').innerHTML=pct+'<span>%</span>';
-  document.getElementById('suivi-payes').textContent=payeurs.length;
-  document.getElementById('suivi-impayes').textContent=impayeurs.length;
-  document.getElementById('suivi-anonymes').textContent=anonymes;
-  const bar=document.getElementById('suivi-bar');
-  bar.style.width=Math.min(pct,100)+'%';bar.className='pct-fill'+(pct>=100?' ok':'');
-  const elI=document.getElementById('liste-impayes');
-  elI.innerHTML=impayeurs.length?impayeurs.map(m=>`<div class="env-item" style="border-left:3px solid var(--rouge)">
-      <div class="env-badge" style="background:var(--rouge)">${m.num}</div>
-      <div style="flex:1;font-size:13px;font-weight:600">${m.nom||'—'}</div>
-    </div>`).join(''):'<div style="text-align:center;color:var(--texte2);padding:10px;font-size:13px">🎉 Tout le monde a payé !</div>';
-  const elP=document.getElementById('liste-payes');
-  elP.innerHTML=payeurs.length?payeurs.map(m=>`<div class="env-item" style="border-left:3px solid var(--vert)">
-      <div class="env-badge">${m.num}</div>
-      <div style="flex:1;font-size:13px;font-weight:600">${m.nom||'—'}</div>
-    </div>`).join(''):'<div style="text-align:center;color:var(--texte2);padding:10px;font-size:13px">Aucun paiement enregistré pour ce mois</div>';
-}
-
-function partagerImpayesWA(){
-  const mois=document.getElementById('suivi-mois').value||moisActuel();
-  const map=getMoisPayeMapAnj();
-  const paidSet=map[mois]?map[mois].cartes:new Set();
-  const membres=load(SK_ANJ_M).filter(m=>m.actif!==false).sort((a,b)=>(a.num||0)-(b.num||0));
-  const impayeurs=membres.filter(m=>!paidSet.has(m.num));
-  let m2=`📨 *ANJARAKO — Impayés ${moisLabel(mois)}*\n━━━━━━━━━━━━━━━━━\n`;
-  if(!impayeurs.length)m2+='🎉 Tout le monde a payé !';
-  else{
-    impayeurs.forEach(function(m){m2+=`• N°${m.num} — ${m.nom||'—'}\n`;});
-    m2+=`\nTotal impayés : ${impayeurs.length}/${membres.length}`;
-  }
-  m2+=`\n_FKMA Abidjan_`;
-  window.open('https://wa.me/?text='+encodeURIComponent(m2),'_blank');
-}
-
-// -- Synthèse mensuelle --
-function calculerSyntheseMensuelleAnj(){
-  const hist=load(SK_ANJ_H);
-  const parMois={};
-  hist.forEach(function(h){
-    if(!h.date)return;
-    const mo=h.date.slice(0,7);
-    if(!parMois[mo])parMois[mo]={total:0,nbEnv:0};
-    parMois[mo].total+=h.total||0;
-    parMois[mo].nbEnv+=(h.enveloppes||[]).length+(h.nbDirect||0);
-  });
-  const map=getMoisPayeMapAnj();
-  const moisListe=Array.from(new Set(Object.keys(parMois).concat(Object.keys(map)))).sort().reverse();
-  return {parMois:parMois,map:map,moisListe:moisListe};
-}
-
-function renderSyntheseMensuelleAnj(){
-  const tbody=document.getElementById('tbody-synthese-mensuelle-anj');
-  if(!tbody)return;
-  const {parMois,map,moisListe}=calculerSyntheseMensuelleAnj();
-  const membresActifs=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  if(!moisListe.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--texte2);padding:14px">Aucune donnée</td></tr>';return;}
-  tbody.innerHTML=moisListe.map(function(mo){
-    const d=parMois[mo]||{total:0,nbEnv:0};
-    const nbPayeurs=map[mo]?map[mo].cartes.size:0;
-    const pct=membresActifs.length?Math.round((nbPayeurs/membresActifs.length)*100):0;
-    return `<tr><td>${moisLabel(mo)}</td><td>${fmt(d.total)} F</td><td>${d.nbEnv}</td><td>${nbPayeurs}/${membresActifs.length}</td><td>${pct}%</td></tr>`;
-  }).join('');
-}
-
-function exporterSyntheseMensuelleAnj(){
-  const {parMois,map,moisListe}=calculerSyntheseMensuelleAnj();
-  const membresActifs=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  const rows=[['Mois','Total collecté (FCFA)','Enveloppes','Membres à jour','Total membres actifs','% couverture']];
-  moisListe.slice().sort().forEach(function(mo){
-    const d=parMois[mo]||{total:0,nbEnv:0};
-    const nbPayeurs=map[mo]?map[mo].cartes.size:0;
-    const pct=membresActifs.length?Math.round((nbPayeurs/membresActifs.length)*100):0;
-    rows.push([moisLabel(mo),d.total,d.nbEnv,nbPayeurs,membresActifs.length,pct+'%']);
-  });
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb,ws,'Synthese Anjarako');
-  XLSX.writeFile(wb,'FKMA_Anjarako_Synthese_Mensuelle.xlsx');
-}
-
-// -- Évolution annuelle (mois par mois, Janvier → Décembre) --
-const MOIS_ABBR=['Janv','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-
-function remplirSelectAnneesAnj(){
-  const sel=document.getElementById('evo-annee');
-  if(!sel)return;
-  const {parMois}=calculerSyntheseMensuelleAnj();
-  const annees=new Set(Object.keys(parMois).map(mo=>mo.slice(0,4)));
-  annees.add(String(new Date().getFullYear()));
-  const listeAnnees=Array.from(annees).sort().reverse();
-  const valeurActuelle=sel.value;
-  sel.innerHTML=listeAnnees.map(a=>`<option value="${a}">${a}</option>`).join('');
-  sel.value=listeAnnees.includes(valeurActuelle)?valeurActuelle:listeAnnees[0];
-}
-
-function renderEvolutionAnnuelleAnj(){
-  const selA=document.getElementById('evo-annee');
-  if(!selA)return;
-  if(!selA.options.length) remplirSelectAnneesAnj();
-  const annee=selA.value||String(new Date().getFullYear());
-  const indicateur=document.getElementById('evo-indicateur').value; // 'nbEnv' ou 'total'
-  const {parMois}=calculerSyntheseMensuelleAnj();
-
-  const valeurs=[];
-  for(let m=1;m<=12;m++){
-    const cle=annee+'-'+String(m).padStart(2,'0');
-    const d=parMois[cle]||{total:0,nbEnv:0};
-    valeurs.push(indicateur==='total'?d.total:d.nbEnv);
-  }
-
-  const auj=new Date();
-  const anneeActuelle=auj.getFullYear();
-  const moisEcoules = (parseInt(annee)<anneeActuelle) ? 12 : (parseInt(annee)===anneeActuelle ? (auj.getMonth()+1) : 0);
-  const valeursEcoulees=valeurs.slice(0,moisEcoules).filter(v=>v>0 || moisEcoules>0);
-  const totalAnnee=valeurs.reduce((a,b)=>a+b,0);
-  const moyenne = moisEcoules>0 ? Math.round(valeurs.slice(0,moisEcoules).reduce((a,b)=>a+b,0)/moisEcoules) : 0;
-
-  let idxMax=-1, max=-1;
-  valeurs.forEach((v,i)=>{ if(v>max){max=v;idxMax=i;} });
-
-  const suffixe = indicateur==='total' ? ' F' : '';
-  document.getElementById('evo-total').innerHTML = fmt(totalAnnee)+'<span>'+suffixe+'</span>';
-  document.getElementById('evo-moyenne').textContent = fmt(moyenne)+suffixe;
-  document.getElementById('evo-mois-ecoules').textContent = moisEcoules;
-  document.getElementById('evo-mois-max').textContent = (max>0) ? (MOIS_ABBR[idxMax]+' ('+fmt(max)+suffixe+')') : '—';
-
-  // Graphique SVG en barres horizontales (empilées verticalement) — tient dans la largeur de l'écran, pas de défilement
-  const largeur=400, labelW=42, rowH=26, padTop=8;
-  const hauteur=12*rowH+padTop*2;
-  const maxEch = Math.max(1, ...valeurs);
-  const barMaxW = largeur-labelW-52;
-  let barres='', labels='';
-  for(let i=0;i<12;i++){
-    const y = padTop + i*rowH;
-    const w = valeurs[i]>0 ? Math.max(2, (valeurs[i]/maxEch)*barMaxW) : 0;
-    const couleur = i===idxMax && max>0 ? 'var(--or)' : 'var(--vert)';
-    labels += `<text x="2" y="${(y+rowH/2+4).toFixed(1)}" font-size="11" fill="var(--texte2)">${MOIS_ABBR[i]}</text>`;
-    barres += `<rect x="${labelW}" y="${(y+4).toFixed(1)}" width="${w.toFixed(1)}" height="${(rowH-9).toFixed(1)}" fill="${couleur}" rx="3"></rect>`;
-    if(valeurs[i]>0){
-      barres += `<text x="${(labelW+w+6).toFixed(1)}" y="${(y+rowH/2+4).toFixed(1)}" font-size="10" fill="var(--texte)">${fmt(valeurs[i])}</text>`;
-    }
-  }
-  const svg = `<svg viewBox="0 0 ${largeur} ${hauteur}" width="${largeur}" height="${hauteur}" preserveAspectRatio="xMinYMin meet" style="display:block;width:100%;max-width:100%;height:auto">
-    ${labels}${barres}
-  </svg>`;
-  document.getElementById('evo-chart-wrap').innerHTML = svg;
-
-  // Tableau récap sous le graphique
-  document.getElementById('evo-thead-mois').innerHTML = '<th>Indicateur</th>'+MOIS_ABBR.map(m=>`<th>${m}</th>`).join('')+'<th>Total</th>';
-  document.getElementById('evo-tbody-valeurs').innerHTML = `<td>${indicateur==='total'?'Total (F)':'Enveloppes'}</td>`+valeurs.map(v=>`<td>${fmt(v)}</td>`).join('')+`<td><b>${fmt(totalAnnee)}</b></td>`;
-}
-
-function exporterEvolutionAnnuelleAnj(){
-  const annee=document.getElementById('evo-annee').value;
-  const {parMois}=calculerSyntheseMensuelleAnj();
-  const rows=[['Année '+annee,'Nombre d\'enveloppes','Total collecté (FCFA)']];
-  let totEnv=0, totMontant=0;
-  for(let m=1;m<=12;m++){
-    const cle=annee+'-'+String(m).padStart(2,'0');
-    const d=parMois[cle]||{total:0,nbEnv:0};
-    rows.push([MOIS_FR[m-1],d.nbEnv,d.total]);
-    totEnv+=d.nbEnv; totMontant+=d.total;
-  }
-  rows.push(['TOTAL',totEnv,totMontant]);
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb,ws,'Evolution '+annee);
-  XLSX.writeFile(wb,'FKMA_Anjarako_Evolution_'+annee+'.xlsx');
+  afficherEnveloppesJour();mettreAJourBannerAnj();
 }
 
 
@@ -2996,9 +2396,9 @@ function calculerAnjTotal(){
   const affiche = document.getElementById('anj-total-affiche');
   if(affiche) affiche.textContent = fmt(tot)+' FCFA';
   mettreAJourBannerAnj();
-  verifierControleValopy();
 }
 // ── VOLA MIVAOKA ─────────────────────────────────────────────
+async 
 // ── SOURCE DÉPENSE ──────────────────────────────────────────
 const srcDep={fiang:'caisse',anj:'caisse'};
 function setSrcDep(livre,src,btn){
@@ -3273,7 +2673,6 @@ async function chargerAnjarako(){
     snap.forEach(function(ds){hist.push(ds.data());});
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
     save(SK_ANJ_H,hist);
-    if(document.getElementById('anj-section-suivi')){renderSuiviMois();renderSyntheseMensuelleAnj();}
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
 }
 
@@ -3385,8 +2784,6 @@ async function chargerAnjHist(){
   if(totalInp) totalInp.value=anj.total||'';
   enveloppesJour=[...(anj.enveloppes||[])];
   afficherEnveloppesJour();
-  valopyJour=[...(anj.valopy||[])];
-  afficherValopyJour();
   alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
 }
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -3533,7 +2930,7 @@ function exporterDashWA(){
 
 
 // ── AUTHENTIFICATION ────────────────────────────────────────────
-const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "ramekantono@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}};
+const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "controleur", "label": "Contrôleur"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}};
 
 // ── FIREBASE READY ────────────────────────────────────────────
 let db = null, fs = null;
@@ -3960,28 +3357,6 @@ majApercu();
 let GL={fiang:[],anj:[],k45:[]};
 let obES='S';
 
-// ── LIBELLÉS DES RUBRIQUES (pour affichage "CODE — Nom" au lieu du code seul) ──
-const RUBRIQUE_LABELS = {
-  'C1.1':'Ezaka Pst Andria','C1.2':'Kojakoja fitandremana Pst Rakotoniaina',
-  'C2.1':'Sekoly Alahady',
-  'C3.1':'Mpitoriteny ivelany','C3.2':'Fanampiana asa fitoriana','C3.3':'Fanampiana Fiangonana / SAMUEL',
-  'C4.1':'Moissons "Les Béatitudes"','C4.2':'Anjara fikarakarana ny fiangonana','C4.3':'Mpanadio trano','C4.4':'Fanofana trano ivelany',
-  'C5.1':'Famangiana - Tsodrano','C5.2':'Asa vavolombelona','C5.3':"Fisintonanan'ny Fiangonana",'C5.4.1':"Fiofanan'ny Mpitandrina",'C5.5':'Divay sy mofo Fandraisana',
-  'C6.1':'Fampitaovana','C6.2':'Banky','C6.3':'Samihafa','C6.5':'Prise en charge sanitaire Mpitandrina','C6.6':'Tranokala www.fkma.ci',
-  'C7.1':'Raki-pisaorana & fanomezana',
-  'B1.1':'Rakitra','B2':'Raki-pisaorana',
-  'K45-INFO':'Raki-pandraisana (hors budget)',
-  'ANJ-E1':'Anjarako voaray',
-  'VB':'Virement Caisse ↔ Banque',
-  'AGI':'Agios','FRB':'Frais bancaires','TIM':'Timbre','CHQ':'Chèque payé','RET':'Retrait espèces','EXT':'Extrait de compte','AUT':'Autre (banque)',
-  'K45-E1':'Raki-pandraisana','K45-E2':'Don / Contribution extérieure','K45-E3':'Cotisations membres','K45-E4':'Vente t-shirts / produits K45','K45-E5':'Vente billets événement','K45-E6':'Subvention','K45-E7':'Autre entrée K45',
-  'K45-S1':'Dépenses événement K45','K45-S2':'Communication K45','K45-S3':'Logistique K45','K45-S4':'Restauration K45','K45-S5':'Achat t-shirts / produits','K45-S6':'Autre sortie K45'
-};
-function labelRubrique(code){
-  if(!code) return '';
-  return RUBRIQUE_LABELS[code] ? (code+' — '+RUBRIQUE_LABELS[code]) : code;
-}
-
 // ── AUTH ─────────────────────────────────────────────────────
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -4014,58 +3389,44 @@ async function chargerTout(){
 }
 
 // ── RENDU LISTE ───────────────────────────────────────────────
-function showGLSource(livre,source,btn){
-  const btnC=document.getElementById(livre+'-src-btn-caisse');
-  const btnB=document.getElementById(livre+'-src-btn-banque');
-  if(btnC)btnC.classList.toggle('actif',source==='caisse');
-  if(btnB)btnB.classList.toggle('actif',source==='banque');
-  const elC=document.getElementById(livre+'-liste-caisse');
-  const elB=document.getElementById(livre+'-liste-banque');
-  if(elC)elC.style.display=source==='caisse'?'':'none';
-  if(elB)elB.style.display=source==='banque'?'':'none';
-}
-
 function renderLivre(livre){
-  if(livre==='k45'){
-    renderLivreListe(livre,GL[livre]||[],document.getElementById('k45-liste'),'k45');
-    return;
-  }
-  const list=GL[livre]||[];
-  const listeCaisse=list.filter(e=>(e.source||'caisse')!=='banque');
-  const listeBanque=list.filter(e=>(e.source||'caisse')==='banque');
-  renderLivreListe(livre,listeCaisse,document.getElementById(livre+'-liste-caisse'),'caisse');
-  renderLivreListe(livre,listeBanque,document.getElementById(livre+'-liste-banque'),'banque');
-}
-
-function renderLivreListe(livre,list,el,source){
+  const el=document.getElementById(livre+'-liste');
   if(!el)return;
+  const list=GL[livre];
   if(!list.length){el.innerHTML='<div class="vide">Aucune \u00e9criture pour l\u0027instant — saisis dans Gestion pour voir les données ici</div>';return;}
 
-  let solde = source==='k45' ? 0 : (parseFloat(document.getElementById(livre+'-init-'+source)?.value)||0);
+  const initCaisse=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
+  const initBanque=parseFloat(document.getElementById(livre+'-init-banque')?.value)||0;
+
+  let soldeCaisse=initCaisse, soldeBanque=initBanque;
   // Rôle depuis Firebase Auth ou window._currentRole
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const userCfg=ROLES_CONFIG[userEmail]||{};
   const currentRole=userCfg.role||window._currentRole||'';
   const canDelete=currentRole==='secretaire'||currentRole==='diacre';
+  const canModify=canDelete||currentRole==='tresoriere';
   el.innerHTML=list.map(function(e){
     const isE=e.es==='E';
+    const src=e.source||'caisse';
     const mnt=e.montant||0;
-    solde+=isE?mnt:-mnt;
+    if(src==='caisse'||src===livre)soldeCaisse+=(isE?mnt:-mnt);
+    else if(src==='banque')soldeBanque+=(isE?mnt:-mnt);
+    const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
       +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
-      +(e.rubrique?'<div class="erub">'+labelRubrique(e.rubrique)+'</div>':'')
+      +(e.rubrique?'<div class="erub">'+e.rubrique+'</div>':'')
       +(e.libelle?'<div style="font-size:12px;margin-bottom:2px">'+e.libelle+'</div>':'')
       +'<div class="emeta">'
-      +(source!=='k45'?'<span>'+(source==='banque'?'🏦 Banque':'💵 Caisse')+'</span>':'')
+      +'<span>'+(src==='banque'?'🏦 Banque':'💵 Caisse')+'</span>'
       +(e.piece?'<span>🔢 '+e.piece+'</span>':'')
       +(e.comment?'<span>💬 '+e.comment+'</span>':'')
       +(e.horsbudget?'<span style="color:var(--orange)">ℹ️ Hors budget</span>':'')
       +(e.createdByNom?'<span style="color:#aaa;font-size:10px">✍️ '+e.createdByNom+'</span>':'')
       +(e.modifiedByNom?'<span style="color:#aaa;font-size:10px"> · ✏️ '+e.modifiedByNom+' ('+((e.modifiedAt||'').slice(0,10))+')</span>':'')
-      +'<span style="margin-left:auto;font-weight:600;color:'+(solde>=0?'var(--vert)':'var(--rouge)')+'">Solde progressif: '+fmt(solde)+' F'+(solde<0?' ⚠️':'')+'</span>'
+      +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
       +'</div>'
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
@@ -4093,12 +3454,6 @@ function renderSoldes(livre){
     const el=document.getElementById(id);
     if(el){el.textContent=fmt(val)+' FCFA';el.className='solval '+(val>=0?'spos':'sneg');}
   };
-  if(livre==='k45'){
-    let k45=0;
-    list.forEach(e=>k45+=(e.es==='E'?1:-1)*(e.montant||0));
-    setEl('k45-sol-total',k45);
-    return;
-  }
   setEl(livre+'-sol-caisse',caisse);
   setEl(livre+'-sol-banque',banque);
   setEl(livre+'-sol-total',tot);
@@ -4113,8 +3468,7 @@ function renderSynth(){
     (GL[livre]||[]).forEach(e=>{const s=e.source||'caisse';const m=e.montant||0;const sg=e.es==='E'?1:-1;if(s==='banque')b+=sg*m;else c+=sg*m;});
     return c+b;
   };
-  const tf=calc('fiang'),ta=calc('anj');
-  let tk45=0;(GL['k45']||[]).forEach(e=>tk45+=(e.es==='E'?1:-1)*(e.montant||0));
+  const tf=calc('fiang'),ta=calc('anj'),tk45=calc('k45');
   const set=(id,v)=>{const el=document.getElementById(id);if(el){el.textContent=fmt(v)+' F';el.style.color=v>=0?'var(--vert)':'var(--rouge)';}};
   set('syn-fiang',tf);set('syn-anj',ta);set('syn-k45',tk45);set('syn-tot',tf+ta);
 }
@@ -4284,52 +3638,53 @@ async function supprimerEcritureGL(btn){
 // ── EXPORT EXCEL ──────────────────────────────────────────────
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde','Alerte']];
-  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC,initC<0?'⚠️ SOLDE NÉGATIF':'']);
+  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
+  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',labelRubrique(e.rubrique),isE?mnt:'',isE?'':mnt,solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
+    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Alerte']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB,initB<0?'⚠️ SOLDE NÉGATIF':'']);
+  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',labelRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
+    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
 
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
-  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde','Alerte']];
-  rows.push([new Date(2026,0,1),'','Solde initial caisse',initC,'',initC,initC<0?'⚠️ SOLDE NÉGATIF':'']);
-  let solde=initC;
-  (GL['anj']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
+  const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
+  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde']];
+  rows.push([new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  let solde=initC+initB;
+  (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
+    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Alerte']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB,initB<0?'⚠️ SOLDE NÉGATIF':'']);
+  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',labelRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,solde<0?'⚠️ SOLDE NÉGATIF':'']);
+    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -4337,10 +3692,10 @@ function buildSheetBanqueAnjarako(){
 function exporterExcel(livre){
   const wb=XLSX.utils.book_new();
   if(livre==='fiang'){
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Caisse Rakitra');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
   } else {
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Caisse Anjarako');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   }
   XLSX.writeFile(wb,'FKMA_GrandLivre_'+(livre==='fiang'?'Fiangonana':'Anjarako')+'_2026.xlsx');
@@ -4348,9 +3703,9 @@ function exporterExcel(livre){
 
 function exporterExcelComplet(){
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Caisse Rakitra');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Caisse Anjarako');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
   XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');
 }
