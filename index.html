@@ -718,10 +718,10 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
 <div id="section-gest" style="display:block">
 <div class="nav-tabs">
-  <button class="nav-btn actif" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
-  <button class="nav-btn" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
-  <button class="nav-btn" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
-  <button class="nav-btn" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
+  <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
+  <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
+  <button class="nav-btn" id="gnav-vola" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
+  <button class="nav-btn" id="gnav-dashboard" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
 </div>
 <div id="tab-rakitra">
 
@@ -1749,10 +1749,16 @@ function appliquerRole(role){
   if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
 
   if(role==='diacre_journal'){
-    // Nataly — Journal K45 seulement
-    if(tabGest) tabGest.style.display='none';
+    // Nataly — Journal K45 + Gestion (Rakitra uniquement, pas Anjarako/Vola/Dashboard, pas Grand Livre)
+    if(tabGest) tabGest.style.display='';
     if(tabGL)   tabGL.style.display='none';
     if(tabK45)  tabK45.style.display='';
+    const gnavAnj=document.getElementById('gnav-anjarako');
+    const gnavVola=document.getElementById('gnav-vola');
+    const gnavDash=document.getElementById('gnav-dashboard');
+    if(gnavAnj) gnavAnj.style.display='none';
+    if(gnavVola) gnavVola.style.display='none';
+    if(gnavDash) gnavDash.style.display='none';
     showMain('k45', tabK45);
     return;
   }
@@ -2004,9 +2010,8 @@ async function seDeconnecter(){
 
 
 function onLoginSuccess(role){
-  // diacre_journal n'a pas accès à la Gestion → rediriger vers Journal
+  // diacre_journal : accès Journal K45 + Gestion/Rakitra uniquement
   if(role==='diacre_journal'){
-    alert('Votre accès est limité au Journal K45.');
     showMain('k45',document.getElementById('mnav-k45'));
     return;
   }
