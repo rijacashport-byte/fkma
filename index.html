@@ -668,6 +668,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 #section-services .rappel-preview{padding:10px 14px;font-size:11px;color:var(--t2);line-height:1.7;max-height:140px;overflow:hidden;position:relative;}
 #section-services .rappel-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,var(--s1));}
 #section-services .rappel-actions{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--bd);}
+#section-services .rappel-actions .btn{width:auto;flex:1;}
 #section-services .btn-copy{flex:1;padding:8px;border-radius:var(--rs);border:1px solid var(--bd2);background:var(--s2);color:var(--t1);font-size:12px;font-weight:600;cursor:pointer;}
 #section-services .btn-wa{flex:1;padding:8px;border-radius:var(--rs);background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:center;display:block;}
 #section-services .rappel-sep{font-size:10px;font-family:monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding:8px 4px;margin-top:6px;}
@@ -4246,19 +4247,23 @@ function sdRenderDiacre(){
 }
 
 // ── VUE RAPPELS ──────────────────────────────────────────
+function sdJoinNoms(noms){
+  if(noms.length===0) return "";
+  if(noms.length===1) return noms[0];
+  return noms.slice(0,-1).join(", ")+" ary "+noms[noms.length-1];
+}
+
 function sdBuildMsg(name,mIdx){
   const m=SD_PLANNING[mIdx];
   if(!m||m.g.indexOf(name)<0) return "";
   const lines=[];
+  const autres=m.g.filter(function(n){return n!==name;});
   lines.push("⛪ *FKMA ABIDJAN — Fanompoana "+m.m+" "+m.a+"*");
   lines.push("━━━━━━━━━━━━━━━━");
-  lines.push("");
-  lines.push("Salam *"+name+"* ! 🙏");
-  lines.push("");
-  lines.push("*Ny volana ianao manompo :* "+m.m+" "+m.a);
-  lines.push("*Vondrona :* "+(m.combo||[]).join("+"));
-  lines.push("");
-  lines.push("📅 *Jadwal fanompoana :*");
+  lines.push("Fiafanana *"+name+"* ! 🙏");
+  lines.push("*Ny volana :* "+m.m+" "+m.a+", ianao no manao asa fanompoana");
+  lines.push("*Vondrona :* "+(m.combo||[]).join("+")+" miaraka amin'i *"+sdJoinNoms(autres)+"*");
+  lines.push("📅 *Asa fanompoana :*");
   m.j.forEach(function(j){
     const p=j.p[name];
     const dt=SD_DISPATCH[String(p)];
@@ -4272,22 +4277,21 @@ function sdBuildMsg(name,mIdx){
       else if(gh[1]===name) tasks.push("👨 Manangona kapoaka vide");
     }
     const mk=j.f?"🙏 Fandraisana"+(j.fe?" — "+j.fe:""):"Alahady Tsotra";
-    lines.push("• "+j.d+" ("+mk+")");
+    lines.push("- "+j.d+" ("+mk+")");
     lines.push("  P"+p+" : "+tasks.join(", "));
   });
   const fita=SD_FITAOVANA.filter(function(f){return f.fitaovana===name&&f.annee===m.a&&f.mois_num===m.mn;});
   if(fita.length>0){
-    lines.push("");lines.push("🧺 *Fitaovam-pandraisana :*");
-    fita.forEach(function(f){lines.push("• "+f.date+" — Manasa fitaovana");});
+    lines.push("🧺 *Fitaovam-pandraisana :*");
+    fita.forEach(function(f){lines.push("- "+f.date+" — Manasa fitaovana");});
   }
   const fivo=SD_FIVORIANA.filter(function(f){return f.nom.indexOf(name)>=0&&f.mois_num===m.mn&&f.annee===m.a;});
   if(fivo.length>0){
-    lines.push("");lines.push("🏠 *Fivoriana — Accueil réunion :*");
-    fivo.forEach(function(f){lines.push("• "+f.mois+" "+f.annee);});
+    lines.push("🏠 *Fivoriana — Accueil réunion :*");
+    fivo.forEach(function(f){lines.push("- "+f.mois+" "+f.annee);});
   }
-  lines.push("");
   lines.push("━━━━━━━━━━━━━━━━");
-  lines.push("_Ny Tompo anie hitahy ny fanompoana !_ 🙏");
+  lines.push("_Ho an'Andriamanitra irery anie ny voninahitra !_ 🙏");
   return lines.join("\n");
 }
 
@@ -4314,8 +4318,8 @@ function sdRenderRappel(){
       +"</div>"
       +"<div class='rappel-preview'>"+preview+"</div>"
       +"<div class='rappel-actions'>"
-      +"<button class='btn-copy' onclick='sdDoCopy(\""+key+"\")'>📋 Copier</button>"
-      +"<a class='btn-wa' href='"+waLink+"' target='_blank'>📱 WhatsApp</a>"
+      +"<button class='btn btn-gris' onclick='sdDoCopy(\""+key+"\")'><span>📋</span> Copier</button>"
+      +"<a class='btn btn-wa' href='"+waLink+"' target='_blank'><span>💬</span> WhatsApp</a>"
       +"</div></div>";
   });
   html+="<div class='rappel-sep'>Diacres hors service ce mois ✨</div>";
