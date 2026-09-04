@@ -15,7 +15,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -31,7 +31,7 @@ const app  = initializeApp({
 const db   = getFirestore(app);
 const auth = getAuth(app);
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where};
+window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._onAuth=onAuthStateChanged;
@@ -528,6 +528,136 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 .src-toggle-btn{flex:1;padding:8px;border:2px solid var(--gris2);border-radius:8px;
   font-size:12px;font-weight:600;cursor:pointer;background:white;font-family:inherit;text-align:center;}
 .src-toggle-btn.actif{background:#e8eefb;border-color:var(--bleu);color:var(--bleu);}
+
+/* ── SERVICES DIACRES (onglet planning) ────────────────────── */
+#section-services{--bg:var(--gris1);--s1:#ffffff;--s2:#f4f3ee;--s3:#eef1f5;--bd:var(--gris2);--bd2:#c9c7bd;--t1:var(--texte);--t2:var(--texte2);--t3:#8a8a8a;--acc:var(--bleu);--amber:var(--or);--amber2:#fdf3da;--green:var(--vert);--green2:#e8f5ee;--pink:#b8356f;--pink2:#fbe8f1;--blue:#2c6cc4;--blue2:#e7f0fc;--purple:var(--violet);--purple2:#f3ecf8;--teal:var(--cyan);--teal2:#e3f6f2;--r:12px;--rs:8px;--p1:#2c6cc4;--p1b:#e7f0fc;--p2:#1a8f5c;--p2b:#e6f7ee;--p3:#c49a2a;--p3b:#fdf3da;--p4:#b8356f;--p4b:#fbe8f1;font-family:'Inter',sans-serif;color:var(--t1);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06);margin-bottom:10px;}
+#section-services *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+#section-services{background:var(--bg);}
+#section-services .topbar{z-index:1;background:var(--s1);border-bottom:1px solid var(--bd);padding:10px 16px 0;}
+#section-services .topbar-title{font-size:10px;color:var(--t3);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;}
+#section-services .topbar-sub{font-size:15px;font-weight:700;margin-bottom:8px;}
+#section-services .topbar-sub span{color:var(--acc);}
+#section-services .tabs{display:flex;gap:0;overflow-x:auto;margin-bottom:-1px;scrollbar-width:none;border-bottom:1px solid var(--bd);}
+#section-services .tabs::-webkit-scrollbar{display:none;}
+#section-services .tab{flex-shrink:0;text-align:center;padding:8px 12px;font-size:11px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;}
+#section-services .tab.active{color:var(--acc);border-bottom-color:var(--acc);}
+#section-services .month-nav{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--s1);border-bottom:1px solid var(--bd);z-index:1;}
+#section-services .mnav-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--bd2);background:var(--s2);color:var(--t1);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#section-services .month-select{flex:1;background:var(--s2);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--t1);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:7px 10px;outline:none;cursor:pointer;}
+#section-services .mcount{font-size:10px;font-family:monospace;color:var(--t3);flex-shrink:0;}
+#section-services .content{padding:12px 14px;}
+#section-services .groupe-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;}
+#section-services .section-label{font-size:10px;font-family:monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+#section-services .membres{display:flex;flex-wrap:wrap;gap:5px;}
+#section-services .membre{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--bd2);}
+#section-services .membre.H{background:var(--blue2);color:var(--blue);border-color:#1E3A5F;}
+#section-services .membre.F{background:var(--pink2);color:var(--pink);border-color:#4A1030;}
+#section-services .combo-badge{font-size:10px;font-family:monospace;background:#1A1B3A;color:var(--acc);padding:2px 8px;border-radius:10px;margin-left:4px;}
+#section-services .jour-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:8px;overflow:hidden;}
+#section-services .jour-card.fandraisana{border-color:var(--amber);}
+#section-services .jour-card.fete{border-color:var(--amber);}
+#section-services .jour-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd);cursor:pointer;user-select:none;}
+#section-services .jour-date{font-family:monospace;font-size:13px;font-weight:500;color:var(--t1);}
+#section-services .jour-right{display:flex;align-items:center;gap:6px;}
+#section-services .pill{font-size:10px;font-family:monospace;padding:3px 8px;border-radius:10px;font-weight:500;}
+#section-services .pill-fandr{background:var(--amber2);color:var(--amber);}
+#section-services .pill-tsotra{background:var(--s3);color:var(--t3);}
+#section-services .chevron{font-size:12px;color:var(--t3);transition:transform .2s;}
+#section-services .chevron.open{transform:rotate(180deg);}
+#section-services .postes-body{display:none;padding:10px 14px;}
+#section-services .postes-body.open{display:block;}
+#section-services .fandr-banner{border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;background:linear-gradient(135deg,rgba(244,114,182,.1),rgba(96,165,250,.1));border:1px solid var(--bd2);}
+#section-services .fandr-title{font-size:10px;font-family:monospace;font-weight:600;margin-bottom:6px;color:var(--t2);}
+#section-services .fandr-roles{display:flex;flex-direction:column;gap:4px;}
+#section-services .fandr-role{font-size:11px;padding:4px 8px;border-radius:6px;line-height:1.4;}
+#section-services .fandr-role.mofo{background:rgba(244,114,182,.15);color:var(--pink);}
+#section-services .fandr-role.divay{background:rgba(96,165,250,.15);color:var(--blue);}
+#section-services .fandr-role.kapoaka{background:rgba(96,165,250,.1);color:#93C5FD;}
+#section-services .fandr-role.plateau{background:rgba(167,139,250,.15);color:var(--purple);}
+#section-services .poste-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bd);}
+#section-services .poste-row:last-child{border-bottom:none;}
+#section-services .poste-badge{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:monospace;flex-shrink:0;}
+#section-services .pb1{background:var(--p1b);color:var(--p1);}.pb2{background:var(--p2b);color:var(--p2);}
+#section-services .pb3{background:var(--p3b);color:var(--p3);}.pb4{background:var(--p4b);color:var(--p4);}
+#section-services .poste-info{flex:1;}
+#section-services .poste-name{font-size:13px;font-weight:600;color:var(--t1);}
+#section-services .poste-tasks{margin-top:4px;display:flex;flex-direction:column;gap:2px;}
+#section-services .task{font-size:11px;color:var(--t2);display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+#section-services .task::before{content:'·';color:var(--t3);flex-shrink:0;}
+#section-services .task.mofo{color:var(--pink);font-weight:600;}.task.mofo::before{content:'👩';}
+#section-services .task.divay{color:var(--blue);font-weight:600;}.task.divay::before{content:'👨';}
+#section-services .task.kapoaka{color:#93C5FD;font-weight:600;}.task.kapoaka::before{content:'👨';}
+#section-services .task.plateau{color:var(--purple);}.task.plateau::before{content:'📋';}
+#section-services .task.fitaovana{color:var(--amber);}.task.fitaovana::before{content:'🙏';}
+#section-services .diacre-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none;}
+#section-services .diacre-scroll::-webkit-scrollbar{display:none;}
+#section-services .diacre-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--bd2);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap;}
+#section-services .diacre-btn.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+#section-services .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+#section-services .stat-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;text-align:center;}
+#section-services .stat-val{font-size:20px;font-weight:700;font-family:monospace;}
+#section-services .stat-lbl{font-size:9px;color:var(--t3);font-family:monospace;margin-top:2px;text-transform:uppercase;}
+#section-services .postes-mini{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;}
+#section-services .pm{font-size:10px;padding:2px 7px;border-radius:8px;font-family:monospace;}
+#section-services .mois-list{display:flex;flex-direction:column;gap:6px;}
+#section-services .mois-row{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;}
+#section-services .mois-row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+#section-services .mois-nom{font-size:14px;font-weight:700;}
+#section-services .mois-annee{font-size:12px;color:var(--t3);}
+#section-services .jours-chips{display:flex;flex-wrap:wrap;gap:4px;}
+#section-services .jour-chip{font-size:10px;font-family:monospace;padding:3px 8px;border-radius:8px;border:1px solid var(--bd);}
+#section-services .sec-header{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+#section-services .sec-icon{font-size:22px;margin-bottom:5px;}.sec-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+#section-services .sec-desc{font-size:12px;color:var(--t2);line-height:1.5;}
+#section-services .sec-badge{display:inline-block;font-size:10px;font-family:monospace;padding:3px 8px;border-radius:10px;margin-top:6px;}
+#section-services .badge-pink{background:var(--pink2);color:var(--pink);}.badge-teal{background:var(--teal2);color:var(--teal);}
+#section-services .badge-amber{background:var(--amber2);color:var(--amber);}
+#section-services .search-bar{background:var(--s2);border:1px solid var(--bd2);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+#section-services .search-bar input{background:transparent;border:none;color:var(--t1);font-family:'Inter',sans-serif;font-size:13px;flex:1;outline:none;}
+#section-services .search-bar input::placeholder{color:var(--t3);}
+#section-services .filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none;}
+#section-services .filter-row::-webkit-scrollbar{display:none;}
+#section-services .filter-chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--bd2);background:var(--s2);color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s;}
+#section-services .filter-chip.active{background:var(--acc);color:#fff;border-color:var(--acc);}
+#section-services .task-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:6px;}
+#section-services .task-card.highlight{border-color:var(--pink);}
+#section-services .task-head{display:flex;align-items:center;gap:10px;padding:10px 14px;}
+#section-services .task-date-sm{font-family:monospace;font-size:11px;color:var(--t3);min-width:82px;text-align:right;}
+#section-services .task-info{flex:1;}.task-label{font-size:11px;color:var(--t2);margin-bottom:2px;}
+#section-services .task-name-big{font-size:14px;font-weight:700;color:var(--t1);}
+#section-services .task-fete{font-size:10px;font-family:monospace;padding:2px 7px;border-radius:8px;background:var(--amber2);color:var(--amber);display:inline-block;margin-top:3px;}
+#section-services .task-badge-f{width:30px;height:30px;border-radius:50%;background:var(--pink2);color:var(--pink);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+#section-services .fiv-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:6px;display:flex;align-items:center;gap:10px;padding:12px 14px;}
+#section-services .fiv-icon{width:34px;height:34px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+#section-services .fiv-info{flex:1;}.fiv-mois-lbl{font-size:11px;color:var(--t3);margin-bottom:3px;font-family:monospace;}
+#section-services .fiv-nom{font-size:14px;font-weight:700;}
+#section-services .fiv-type{font-size:10px;font-family:monospace;padding:2px 7px;border-radius:8px;margin-top:4px;display:inline-block;}
+#section-services .type-diacre{background:#1A1B3A;color:var(--acc);}.type-couple{background:var(--pink2);color:var(--pink);}
+#section-services .type-pasteur{background:var(--purple2);color:var(--purple);}.type-pl{background:var(--amber2);color:var(--amber);}
+#section-services .type-sortie{background:var(--teal2);color:var(--teal);}
+#section-services .annee-header{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:7px 14px;margin-bottom:8px;margin-top:4px;font-size:12px;font-weight:700;color:var(--acc);font-family:monospace;}
+#section-services .diacre-section{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+#section-services .ds-header{padding:10px 14px;border-bottom:1px solid var(--bd);font-size:11px;font-weight:600;font-family:monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;}
+#section-services .ds-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd);}
+#section-services .ds-item:last-child{border-bottom:none;}
+#section-services .ds-date-sm{font-family:monospace;font-size:11px;color:var(--t3);min-width:82px;}
+#section-services .ds-info{flex:1;font-size:13px;}.ds-sub{font-size:11px;color:var(--t2);margin-top:2px;}
+/* RAPPELS */
+#section-services .rappel-mois-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+#section-services .rappel-mois-nav select{flex:1;background:var(--s2);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--t1);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:7px 10px;outline:none;}
+#section-services .rappel-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+#section-services .rappel-card.rappel-off{opacity:.5;}
+#section-services .rappel-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bd);}
+#section-services .rappel-name{font-size:14px;font-weight:700;}
+#section-services .rappel-wa{font-size:11px;font-family:monospace;color:var(--t3);}
+#section-services .rappel-badge{font-size:10px;font-family:monospace;padding:2px 8px;border-radius:10px;background:var(--green2);color:var(--green);}
+#section-services .rappel-preview{padding:10px 14px;font-size:11px;color:var(--t2);line-height:1.7;max-height:140px;overflow:hidden;position:relative;}
+#section-services .rappel-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,var(--s1));}
+#section-services .rappel-actions{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--bd);}
+#section-services .btn-copy{flex:1;padding:8px;border-radius:var(--rs);border:1px solid var(--bd2);background:var(--s2);color:var(--t1);font-size:12px;font-weight:600;cursor:pointer;}
+#section-services .btn-wa{flex:1;padding:8px;border-radius:var(--rs);background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:center;display:block;}
+#section-services .rappel-sep{font-size:10px;font-family:monospace;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding:8px 4px;margin-top:6px;}
+
 </style>
 </head>
 <body>
@@ -563,6 +693,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)">📖<br>Journal</button>
   <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)">📒<br>Grand Livre</button>
   <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none">🏦<br>Opérations</button>
+  <button class="main-tab" id="mnav-services" onclick="showMain('services',this)">🤝<br>Diacres</button>
 </div>
 
 <div class="fb-status" id="fb-status">
@@ -1278,28 +1409,11 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
 <!-- ══ K45 ══ -->
 <div id="gl-tab-k45" style="display:none">
-  <div class="note">📙 Livre K45 — Hors budget Fiangonana · Événement temporaire</div>
-
-  <!-- Soldes initiaux -->
-  <div class="card">
-    <div class="ctit">🏁 Soldes initiaux K45</div>
-    <div class="g2">
-      <div class="ch"><label>💵 Caisse initiale</label>
-        <input type="number" id="k45-init-caisse" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
-      </div>
-      <div class="ch"><label>🏦 Banque SIB initiale</label>
-        <input type="number" id="k45-init-banque" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
-      </div>
-    </div>
-    <div class="note" style="margin-bottom:0">💡 Normalement 0 pour un événement qui démarre à zéro.</div>
-  </div>
+  <div class="note">📙 Livre K45 — Hors budget Fiangonana · Dans SIB Rakitra</div>
 
   <div class="card">
     <div class="ctit">💰 Solde K45</div>
-    <div class="solrow"><span class="sollab">💵 Caisse K45</span><span class="solval" id="k45-sol-caisse">0 FCFA</span></div>
-    <div class="solrow"><span class="sollab">🏦 SIB K45 (versé dans SIB Rakitra)</span><span class="solval" id="k45-sol-banque">0 FCFA</span></div>
-    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
-    <div class="note" style="margin-bottom:0">⚠️ La ligne "SIB K45" fait partie du même compte bancaire physique que SIB Rakitra — le vrai relevé SIB Rakitra = SIB Rakitra + SIB K45.</div>
+    <div class="solrow"><span class="sollab">📙 K45 (dans SIB Rakitra)</span><span class="solval" id="k45-sol-total">0 FCFA</span></div>
   </div>
 
   <!-- Formulaire saisie K45 (Rija + PL seulement) -->
@@ -1376,7 +1490,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
 <div id="section-ops" style="display:none">
   <div class="note" style="margin-bottom:10px">
-    🏦 Opérations bancaires — SIB Rakitra, SIB Anjarako & SIB K45
+    🏦 Opérations bancaires — SIB Rakitra & SIB Anjarako
   </div>
   
 
@@ -1390,7 +1504,6 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="tr-livre">
           <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
           <option value="anj">📘 Anjarako (SIB Anjarako)</option>
-          <option value="k45">📙 K45 (SIB K45)</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
@@ -1419,7 +1532,6 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="ob-livre">
           <option value="fiang">📗 SIB Rakitra</option>
           <option value="anj">📘 SIB Anjarako</option>
-          <option value="k45">📙 SIB K45</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
@@ -1453,7 +1565,6 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
         <select id="rp-livre">
           <option value="fiang">📗 SIB Rakitra</option>
           <option value="anj">📘 SIB Anjarako</option>
-          <option value="k45">📙 SIB K45</option>
         </select>
       </div>
       <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
@@ -1477,6 +1588,96 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
 
   <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
+
+<div id="section-services" style="display:none">
+  <div id="section-services-inner">
+  <div class="topbar">
+    <div class="topbar-title" id="sd-periode">FKMA Abidjan · Planning des services</div>
+    <div class="topbar-sub">Services <span>Diacres</span></div>
+    <div class="tabs">
+      <div class="tab active" onclick="sdSetTab('mois')" id="sd-tab-mois">📅 Par mois</div>
+      <div class="tab" onclick="sdSetTab('diacre')" id="sd-tab-diacre">👤 Par diacre</div>
+      <div class="tab" onclick="sdSetTab('rappel')" id="sd-tab-rappel">📱 Rappels</div>
+      <div class="tab" onclick="sdSetTab('fitaovana')" id="sd-tab-fitaovana">🧺 Fitaovana</div>
+      <div class="tab" onclick="sdSetTab('fivoriana')" id="sd-tab-fivoriana">🏠 Fivoriana</div>
+    </div>
+  </div>
+
+  <div id="sd-status" style="display:none;margin:10px 14px;padding:10px 12px;background:#fdf3da;border:1px solid var(--or);border-radius:8px;font-size:12px;color:#7a5c10;">
+    ℹ️ Aucune donnée de planning n'a encore été enregistrée dans la base. Les données par défaut sont affichées. Un secrétaire peut les enregistrer dans Firestore ci-dessous (⚙️ en bas de cette page).
+  </div>
+
+  <div class="month-nav" id="sd-monthNav">
+    <button class="mnav-btn" onclick="sdPrevMois()">&#8249;</button>
+    <select class="month-select" id="sd-selMois" onchange="sdGoMois(this.value)"></select>
+    <span class="mcount" id="sd-mcount"></span>
+    <button class="mnav-btn" onclick="sdNextMois()">&#8250;</button>
+  </div>
+
+  <div class="content">
+    <div id="sd-view-mois">
+      <div class="groupe-card">
+        <div class="section-label" id="sd-sectLabel">Groupe du mois</div>
+        <div class="membres" id="sd-membresBar"></div>
+      </div>
+      <div id="sd-joursContainer"></div>
+    </div>
+
+    <div id="sd-view-diacre" style="display:none;">
+      <div class="diacre-scroll" id="sd-diacre-scroll"></div>
+      <div class="stats-grid" id="sd-diacre-stats"></div>
+      <div class="postes-mini" id="sd-postes-mini"></div>
+      <div class="mois-list" id="sd-moisList"></div>
+    </div>
+
+    <div id="sd-view-rappel" style="display:none;">
+      <div class="sec-header">
+        <div class="sec-icon">📱</div>
+        <div class="sec-title">Rappels WhatsApp</div>
+        <div class="sec-desc">Message personnalisé pour chaque diacre. 1 clic pour ouvrir WhatsApp avec le message prêt.</div>
+        <span class="sec-badge" style="background:#e6f9ef;color:#0f7a4d;">📱 WhatsApp · 1 clic par diacre</span>
+      </div>
+      <div class="rappel-mois-nav">
+        <span style="font-size:11px;color:var(--t3);font-family:monospace;">Mois :</span>
+        <select id="sd-selRappelMois" onchange="sdCurRappelMois=parseInt(this.value);sdRenderRappel()"></select>
+      </div>
+      <div id="sd-rappelContainer"></div>
+    </div>
+
+    <div id="sd-view-fitaovana" style="display:none;">
+      <div class="sec-header">
+        <div class="sec-icon">🧺</div>
+        <div class="sec-title">Fitaovam-pandraisana</div>
+        <div class="sec-desc">Laver les verres et nappes après chaque Fandraisana. Rotation des diaconesses.</div>
+        <span class="sec-badge badge-pink">👩 Diakona vavy uniquement</span>
+      </div>
+      <div class="search-bar"><span style="color:var(--t3);">🔍</span>
+        <input type="text" id="sd-search-fita" placeholder="Rechercher..." oninput="sdRenderFitaovana()"/></div>
+      <div class="filter-row" id="sd-filter-row"></div>
+      <div id="sd-list-fitaovana"></div>
+    </div>
+
+    <div id="sd-view-fivoriana" style="display:none;">
+      <div class="sec-header">
+        <div class="sec-icon">🏠</div>
+        <div class="sec-title">Fivoriana Diakona / Fianakaviana</div>
+        <div class="sec-desc">Réunion mensuelle des diacres. Rotation de l'accueil.</div>
+        <span class="sec-badge badge-teal">🔄 Rotation mensuelle</span>
+      </div>
+      <div id="sd-list-fivoriana"></div>
+    </div>
+  </div>
+
+  <div id="sd-admin-panel" style="display:none;margin:14px;padding:12px 14px;background:#fff;border:1px dashed var(--gris2);border-radius:10px;">
+    <div style="font-size:12px;font-weight:700;color:var(--bleu);margin-bottom:6px;">⚙️ Mettre à jour le planning des services (secrétaire uniquement)</div>
+    <div style="font-size:11px;color:var(--texte2);margin-bottom:8px;line-height:1.5;">
+      Chaque année, Claude vous donnera un bloc de texte à jour. Collez-le ici tel quel et cliquez sur "Enregistrer" — cela remplace le planning dans la base de données, sans toucher au reste de l'application.
+    </div>
+    <textarea id="sd-import-zone" placeholder="Collez ici le bloc de données fourni par Claude…" style="width:100%;min-height:90px;border:1.5px solid var(--gris2);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;"></textarea>
+    <button class="btn" style="margin-top:8px;background:var(--bleu);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;" onclick="sdImporterDonnees()">💾 Enregistrer dans la base</button>
+  </div>
+  </div>
+</div>
 
 </div>
 </div><!-- /app -->
@@ -1523,9 +1724,14 @@ function appliquerRole(role){
   const tabK45  = document.getElementById('mnav-k45');
   const tabGL   = document.getElementById('mnav-gl');
   const tabOps  = document.getElementById('mnav-ops');
+  const tabServices = document.getElementById('mnav-services');
 
   // Cacher tout par défaut
   if(tabOps) tabOps.style.display='none';
+  // L'onglet "Diacres" (planning des services) reste visible pour tous les comptes, quel que soit le rôle
+  if(tabServices) tabServices.style.display='';
+  const sdAdmin=document.getElementById('sd-admin-panel');
+  if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
 
   if(role==='diacre_journal'){
     // Nataly — Journal K45 seulement
@@ -1605,11 +1811,12 @@ document.addEventListener('DOMContentLoaded', function(){
 function showMain(section, btn){
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['gest','k45','gl','ops'].forEach(s=>{
+  ['gest','k45','gl','ops','services'].forEach(s=>{
     const el=document.getElementById('section-'+s);
     if(el) el.style.display=s===section?'':'none';
   });
   if(section==='gl') chargerTout();
+  if(section==='services') sdChargerDonnees();
 }
 
 // ── NAVIGATION SOUS-ONGLETS GESTION ──────────────────────────
@@ -3453,6 +3660,12 @@ function renderSoldes(livre){
     const el=document.getElementById(id);
     if(el){el.textContent=fmt(val)+' FCFA';el.className='solval '+(val>=0?'spos':'sneg');}
   };
+  if(livre==='k45'){
+    let k45=0;
+    list.forEach(e=>k45+=(e.es==='E'?1:-1)*(e.montant||0));
+    setEl('k45-sol-total',k45);
+    return;
+  }
   setEl(livre+'-sol-caisse',caisse);
   setEl(livre+'-sol-banque',banque);
   setEl(livre+'-sol-total',tot);
@@ -3467,7 +3680,8 @@ function renderSynth(){
     (GL[livre]||[]).forEach(e=>{const s=e.source||'caisse';const m=e.montant||0;const sg=e.es==='E'?1:-1;if(s==='banque')b+=sg*m;else c+=sg*m;});
     return c+b;
   };
-  const tf=calc('fiang'),ta=calc('anj'),tk45=calc('k45');
+  const tf=calc('fiang'),ta=calc('anj');
+  let tk45=0;(GL['k45']||[]).forEach(e=>tk45+=(e.es==='E'?1:-1)*(e.montant||0));
   const set=(id,v)=>{const el=document.getElementById(id);if(el){el.textContent=fmt(v)+' F';el.style.color=v>=0?'var(--vert)':'var(--rouge)';}};
   set('syn-fiang',tf);set('syn-anj',ta);set('syn-k45',tk45);set('syn-tot',tf+ta);
 }
@@ -3726,6 +3940,446 @@ setTimeout(function(){
     if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='Se connecter';}
   }
 }, 10000);
+
+
+// ══════════════════════════════════════════════════════════════
+// ── SERVICES DIACRES (onglet "Diacres" — planning des services) ─
+// ══════════════════════════════════════════════════════════════
+// Règles fixes du roulement (ne changent pas d'une année à l'autre)
+const SD_DISPATCH={"1":{"t":["Sonorisation","Tableau hira (1)","Mitaty rakitra (1)"]},"2":{"t":["Tableau hira (2)","Mandray vaovao","Mitaty rakitra (2)"]},"3":{"t":["Mampandroso olona","Manisa rakitra (1)","Ventilateur"]},"4":{"t":["Lamba litorjika","Manisa rakitra (2)","Manoratra journal"]}};
+const SD_TYPE_CONFIG={diacre:{icon:"👤",cls:"type-diacre"},couple:{icon:"👫",cls:"type-couple"},pasteur:{icon:"⛪",cls:"type-pasteur"},pl:{icon:"🌟",cls:"type-pl"},sortie:{icon:"🚌",cls:"type-sortie"}};
+const SD_PC_COLOR=["var(--p1)","var(--p2)","var(--p3)","var(--p4)"];
+const SD_PC_BG=["var(--p1b)","var(--p2b)","var(--p3b)","var(--p4b)"];
+
+// Données de secours (utilisées uniquement si rien n'est encore enregistré dans Firestore).
+// Une fois importées, les vraies données vivent dans la collection 'services_diacres' (doc 'data').
+const SD_DEFAULT = {"contacts":{"Rado":{"nom":"RAKOTOSON Rado","wa":"+225759893311","email":"koakio@hotmail.com","genre":"H"},"Nathalie Lolona":{"nom":"RAKOTOSON Nathalie Lolona","wa":"+225768312627","email":"ramekantono@gmail.com","genre":"F"},"Rija":{"nom":"RAKOTOSON Rija","wa":"+225768151367","email":"rijacashport@gmail.com","genre":"H"},"Nathalie Rija":{"nom":"RAKOTOSON Nathalie Rija","wa":"+225544090189","email":"natalyrakout@gmail.com","genre":"F"},"Mahery":{"nom":"RATOARIJAONA Mahery","wa":"+225757296148","email":"maheryratoatijaona@yahoo.fr","genre":"H"},"Ando":{"nom":"RAKOTOARIVONY Ny Aina Ando","wa":"+225504397715","email":"nyandorakotoarivony@yahoo.fr","genre":"F"},"Rivo":{"nom":"RAJAONARIFETRA Rivo Mahaleo","wa":"+225757406101","email":"fetrarivograceland@yahoo.fr","genre":"H"},"Patricia":{"nom":"RAJAONARIFETRA Patricia","wa":"+225779949161","email":"patriciarajao@yahoo.fr","genre":"F"},"Yvon Staël":{"nom":"RABOSAONA Aina Herilanto Yvon Staël","wa":"+225779813519","email":"yvons1977@gmail.com","genre":"H"},"Nivo":{"nom":"ANDRIANARY RAKOTOARISON Verohaja Nivosoa","wa":"+225554115003","email":"nivoandrianary15@gmail.com","genre":"F"},"Manovosoa":{"nom":"RAKOTONIRAINY Manovosoa","wa":"+225554519139","email":"toavinkaja@gmail.com","genre":"H"},"Laeticia":{"nom":"RANDRIANAIVO HARIMANANTSOA  Laeticia","wa":"+225102029394","email":"hariletitia@gmail.com","genre":"F"}},"planning":[{"m":"Septembre","a":2026,"mn":9,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"06/09/2026","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}},{"d":"13/09/2026","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1}},{"d":"20/09/2026","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2}},{"d":"27/09/2026","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Octobre","a":2026,"mn":10,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"04/10/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rija":3,"Nathalie Rija":4}},{"d":"11/10/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rija":4,"Nathalie Rija":1}},{"d":"18/10/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rija":1,"Nathalie Rija":2}},{"d":"25/10/2026","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Novembre","a":2026,"mn":11,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"01/11/2026","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}},{"d":"08/11/2026","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1}},{"d":"15/11/2026","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2}},{"d":"22/11/2026","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3}},{"d":"29/11/2026","f":false,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}}]},{"m":"Décembre","a":2026,"mn":12,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"06/12/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"13/12/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"20/12/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"25/12/2026","f":true,"fe":"Noël","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}},{"d":"27/12/2026","f":false,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}}]},{"m":"Janvier","a":2027,"mn":1,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"03/01/2027","f":true,"fe":"","p":{"Rado":1,"Rivo":2,"Patricia":3,"Nathalie Lolona":4}},{"d":"10/01/2027","f":false,"fe":"","p":{"Rado":2,"Rivo":3,"Patricia":4,"Nathalie Lolona":1}},{"d":"17/01/2027","f":false,"fe":"","p":{"Rado":3,"Rivo":4,"Patricia":1,"Nathalie Lolona":2}},{"d":"24/01/2027","f":false,"fe":"","p":{"Rado":4,"Rivo":1,"Patricia":2,"Nathalie Lolona":3}},{"d":"31/01/2027","f":false,"fe":"","p":{"Rado":1,"Rivo":2,"Patricia":3,"Nathalie Lolona":4}}]},{"m":"Février","a":2027,"mn":2,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"07/02/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4}},{"d":"14/02/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1}},{"d":"21/02/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2}},{"d":"28/02/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3}}]},{"m":"Mars","a":2027,"mn":3,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"07/03/2027","f":true,"fe":"","p":{"Manovosoa":1,"Patricia":2,"Laeticia":3,"Rivo":4}},{"d":"14/03/2027","f":false,"fe":"","p":{"Manovosoa":2,"Patricia":3,"Laeticia":4,"Rivo":1}},{"d":"21/03/2027","f":false,"fe":"","p":{"Manovosoa":3,"Patricia":4,"Laeticia":1,"Rivo":2}},{"d":"25/03/2027","f":true,"fe":"Jeudi Saint","p":{"Manovosoa":4,"Patricia":1,"Laeticia":2,"Rivo":3}},{"d":"28/03/2027","f":true,"fe":"Pâques","p":{"Manovosoa":1,"Patricia":2,"Laeticia":3,"Rivo":4}}]},{"m":"Avril","a":2027,"mn":4,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"04/04/2027","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Mahery":3,"Ando":4}},{"d":"11/04/2027","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Mahery":4,"Ando":1}},{"d":"18/04/2027","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Mahery":1,"Ando":2}},{"d":"25/04/2027","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Mahery":2,"Ando":3}}]},{"m":"Mai","a":2027,"mn":5,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"02/05/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Lolona":2,"Rado":3,"Nathalie Rija":4}},{"d":"06/05/2027","f":true,"fe":"Ascension","p":{"Rija":2,"Nathalie Lolona":3,"Rado":4,"Nathalie Rija":1}},{"d":"09/05/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Lolona":4,"Rado":1,"Nathalie Rija":2}},{"d":"16/05/2027","f":true,"fe":"Pentecôte","p":{"Rija":4,"Nathalie Lolona":1,"Rado":2,"Nathalie Rija":3}},{"d":"23/05/2027","f":false,"fe":"","p":{"Rija":1,"Nathalie Lolona":2,"Rado":3,"Nathalie Rija":4}},{"d":"30/05/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Lolona":3,"Rado":4,"Nathalie Rija":1}}]},{"m":"Juin","a":2027,"mn":6,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"06/06/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Mahery":3,"Ando":4}},{"d":"13/06/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Mahery":4,"Ando":1}},{"d":"20/06/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Mahery":1,"Ando":2}},{"d":"27/06/2027","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Mahery":2,"Ando":3}}]},{"m":"Juillet","a":2027,"mn":7,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"04/07/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":3,"Patricia":4}},{"d":"11/07/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":4,"Patricia":1}},{"d":"18/07/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":1,"Patricia":2}},{"d":"25/07/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":2,"Patricia":3}}]},{"m":"Août","a":2027,"mn":8,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"01/08/2027","f":true,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Yvon Staël":3,"Nivo":4}},{"d":"08/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":2,"Rado":3,"Yvon Staël":4,"Nivo":1}},{"d":"15/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":3,"Rado":4,"Yvon Staël":1,"Nivo":2}},{"d":"22/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":4,"Rado":1,"Yvon Staël":2,"Nivo":3}},{"d":"29/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Yvon Staël":3,"Nivo":4}}]},{"m":"Septembre","a":2027,"mn":9,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"05/09/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rija":3,"Nathalie Rija":4}},{"d":"12/09/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rija":4,"Nathalie Rija":1}},{"d":"19/09/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rija":1,"Nathalie Rija":2}},{"d":"26/09/2027","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Octobre","a":2027,"mn":10,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"03/10/2027","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}},{"d":"10/10/2027","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Mahery":4,"Ando":1}},{"d":"17/10/2027","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Mahery":1,"Ando":2}},{"d":"24/10/2027","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Mahery":2,"Ando":3}},{"d":"31/10/2027","f":false,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}}]},{"m":"Novembre","a":2027,"mn":11,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"07/11/2027","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rivo":3,"Patricia":4}},{"d":"14/11/2027","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rivo":4,"Patricia":1}},{"d":"21/11/2027","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rivo":1,"Patricia":2}},{"d":"28/11/2027","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rivo":2,"Patricia":3}}]},{"m":"Décembre","a":2027,"mn":12,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"05/12/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}},{"d":"12/12/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1}},{"d":"19/12/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2}},{"d":"25/12/2027","f":true,"fe":"Noël","p":{"Manovosoa":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3}},{"d":"26/12/2027","f":false,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}}]},{"m":"Janvier","a":2028,"mn":1,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"02/01/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nathalie Rija":2,"Nivo":3,"Rija":4}},{"d":"09/01/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nathalie Rija":3,"Nivo":4,"Rija":1}},{"d":"16/01/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nathalie Rija":4,"Nivo":1,"Rija":2}},{"d":"23/01/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nathalie Rija":1,"Nivo":2,"Rija":3}},{"d":"30/01/2028","f":false,"fe":"","p":{"Yvon Staël":1,"Nathalie Rija":2,"Nivo":3,"Rija":4}}]},{"m":"Février","a":2028,"mn":2,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"06/02/2028","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}},{"d":"13/02/2028","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1}},{"d":"20/02/2028","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2}},{"d":"27/02/2028","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3}}]},{"m":"Mars","a":2028,"mn":3,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"05/03/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"12/03/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"19/03/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"26/03/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}}]},{"m":"Avril","a":2028,"mn":4,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"02/04/2028","f":true,"fe":"","p":{"Rivo":1,"Rado":2,"Nathalie Lolona":3,"Patricia":4}},{"d":"09/04/2028","f":false,"fe":"","p":{"Rivo":2,"Rado":3,"Nathalie Lolona":4,"Patricia":1}},{"d":"13/04/2028","f":true,"fe":"Jeudi Saint","p":{"Rivo":3,"Rado":4,"Nathalie Lolona":1,"Patricia":2}},{"d":"16/04/2028","f":true,"fe":"Pâques","p":{"Rivo":4,"Rado":1,"Nathalie Lolona":2,"Patricia":3}},{"d":"23/04/2028","f":false,"fe":"","p":{"Rivo":1,"Rado":2,"Nathalie Lolona":3,"Patricia":4}},{"d":"30/04/2028","f":false,"fe":"","p":{"Rivo":2,"Rado":3,"Nathalie Lolona":4,"Patricia":1}}]},{"m":"Mai","a":2028,"mn":5,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"07/05/2028","f":true,"fe":"","p":{"Rija":1,"Mahery":2,"Nathalie Rija":3,"Ando":4}},{"d":"14/05/2028","f":false,"fe":"","p":{"Rija":2,"Mahery":3,"Nathalie Rija":4,"Ando":1}},{"d":"21/05/2028","f":false,"fe":"","p":{"Rija":3,"Mahery":4,"Nathalie Rija":1,"Ando":2}},{"d":"25/05/2028","f":true,"fe":"Ascension","p":{"Rija":4,"Mahery":1,"Nathalie Rija":2,"Ando":3}},{"d":"28/05/2028","f":false,"fe":"","p":{"Rija":1,"Mahery":2,"Nathalie Rija":3,"Ando":4}}]},{"m":"Juin","a":2028,"mn":6,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"04/06/2028","f":true,"fe":"Pentecôte","p":{"Manovosoa":1,"Laeticia":2,"Rivo":3,"Patricia":4}},{"d":"11/06/2028","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rivo":4,"Patricia":1}},{"d":"18/06/2028","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rivo":1,"Patricia":2}},{"d":"25/06/2028","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rivo":2,"Patricia":3}}]},{"m":"Juillet","a":2028,"mn":7,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"02/07/2028","f":true,"fe":"","p":{"Mahery":1,"Yvon Staël":2,"Ando":3,"Nivo":4}},{"d":"09/07/2028","f":false,"fe":"","p":{"Mahery":2,"Yvon Staël":3,"Ando":4,"Nivo":1}},{"d":"16/07/2028","f":false,"fe":"","p":{"Mahery":3,"Yvon Staël":4,"Ando":1,"Nivo":2}},{"d":"23/07/2028","f":false,"fe":"","p":{"Mahery":4,"Yvon Staël":1,"Ando":2,"Nivo":3}},{"d":"30/07/2028","f":false,"fe":"","p":{"Mahery":1,"Yvon Staël":2,"Ando":3,"Nivo":4}}]},{"m":"Août","a":2028,"mn":8,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"06/08/2028","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4}},{"d":"13/08/2028","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1}},{"d":"20/08/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2}},{"d":"27/08/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Septembre","a":2028,"mn":9,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"03/09/2028","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Mahery":3,"Ando":4}},{"d":"10/09/2028","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Mahery":4,"Ando":1}},{"d":"17/09/2028","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Mahery":1,"Ando":2}},{"d":"24/09/2028","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Mahery":2,"Ando":3}}]},{"m":"Octobre","a":2028,"mn":10,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"01/10/2028","f":true,"fe":"","p":{"Rivo":1,"Patricia":2,"Rija":3,"Nathalie Rija":4}},{"d":"08/10/2028","f":false,"fe":"","p":{"Rivo":2,"Patricia":3,"Rija":4,"Nathalie Rija":1}},{"d":"15/10/2028","f":false,"fe":"","p":{"Rivo":3,"Patricia":4,"Rija":1,"Nathalie Rija":2}},{"d":"22/10/2028","f":false,"fe":"","p":{"Rivo":4,"Patricia":1,"Rija":2,"Nathalie Rija":3}},{"d":"29/10/2028","f":false,"fe":"","p":{"Rivo":1,"Patricia":2,"Rija":3,"Nathalie Rija":4}}]},{"m":"Novembre","a":2028,"mn":11,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"05/11/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rado":3,"Nathalie Lolona":4}},{"d":"12/11/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rado":4,"Nathalie Lolona":1}},{"d":"19/11/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rado":1,"Nathalie Lolona":2}},{"d":"26/11/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Décembre","a":2028,"mn":12,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"03/12/2028","f":true,"fe":"","p":{"Manovosoa":1,"Nathalie Rija":2,"Rija":3,"Laeticia":4}},{"d":"10/12/2028","f":false,"fe":"","p":{"Manovosoa":2,"Nathalie Rija":3,"Rija":4,"Laeticia":1}},{"d":"17/12/2028","f":false,"fe":"","p":{"Manovosoa":3,"Nathalie Rija":4,"Rija":1,"Laeticia":2}},{"d":"24/12/2028","f":false,"fe":"","p":{"Manovosoa":4,"Nathalie Rija":1,"Rija":2,"Laeticia":3}},{"d":"25/12/2028","f":true,"fe":"Noël","p":{"Manovosoa":1,"Nathalie Rija":2,"Rija":3,"Laeticia":4}},{"d":"31/12/2028","f":false,"fe":"","p":{"Manovosoa":2,"Nathalie Rija":3,"Rija":4,"Laeticia":1}}]},{"m":"Janvier","a":2029,"mn":1,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"07/01/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}},{"d":"14/01/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Mahery":4,"Ando":1}},{"d":"21/01/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Mahery":1,"Ando":2}},{"d":"28/01/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Mahery":2,"Ando":3}}]},{"m":"Février","a":2029,"mn":2,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"04/02/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rivo":3,"Patricia":4}},{"d":"11/02/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rivo":4,"Patricia":1}},{"d":"18/02/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rivo":1,"Patricia":2}},{"d":"25/02/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rivo":2,"Patricia":3}}]},{"m":"Mars","a":2029,"mn":3,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"04/03/2029","f":true,"fe":"","p":{"Rado":1,"Laeticia":2,"Nathalie Lolona":3,"Manovosoa":4}},{"d":"11/03/2029","f":false,"fe":"","p":{"Rado":2,"Laeticia":3,"Nathalie Lolona":4,"Manovosoa":1}},{"d":"18/03/2029","f":false,"fe":"","p":{"Rado":3,"Laeticia":4,"Nathalie Lolona":1,"Manovosoa":2}},{"d":"25/03/2029","f":false,"fe":"","p":{"Rado":4,"Laeticia":1,"Nathalie Lolona":2,"Manovosoa":3}},{"d":"29/03/2029","f":true,"fe":"Jeudi Saint","p":{"Rado":1,"Laeticia":2,"Nathalie Lolona":3,"Manovosoa":4}}]},{"m":"Avril","a":2029,"mn":4,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"01/04/2029","f":true,"fe":"Pâques","p":{"Nivo":1,"Rija":2,"Yvon Staël":3,"Nathalie Rija":4}},{"d":"08/04/2029","f":false,"fe":"","p":{"Nivo":2,"Rija":3,"Yvon Staël":4,"Nathalie Rija":1}},{"d":"15/04/2029","f":false,"fe":"","p":{"Nivo":3,"Rija":4,"Yvon Staël":1,"Nathalie Rija":2}},{"d":"22/04/2029","f":false,"fe":"","p":{"Nivo":4,"Rija":1,"Yvon Staël":2,"Nathalie Rija":3}},{"d":"29/04/2029","f":false,"fe":"","p":{"Nivo":1,"Rija":2,"Yvon Staël":3,"Nathalie Rija":4}}]},{"m":"Mai","a":2029,"mn":5,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"06/05/2029","f":true,"fe":"","p":{"Rivo":1,"Ando":2,"Patricia":3,"Mahery":4}},{"d":"10/05/2029","f":true,"fe":"Ascension","p":{"Rivo":2,"Ando":3,"Patricia":4,"Mahery":1}},{"d":"13/05/2029","f":false,"fe":"","p":{"Rivo":3,"Ando":4,"Patricia":1,"Mahery":2}},{"d":"20/05/2029","f":true,"fe":"Pentecôte","p":{"Rivo":4,"Ando":1,"Patricia":2,"Mahery":3}},{"d":"27/05/2029","f":false,"fe":"","p":{"Rivo":1,"Ando":2,"Patricia":3,"Mahery":4}}]},{"m":"Juin","a":2029,"mn":6,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"03/06/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"10/06/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"17/06/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"24/06/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}}]},{"m":"Juillet","a":2029,"mn":7,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"01/07/2029","f":true,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Rivo":3,"Patricia":4}},{"d":"08/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":2,"Rado":3,"Rivo":4,"Patricia":1}},{"d":"15/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":3,"Rado":4,"Rivo":1,"Patricia":2}},{"d":"22/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":4,"Rado":1,"Rivo":2,"Patricia":3}},{"d":"29/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Rivo":3,"Patricia":4}}]},{"m":"Août","a":2029,"mn":8,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"05/08/2029","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4}},{"d":"12/08/2029","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1}},{"d":"19/08/2029","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2}},{"d":"26/08/2029","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3}}]},{"m":"Septembre","a":2029,"mn":9,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"02/09/2029","f":true,"fe":"","p":{"Patricia":1,"Manovosoa":2,"Laeticia":3,"Rivo":4}},{"d":"09/09/2029","f":false,"fe":"","p":{"Patricia":2,"Manovosoa":3,"Laeticia":4,"Rivo":1}},{"d":"16/09/2029","f":false,"fe":"","p":{"Patricia":3,"Manovosoa":4,"Laeticia":1,"Rivo":2}},{"d":"23/09/2029","f":false,"fe":"","p":{"Patricia":4,"Manovosoa":1,"Laeticia":2,"Rivo":3}},{"d":"30/09/2029","f":false,"fe":"","p":{"Patricia":1,"Manovosoa":2,"Laeticia":3,"Rivo":4}}]},{"m":"Octobre","a":2029,"mn":10,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"07/10/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Mahery":3,"Ando":4}},{"d":"14/10/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Mahery":4,"Ando":1}},{"d":"21/10/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Mahery":1,"Ando":2}},{"d":"28/10/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Mahery":2,"Ando":3}}]},{"m":"Novembre","a":2029,"mn":11,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"04/11/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4}},{"d":"11/11/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1}},{"d":"18/11/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2}},{"d":"25/11/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Décembre","a":2029,"mn":12,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"02/12/2029","f":true,"fe":"","p":{"Laeticia":1,"Mahery":2,"Manovosoa":3,"Ando":4}},{"d":"09/12/2029","f":false,"fe":"","p":{"Laeticia":2,"Mahery":3,"Manovosoa":4,"Ando":1}},{"d":"16/12/2029","f":false,"fe":"","p":{"Laeticia":3,"Mahery":4,"Manovosoa":1,"Ando":2}},{"d":"23/12/2029","f":false,"fe":"","p":{"Laeticia":4,"Mahery":1,"Manovosoa":2,"Ando":3}},{"d":"25/12/2029","f":true,"fe":"Noël","p":{"Laeticia":1,"Mahery":2,"Manovosoa":3,"Ando":4}},{"d":"30/12/2029","f":false,"fe":"","p":{"Laeticia":2,"Mahery":3,"Manovosoa":4,"Ando":1}}]},{"m":"Janvier","a":2030,"mn":1,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"06/01/2030","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":3,"Patricia":4}},{"d":"13/01/2030","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":4,"Patricia":1}},{"d":"20/01/2030","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":1,"Patricia":2}},{"d":"27/01/2030","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":2,"Patricia":3}}]},{"m":"Février","a":2030,"mn":2,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"03/02/2030","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rado":3,"Nathalie Lolona":4}},{"d":"10/02/2030","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rado":4,"Nathalie Lolona":1}},{"d":"17/02/2030","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rado":1,"Nathalie Lolona":2}},{"d":"24/02/2030","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Mars","a":2030,"mn":3,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"03/03/2030","f":true,"fe":"","p":{"Rija":1,"Manovosoa":2,"Nathalie Rija":3,"Laeticia":4}},{"d":"10/03/2030","f":false,"fe":"","p":{"Rija":2,"Manovosoa":3,"Nathalie Rija":4,"Laeticia":1}},{"d":"17/03/2030","f":false,"fe":"","p":{"Rija":3,"Manovosoa":4,"Nathalie Rija":1,"Laeticia":2}},{"d":"24/03/2030","f":false,"fe":"","p":{"Rija":4,"Manovosoa":1,"Nathalie Rija":2,"Laeticia":3}},{"d":"31/03/2030","f":false,"fe":"","p":{"Rija":1,"Manovosoa":2,"Nathalie Rija":3,"Laeticia":4}}]},{"m":"Avril","a":2030,"mn":4,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"07/04/2030","f":true,"fe":"","p":{"Mahery":1,"Nathalie Lolona":2,"Ando":3,"Rado":4}},{"d":"14/04/2030","f":false,"fe":"","p":{"Mahery":2,"Nathalie Lolona":3,"Ando":4,"Rado":1}},{"d":"18/04/2030","f":true,"fe":"Jeudi Saint","p":{"Mahery":3,"Nathalie Lolona":4,"Ando":1,"Rado":2}},{"d":"21/04/2030","f":true,"fe":"Pâques","p":{"Mahery":4,"Nathalie Lolona":1,"Ando":2,"Rado":3}},{"d":"28/04/2030","f":false,"fe":"","p":{"Mahery":1,"Nathalie Lolona":2,"Ando":3,"Rado":4}}]},{"m":"Mai","a":2030,"mn":5,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"05/05/2030","f":true,"fe":"","p":{"Rivo":1,"Nivo":2,"Patricia":3,"Yvon Staël":4}},{"d":"12/05/2030","f":false,"fe":"","p":{"Rivo":2,"Nivo":3,"Patricia":4,"Yvon Staël":1}},{"d":"19/05/2030","f":false,"fe":"","p":{"Rivo":3,"Nivo":4,"Patricia":1,"Yvon Staël":2}},{"d":"26/05/2030","f":false,"fe":"","p":{"Rivo":4,"Nivo":1,"Patricia":2,"Yvon Staël":3}},{"d":"30/05/2030","f":true,"fe":"Ascension","p":{"Rivo":1,"Nivo":2,"Patricia":3,"Yvon Staël":4}}]}],"fitaovana":[{"date":"06/09/2026","fete":"","fitaovana":"Ando","mois_num":9,"annee":2026,"label":"1er dim. Septembre 2026"},{"date":"04/10/2026","fete":"","fitaovana":"Patricia","mois_num":10,"annee":2026,"label":"1er dim. Octobre 2026"},{"date":"01/11/2026","fete":"","fitaovana":"Nivo","mois_num":11,"annee":2026,"label":"1er dim. Novembre 2026"},{"date":"06/12/2026","fete":"","fitaovana":"Laeticia","mois_num":12,"annee":2026,"label":"1er dim. Décembre 2026"},{"date":"25/12/2026","fete":"Noël","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2026,"label":"Noël 2026"},{"date":"03/01/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":1,"annee":2027,"label":"1er dim. Janvier 2027"},{"date":"07/02/2027","fete":"","fitaovana":"Laeticia","mois_num":2,"annee":2027,"label":"1er dim. Février 2027"},{"date":"07/03/2027","fete":"","fitaovana":"Patricia","mois_num":3,"annee":2027,"label":"1er dim. Mars 2027"},{"date":"25/03/2027","fete":"Pâques","fitaovana":"Patricia","mois_num":3,"annee":2027,"label":"Pâques 2027"},{"date":"28/03/2027","fete":"Jeudi Saint","fitaovana":"Nivo","mois_num":3,"annee":2027,"label":"Jeudi Saint 2027"},{"date":"04/04/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":4,"annee":2027,"label":"1er dim. Avril 2027"},{"date":"02/05/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":5,"annee":2027,"label":"1er dim. Mai 2027"},{"date":"06/05/2027","fete":"Ascension","fitaovana":"Nathalie Rija","mois_num":5,"annee":2027,"label":"Ascension 2027"},{"date":"16/05/2027","fete":"Pentecôte","fitaovana":"Ando","mois_num":5,"annee":2027,"label":"Pentecôte 2027"},{"date":"06/06/2027","fete":"","fitaovana":"Ando","mois_num":6,"annee":2027,"label":"1er dim. Juin 2027"},{"date":"04/07/2027","fete":"","fitaovana":"Nivo","mois_num":7,"annee":2027,"label":"1er dim. Juillet 2027"},{"date":"01/08/2027","fete":"","fitaovana":"Laeticia","mois_num":8,"annee":2027,"label":"1er dim. Août 2027"},{"date":"05/09/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":9,"annee":2027,"label":"1er dim. Septembre 2027"}],"fivoriana":[{"annee":2026,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2026,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2026,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2026,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2027,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2027,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2027,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2027,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2027,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2027,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2027,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2027,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2027,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2027,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2028,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2028,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2028,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2028,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2028,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2028,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2028,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2028,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2028,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2028,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2029,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2029,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2029,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2029,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2029,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2029,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2029,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2029,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2029,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2029,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2030,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2030,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2030,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2030,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2030,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"}]};
+
+let SD_LOADED=false, SD_LOADING=false;
+let SD_CONTACTS={}, SD_GENRE={}, SD_ALL_NAMES=[];
+let SD_PLANNING=[], SD_FITAOVANA=[], SD_FIVORIANA=[];
+let sdCurTab="mois", sdCurMois=0, sdCurDiacre=null, sdCurFilter="all", sdCurRappelMois=0, sdOpenJours={};
+let SD_MSGS={};
+
+async function sdChargerDonnees(){
+  if(SD_LOADING) return;
+  if(SD_LOADED){ sdRenderCurrentView(); return; }
+  SD_LOADING=true;
+  const statusEl=document.getElementById('sd-status');
+  let data=null;
+  try{
+    if(window._db && window._fs){
+      const ref=_fs.doc(_db,'services_diacres','data');
+      const snap=await _fs.getDoc(ref);
+      if(snap.exists()) data=snap.data();
+    }
+  }catch(e){
+    console.log('Services Diacres — lecture Firestore impossible:', e.message);
+  }
+  if(data && data.planning && data.planning.length){
+    SD_CONTACTS=data.contacts||{};
+    SD_PLANNING=data.planning||[];
+    SD_FITAOVANA=data.fitaovana||[];
+    SD_FIVORIANA=data.fivoriana||[];
+    if(statusEl) statusEl.style.display='none';
+  } else {
+    SD_CONTACTS=SD_DEFAULT.contacts;
+    SD_PLANNING=SD_DEFAULT.planning;
+    SD_FITAOVANA=SD_DEFAULT.fitaovana;
+    SD_FIVORIANA=SD_DEFAULT.fivoriana;
+    if(statusEl) statusEl.style.display='block';
+  }
+  SD_GENRE={}; SD_ALL_NAMES=[];
+  Object.keys(SD_CONTACTS).forEach(function(n){ SD_GENRE[n]=SD_CONTACTS[n].genre; SD_ALL_NAMES.push(n); });
+  if(!sdCurDiacre || SD_ALL_NAMES.indexOf(sdCurDiacre)<0) sdCurDiacre=SD_ALL_NAMES[0];
+  if(sdCurMois>=SD_PLANNING.length) sdCurMois=0;
+  const periodeEl=document.getElementById('sd-periode');
+  if(periodeEl && SD_PLANNING.length){
+    const premier=SD_PLANNING[0], dernier=SD_PLANNING[SD_PLANNING.length-1];
+    periodeEl.textContent="FKMA Abidjan · "+premier.m+" "+premier.a+" – "+dernier.m+" "+dernier.a;
+  }
+  SD_LOADED=true; SD_LOADING=false;
+  sdInitMoisSelect();
+  sdRenderFilterRow();
+  sdRenderCurrentView();
+}
+
+async function sdImporterDonnees(){
+  const zone=document.getElementById('sd-import-zone');
+  if(!zone || !zone.value.trim()){ alert("Collez d'abord le bloc de données envoyé par Claude."); return; }
+  let obj;
+  try{ obj=JSON.parse(zone.value); }
+  catch(e){ alert('Le texte collé n\'est pas valide : '+e.message); return; }
+  if(!obj.planning || !Array.isArray(obj.planning)){ alert("Le bloc collé ne contient pas de champ 'planning' valide."); return; }
+  if(!confirm('Remplacer le planning des services actuel par ce nouveau contenu ?')) return;
+  try{
+    await _fs.setDoc(_fs.doc(_db,'services_diacres','data'), obj);
+    alert('Planning mis à jour ✅');
+    zone.value='';
+    SD_LOADED=false;
+    sdChargerDonnees();
+  }catch(e){
+    alert("Erreur d'enregistrement : "+e.message+"\n\nAstuce : vérifiez que la collection 'services_diacres' est autorisée dans les règles Firestore.");
+  }
+}
+
+function sdInitMoisSelect(){
+  const sel=document.getElementById('sd-selMois');
+  const selR=document.getElementById('sd-selRappelMois');
+  if(sel){
+    sel.innerHTML="";
+    SD_PLANNING.forEach(function(m,i){
+      const o=document.createElement('option');
+      o.value=i; o.textContent=m.m+' '+m.a;
+      sel.appendChild(o);
+    });
+  }
+  if(selR){
+    selR.innerHTML="";
+    SD_PLANNING.forEach(function(m,i){
+      const o=document.createElement('option');
+      o.value=i; o.textContent=m.m+' '+m.a;
+      selR.appendChild(o);
+    });
+  }
+}
+
+function sdRenderFilterRow(){
+  const row=document.getElementById('sd-filter-row');
+  if(!row) return;
+  const femmes=SD_ALL_NAMES.filter(function(n){return SD_GENRE[n]==='F';});
+  let html="<div class='filter-chip active' onclick=\"sdSetFilter('all')\" id='sd-filter-all'>Toutes</div>";
+  femmes.forEach(function(n){
+    const safe=n.replace(/'/g,"\\'");
+    html+="<div class='filter-chip' onclick=\"sdSetFilter('"+safe+"')\" id='sd-filter-"+n.replace(/ /g,'_')+"'>"+n+"</div>";
+  });
+  row.innerHTML=html;
+}
+
+function sdRenderCurrentView(){
+  if(sdCurTab==='mois') sdRenderMois();
+  else if(sdCurTab==='diacre') sdRenderDiacre();
+  else if(sdCurTab==='rappel') sdRenderRappel();
+  else if(sdCurTab==='fitaovana') sdRenderFitaovana();
+  else sdRenderFivoriana();
+}
+
+function sdSetTab(t){
+  sdCurTab=t;
+  ["mois","diacre","rappel","fitaovana","fivoriana"].forEach(function(v){
+    const el=document.getElementById("sd-view-"+v);
+    if(el) el.style.display=(v===t)?"block":"none";
+    const tb=document.getElementById("sd-tab-"+v);
+    if(tb) tb.classList.toggle("active",v===t);
+  });
+  const mn=document.getElementById("sd-monthNav");
+  if(mn) mn.style.display=(t==="mois")?"flex":"none";
+  sdRenderCurrentView();
+}
+
+function sdGoMois(i){sdCurMois=parseInt(i);sdOpenJours={};sdRenderMois();}
+function sdPrevMois(){if(sdCurMois>0){sdCurMois--;sdOpenJours={};sdRenderMois();}}
+function sdNextMois(){if(sdCurMois<SD_PLANNING.length-1){sdCurMois++;sdOpenJours={};sdRenderMois();}}
+function sdToggleJour(id){
+  sdOpenJours[id]=!sdOpenJours[id];
+  const b=document.getElementById("sd-body-"+id);
+  const c=document.getElementById("sd-chev-"+id);
+  if(b) b.classList.toggle("open",!!sdOpenJours[id]);
+  if(c) c.classList.toggle("open",!!sdOpenJours[id]);
+}
+
+// ── FANDRAISANA ──────────────────────────────────────────
+function sdGetFandr(g,p){
+  const f=g.filter(function(n){return SD_GENRE[n]==="F";}).sort(function(a,b){return p[a]-p[b];});
+  const h=g.filter(function(n){return SD_GENRE[n]==="H";}).sort(function(a,b){return p[a]-p[b];});
+  const a={};
+  if(f[0]) a[f[0]]=[{c:"mofo",t:"Mizara mofo"},{c:"fitaovana",t:"Manomana fitaovana"}];
+  if(f[1]) a[f[1]]=[{c:"plateau",t:"Manaramaso plateau vide"},{c:"fitaovana",t:"Latabatra (1)"}];
+  if(h[0]) a[h[0]]=[{c:"divay",t:"Mizara divay"}];
+  if(h[1]) a[h[1]]=[{c:"kapoaka",t:"Manangona kapoaka vide"}];
+  return a;
+}
+function sdGetBanner(g,p){
+  const f=g.filter(function(n){return SD_GENRE[n]==="F";}).sort(function(a,b){return p[a]-p[b];});
+  const h=g.filter(function(n){return SD_GENRE[n]==="H";}).sort(function(a,b){return p[a]-p[b];});
+  let s="<div class='fandr-banner'><div class='fandr-title'>🙏 Fandraisana</div><div class='fandr-roles'>";
+  if(f[0]) s+="<div class='fandr-role mofo'>👩 Mizara mofo + Manomana fitaovana : "+f[0]+"</div>";
+  if(f[1]) s+="<div class='fandr-role plateau'>📋 Manaramaso plateau + Latabatra : "+f[1]+"</div>";
+  if(h[0]) s+="<div class='fandr-role divay'>👨 Mizara divay : "+h[0]+"</div>";
+  if(h[1]) s+="<div class='fandr-role kapoaka'>👨 Manangona kapoaka : "+h[1]+"</div>";
+  s+="</div></div>"; return s;
+}
+
+// ── VUE PAR MOIS ─────────────────────────────────────────
+function sdRenderMois(){
+  const m=SD_PLANNING[sdCurMois];
+  const sel=document.getElementById('sd-selMois');
+  if(!m){ const jc=document.getElementById("sd-joursContainer"); if(jc) jc.innerHTML=""; return; }
+  if(sel) sel.value=sdCurMois;
+  const mc=document.getElementById("sd-mcount");
+  if(mc) mc.textContent=(sdCurMois+1)+"/"+SD_PLANNING.length;
+  const sl=document.getElementById("sd-sectLabel");
+  if(sl) sl.innerHTML="Groupe du mois <span class='combo-badge'>"+(m.opt||"")+" · "+(m.combo||[]).join("+")+"</span>";
+  const mb=document.getElementById("sd-membresBar");
+  if(mb) mb.innerHTML=m.g.map(function(n){
+    return "<div class='membre "+SD_GENRE[n]+"'>"+(SD_GENRE[n]==="H"?"👨":"👩")+" "+n+"</div>";
+  }).join("");
+  document.getElementById("sd-joursContainer").innerHTML=m.j.map(function(jour,ji){
+    const id="j"+sdCurMois+"_"+ji;
+    const isFandr=jour.f;
+    const fa=isFandr?sdGetFandr(m.g,jour.p):{};
+    const badge=isFandr
+      ?"<span class='pill pill-fandr'>🙏"+(jour.fe?" "+jour.fe:" Fandraisana")+"</span>"
+      :(jour.fe?"<span class='pill pill-fandr'>★ "+jour.fe+"</span>":"<span class='pill pill-tsotra'>Tsotra</span>");
+    const postes=[1,2,3,4].map(function(p){
+      let name="—";
+      Object.keys(jour.p).forEach(function(n){if(jour.p[n]===p)name=n;});
+      const g2=SD_GENRE[name]||"";
+      const dt=SD_DISPATCH[String(p)];
+      let tHTML=(dt?dt.t:[]).map(function(t){return "<div class='task'>"+t+"</div>";}).join("");
+      if(isFandr&&fa[name]) tHTML+=fa[name].map(function(t){return "<div class='task "+t.c+"'>"+t.t+"</div>";}).join("");
+      return "<div class='poste-row'><div class='poste-badge pb"+p+"'>P"+p+"</div>"
+        +"<div class='poste-info'><div class='poste-name'>"+name+" "+(g2==="H"?"👨":"👩")+"</div>"
+        +"<div class='poste-tasks'>"+tHTML+"</div></div></div>";
+    }).join("");
+    return "<div class='jour-card"+(isFandr?" fandraisana":jour.fe?" fete":"")+"'>"
+      +"<div class='jour-head' onclick=\"sdToggleJour('"+id+"')\">"
+      +"<span class='jour-date'>"+jour.d+"</span>"
+      +"<div class='jour-right'>"+badge+"<span class='chevron"+(sdOpenJours[id]?" open":"")+"' id='sd-chev-"+id+"'>▼</span></div>"
+      +"</div><div class='postes-body"+(sdOpenJours[id]?" open":"")+"' id='sd-body-"+id+"'>"
+      +(isFandr?sdGetBanner(m.g,jour.p):"")+postes+"</div></div>";
+  }).join("");
+}
+
+// ── VUE PAR DIACRE ───────────────────────────────────────
+function sdSelectDiacre(idx){sdCurDiacre=SD_ALL_NAMES[idx];sdRenderDiacre();}
+
+function sdRenderDiacre(){
+  const scroll=document.getElementById("sd-diacre-scroll");
+  if(scroll) scroll.innerHTML=SD_ALL_NAMES.map(function(n,idx){
+    return "<button class='diacre-btn"+(n===sdCurDiacre?" active":"")+"' onclick='sdSelectDiacre("+idx+")'>"+n+"</button>";
+  }).join("");
+  const pc={1:0,2:0,3:0,4:0};
+  let totJ=0,totF=0,totMofo=0,totDivay=0;
+  const moisD=[];
+  SD_PLANNING.forEach(function(m){
+    const jours=m.j.map(function(j){
+      const p=j.p[sdCurDiacre];
+      if(!p) return null;
+      pc[p]=(pc[p]||0)+1; totJ++;
+      const fa=j.f?sdGetFandr(m.g,j.p):{};
+      if(j.f) totF++;
+      const fat=fa[sdCurDiacre]||[];
+      fat.forEach(function(t){ if(t.c==="mofo") totMofo++; if(t.c==="divay") totDivay++; });
+      return {d:j.d,poste:p,f:j.f,fat:fat};
+    }).filter(Boolean);
+    if(jours.length) moisD.push({m:m.m,a:m.a,combo:(m.combo||[]).join("+"),jours:jours});
+  });
+  const statsEl=document.getElementById("sd-diacre-stats");
+  if(statsEl) statsEl.innerHTML=
+     "<div class='stat-card'><div class='stat-val'>"+totJ+"</div><div class='stat-lbl'>Dimanches</div></div>"
+    +"<div class='stat-card'><div class='stat-val' style='color:var(--amber)'>"+totF+"</div><div class='stat-lbl'>🙏 Fandraisana</div></div>"
+    +"<div class='stat-card'><div class='stat-val' style='color:var(--pink)'>"+totMofo+"</div><div class='stat-lbl'>👩 Mofo</div></div>";
+  const pmEl=document.getElementById("sd-postes-mini");
+  if(pmEl) pmEl.innerHTML=[1,2,3,4].map(function(p){
+    return "<span class='pm' style='background:"+SD_PC_BG[p-1]+";color:"+SD_PC_COLOR[p-1]+"'>P"+p+":"+(pc[p]||0)+"</span>";
+  }).join("");
+  const gn=SD_GENRE[sdCurDiacre];
+  const myFita=(gn==="F")?SD_FITAOVANA.filter(function(f){return f.fitaovana===sdCurDiacre;}) : [];
+  const myFivo=SD_FIVORIANA.filter(function(f){return f.nom.indexOf(sdCurDiacre)>=0;});
+  let html="";
+  moisD.forEach(function(m){
+    const chips=m.jours.map(function(j){
+      const p=j.poste;
+      const bg=p?SD_PC_BG[p-1]:"var(--s3)";
+      const tx=p?SD_PC_COLOR[p-1]:"var(--t3)";
+      const fm=j.fat.map(function(t){return t.t==="Mizara mofo"?"👩":t.t==="Mizara divay"?"👨":"";}).filter(Boolean).join("");
+      return "<span class='jour-chip' style='background:"+bg+";color:"+tx+";border-color:"+bg+"'>"+j.d.slice(0,5)+" P"+p+fm+(j.f?"🙏":"")+"</span>";
+    }).join("");
+    html+="<div class='mois-row'><div class='mois-row-head'>"
+      +"<span class='mois-nom'>"+m.m+"</span>"
+      +"<div style='display:flex;gap:5px;align-items:center;'><span class='mois-annee'>"+m.a+"</span>"
+      +"<span class='combo-badge'>"+m.combo+"</span></div></div>"
+      +"<div class='jours-chips'>"+chips+"</div></div>";
+  });
+  if(gn==="F"&&myFita.length>0){
+    html+="<div class='diacre-section' style='margin-top:14px;'><div class='ds-header'>🧺 Fitaovam-pandraisana ("+myFita.length+" fois)</div>";
+    myFita.forEach(function(f){
+      html+="<div class='ds-item'><div class='ds-date-sm'>"+f.date+"</div>"
+        +"<div class='ds-info'><div>"+f.label+"</div>"+(f.fete?"<div class='ds-sub'>★ "+f.fete+"</div>":"")+"</div>"
+        +"<span class='task-fete' style='background:var(--pink2);color:var(--pink);'>🧺</span></div>";
+    });
+    html+="</div>";
+  }
+  if(myFivo.length>0){
+    html+="<div class='diacre-section' style='margin-top:6px;'><div class='ds-header'>🏠 Fivoriana — Accueil ("+myFivo.length+" fois)</div>";
+    myFivo.forEach(function(m2){
+      const cfg=SD_TYPE_CONFIG[m2.type]||{icon:"👤",cls:"type-diacre"};
+      html+="<div class='ds-item'><div class='ds-date-sm'>"+m2.mois+"<br>"+m2.annee+"</div>"
+        +"<div class='ds-info'><div>Accueil réunion mensuelle</div>"
+        +"<span class='fiv-type "+cfg.cls+"' style='margin-top:4px;'>"+cfg.icon+" "+m2.nom+"</span></div></div>";
+    });
+    html+="</div>";
+  }
+  const ml=document.getElementById("sd-moisList");
+  if(ml) ml.innerHTML=html;
+}
+
+// ── VUE RAPPELS ──────────────────────────────────────────
+function sdBuildMsg(name,mIdx){
+  const m=SD_PLANNING[mIdx];
+  if(!m||m.g.indexOf(name)<0) return "";
+  const lines=[];
+  lines.push("⛪ *FKMA ABIDJAN — Fanompoana "+m.m+" "+m.a+"*");
+  lines.push("━━━━━━━━━━━━━━━━");
+  lines.push("");
+  lines.push("Salam *"+name+"* ! 🙏");
+  lines.push("");
+  lines.push("*Ny volana ianao manompo :* "+m.m+" "+m.a);
+  lines.push("*Vondrona :* "+(m.combo||[]).join("+"));
+  lines.push("");
+  lines.push("📅 *Jadwal fanompoana :*");
+  m.j.forEach(function(j){
+    const p=j.p[name];
+    const dt=SD_DISPATCH[String(p)];
+    const tasks=dt?dt.t.slice():[];
+    if(j.f){
+      const gf=m.g.filter(function(n){return SD_GENRE[n]==="F";}).sort(function(a,b){return j.p[a]-j.p[b];});
+      const gh=m.g.filter(function(n){return SD_GENRE[n]==="H";}).sort(function(a,b){return j.p[a]-j.p[b];});
+      if(gf[0]===name) tasks.push("👩 Mizara mofo + Manomana fitaovana");
+      else if(gf[1]===name) tasks.push("📋 Manaramaso plateau + Latabatra (1)");
+      else if(gh[0]===name) tasks.push("👨 Mizara divay");
+      else if(gh[1]===name) tasks.push("👨 Manangona kapoaka vide");
+    }
+    const mk=j.f?"🙏 Fandraisana"+(j.fe?" — "+j.fe:""):"Alahady Tsotra";
+    lines.push("• "+j.d+" ("+mk+")");
+    lines.push("  P"+p+" : "+tasks.join(", "));
+  });
+  const fita=SD_FITAOVANA.filter(function(f){return f.fitaovana===name&&f.annee===m.a&&f.mois_num===m.mn;});
+  if(fita.length>0){
+    lines.push("");lines.push("🧺 *Fitaovam-pandraisana :*");
+    fita.forEach(function(f){lines.push("• "+f.date+" — Manasa fitaovana");});
+  }
+  const fivo=SD_FIVORIANA.filter(function(f){return f.nom.indexOf(name)>=0&&f.mois_num===m.mn&&f.annee===m.a;});
+  if(fivo.length>0){
+    lines.push("");lines.push("🏠 *Fivoriana — Accueil réunion :*");
+    fivo.forEach(function(f){lines.push("• "+f.mois+" "+f.annee);});
+  }
+  lines.push("");
+  lines.push("━━━━━━━━━━━━━━━━");
+  lines.push("_Ny Tompo anie hitahy ny fanompoana !_ 🙏");
+  return lines.join("\n");
+}
+
+function sdRenderRappel(){
+  const s=document.getElementById("sd-selRappelMois");
+  if(s) s.value=sdCurRappelMois;
+  const m=SD_PLANNING[sdCurRappelMois];
+  const cont=document.getElementById("sd-rappelContainer");
+  if(!m){ if(cont) cont.innerHTML=""; return; }
+  SD_MSGS={};
+  let html="";
+  m.g.forEach(function(name){
+    const contact=SD_CONTACTS[name]||{};
+    const msg=sdBuildMsg(name,sdCurRappelMois);
+    const key=sdCurRappelMois+"_"+name;
+    SD_MSGS[key]=msg;
+    const waNum=(contact.wa||"").replace("+","");
+    const waLink="https://wa.me/"+waNum+"?text="+encodeURIComponent(msg);
+    const preview=msg.replace(/\n/g,"<br>").replace(/\*(.*?)\*/g,"<b>$1</b>").replace(/_(.*?)_/g,"<i>$1</i>");
+    html+="<div class='rappel-card'>"
+      +"<div class='rappel-head'>"
+      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+name+"</div>"
+      +"<div class='rappel-wa'>"+(contact.wa||"—")+"</div>"
+      +"</div>"
+      +"<div class='rappel-preview'>"+preview+"</div>"
+      +"<div class='rappel-actions'>"
+      +"<button class='btn-copy' onclick='sdDoCopy(\""+key+"\")'>📋 Copier</button>"
+      +"<a class='btn-wa' href='"+waLink+"' target='_blank'>📱 WhatsApp</a>"
+      +"</div></div>";
+  });
+  html+="<div class='rappel-sep'>Diacres hors service ce mois ✨</div>";
+  SD_ALL_NAMES.forEach(function(name){
+    if(m.g.indexOf(name)>=0) return;
+    html+="<div class='rappel-card rappel-off'>"
+      +"<div class='rappel-head'>"
+      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+name+"</div>"
+      +"<span class='rappel-badge'>Repos ✨</span>"
+      +"</div></div>";
+  });
+  if(cont) cont.innerHTML=html;
+}
+
+function sdDoCopy(key){
+  const msg=SD_MSGS[key]||"";
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){sdToast("Copié ! 📋");});
+  } else {
+    const ta=document.createElement("textarea");
+    ta.value=msg;document.body.appendChild(ta);
+    ta.select();document.execCommand("copy");
+    document.body.removeChild(ta);
+    sdToast("Copié ! 📋");
+  }
+}
+
+function sdToast(msg){
+  let t=document.getElementById("sd-toast");
+  if(!t){
+    t=document.createElement("div");t.id="sd-toast";
+    t.style.cssText="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bleu);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;font-family:'Inter',sans-serif;display:none;";
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.display="block";
+  setTimeout(function(){t.style.display="none";},2500);
+}
+
+// ── VUE FITAOVANA ────────────────────────────────────────
+function sdSetFilter(f){
+  sdCurFilter=f;
+  document.querySelectorAll("#sd-filter-row .filter-chip").forEach(function(c){c.classList.remove("active");});
+  const el=document.getElementById("sd-filter-"+f.replace(/ /g,"_"));
+  if(el) el.classList.add("active");
+  sdRenderFitaovana();
+}
+
+function sdRenderFitaovana(){
+  const search=(document.getElementById("sd-search-fita")?document.getElementById("sd-search-fita").value:"").toLowerCase();
+  let items=SD_FITAOVANA.slice();
+  if(sdCurFilter!=="all") items=items.filter(function(f){return f.fitaovana===sdCurFilter;});
+  if(search) items=items.filter(function(f){return f.fitaovana.toLowerCase().indexOf(search)>=0||f.label.toLowerCase().indexOf(search)>=0;});
+  let html="";let lastYear="";
+  items.forEach(function(f){
+    const yr=f.date.slice(6);
+    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+yr+"  ━━</div>";lastYear=yr;}
+    html+="<div class='task-card"+(f.fete?" highlight":"")+"'>"
+      +"<div class='task-head'><div class='task-badge-f'>👩</div>"
+      +"<div class='task-info'><div class='task-label'>"+f.label+"</div>"
+      +"<div class='task-name-big'>"+f.fitaovana+"</div>"
+      +(f.fete?"<span class='task-fete'>★ "+f.fete+"</span>":"")
+      +"</div><div class='task-date-sm'>"+f.date+"</div></div></div>";
+  });
+  if(!html) html="<div style='text-align:center;color:var(--t3);padding:30px;'>Aucun résultat</div>";
+  const el=document.getElementById("sd-list-fitaovana");
+  if(el) el.innerHTML=html;
+}
+
+// ── VUE FIVORIANA ────────────────────────────────────────
+function sdRenderFivoriana(){
+  let html="";let lastYear="";
+  SD_FIVORIANA.forEach(function(m){
+    const yr=String(m.annee);
+    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+yr+"  ━━</div>";lastYear=yr;}
+    const cfg=SD_TYPE_CONFIG[m.type]||{icon:"👤",cls:"type-diacre"};
+    html+="<div class='fiv-card'><div class='fiv-icon'>"+cfg.icon+"</div>"
+      +"<div class='fiv-info'><div class='fiv-mois-lbl'>"+m.mois+" "+m.annee+"</div>"
+      +"<div class='fiv-nom'>"+m.nom+"</div>"
+      +"<span class='fiv-type "+cfg.cls+"'>"+m.type.toUpperCase()+"</span></div></div>";
+  });
+  const el=document.getElementById("sd-list-fivoriana");
+  if(el) el.innerHTML=html;
+}
+
 </script>
 </body>
 </html>
