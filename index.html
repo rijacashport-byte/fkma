@@ -1800,9 +1800,14 @@ function appliquerRole(role){
     return;
   }
 
-  // Défaut
-  showMain('gest', tabGest);
-  if(window._db){ chargerDepenses(); chargerAnjarako(); }
+  // Défaut — rôle non reconnu : accès refusé, déconnexion automatique
+  if(tabGest) tabGest.style.display='none';
+  if(tabK45)  tabK45.style.display='none';
+  if(tabGL)   tabGL.style.display='none';
+  if(tabOps)  tabOps.style.display='none';
+  if(tabServices) tabServices.style.display='none';
+  alert("Ce compte n'a pas de rôle autorisé dans l'application. Vous allez être déconnecté(e).");
+  if(window._signOut && window._auth) window._signOut(window._auth);
 }
 
 window.addEventListener('fb-ready', function(){
