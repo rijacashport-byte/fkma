@@ -835,7 +835,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 <!-- ═══ ONGLET 3 : ANJARAKO ═══ -->
 <div id="tab-anjarako" style="display:none">
 
+  <div class="sub-nav" style="margin-bottom:10px">
+    <button class="sub-btn actif" id="anj-view-btn-saisie" onclick="showAnjView('saisie')">📇 Saisie du jour</button>
+    <button class="sub-btn" id="anj-view-btn-suivi" onclick="showAnjView('suivi')">📊 Suivi paiements</button>
+  </div>
 
+  <div id="anj-view-saisie">
 
   <div class="card">
     <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
@@ -961,6 +966,59 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <button class="btn btn-vert btn-full" onclick="enregistrerAnjarako()"><span>💾</span> Enregistrer</button>
     <button class="btn btn-gris btn-full" onclick="resetAnjarako()"><span>🔄</span> Réinitialiser</button>
   </div>
+
+  </div><!-- /anj-view-saisie -->
+
+  <div id="anj-view-suivi" style="display:none">
+
+    <div class="card">
+      <div class="card-titre">📊 Suivi des paiements — Anjarako</div>
+      <div class="champ"><label>📆 Mois</label><input type="month" id="suivi-mois" onchange="renderSuiviPaiements()"></div>
+    </div>
+
+    <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="kpi kv"><div class="kpi-icon">✅</div><div class="kpi-val" id="suivi-pct">0%</div><div class="kpi-lab">Ont payé</div></div>
+      <div class="kpi kb"><div class="kpi-icon">💰</div><div class="kpi-val" id="suivi-montant">0 F</div><div class="kpi-lab">Total du mois</div></div>
+      <div class="kpi kr"><div class="kpi-icon">❌</div><div class="kpi-val" id="suivi-nonpayes">0</div><div class="kpi-lab">Non payés</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
+        <span>✅ Ont payé (<span id="suivi-cnt-payes">0</span>)</span>
+        <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▾ Réduire</button>
+      </div>
+      <div id="suivi-liste-payes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center;color:var(--rouge)">
+        <span>❌ N'ont pas payé (<span id="suivi-cnt-nonpayes">0</span>)</span>
+        <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▾ Réduire</button>
+      </div>
+      <div id="suivi-liste-nonpayes"></div>
+    </div>
+
+    <div class="btns">
+      <button class="btn btn-wa btn-full" onclick="partagerWANonPayants()"><span>💬</span> Partager la liste des non-payants</button>
+    </div>
+
+    <div class="card">
+      <div class="card-titre">📈 Évolution annuelle — % de membres à jour</div>
+      <div id="suivi-chart-annuel"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titre">👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</div>
+      <div class="grid2" style="margin-bottom:9px">
+        <div class="champ"><label>🔢 N° carte</label><input type="number" id="mb-num" placeholder="Ex: 172" inputmode="numeric"></div>
+        <div class="champ"><label>👤 Nom</label><input type="text" id="mb-nom" placeholder="Nom complet"></div>
+      </div>
+      <button class="btn btn-vert" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter un membre</button>
+      <div class="note" style="margin-top:9px;margin-bottom:0">💡 Pour importer une liste complète depuis un fichier Excel, demandez à Claude — il préparera un fichier JSON prêt à coller ici.</div>
+      <div style="margin-top:10px" id="suivi-liste-membres"></div>
+    </div>
+
+  </div><!-- /anj-view-suivi -->
 
 </div><!-- /anjarako -->
 
@@ -1800,7 +1858,7 @@ function appliquerRole(role){
       const anjBtn=document.querySelector('#section-gest .nav-btn:nth-child(2)');
       if(anjBtn) showGestTab('anjarako', anjBtn);
     }, 300);
-    if(window._db){ chargerAnjarako(); }
+    if(window._db){ chargerAnjarako(); chargerMembresAnj(); }
     return;
   }
 
@@ -1821,7 +1879,7 @@ function appliquerRole(role){
     if(tabGL)   tabGL.style.display='';
     if(tabOps)  tabOps.style.display=''; // Opérations visibles
     showMain('gest', tabGest);
-    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); }
+    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); chargerMembresAnj(); }
     return;
   }
 
@@ -2082,6 +2140,7 @@ function fbOK(){
   // Charger les données depuis Firebase au démarrage
   chargerDepenses();
   chargerAnjarako();
+  chargerMembresAnj();
 }
 function fbErr(msg){
   document.getElementById('fb-status').style.background='#fdecea';
@@ -2599,6 +2658,174 @@ function resetAnjarako(){
   afficherEnveloppesJour();mettreAJourBannerAnj();
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── SUIVI DES PAIEMENTS ANJARAKO ─────────────────────────────
+// ══════════════════════════════════════════════════════════════
+function showAnjView(view){
+  document.getElementById('anj-view-saisie').style.display = view==='saisie'?'':'none';
+  document.getElementById('anj-view-suivi').style.display  = view==='suivi'?'':'none';
+  document.getElementById('anj-view-btn-saisie').classList.toggle('actif', view==='saisie');
+  document.getElementById('anj-view-btn-suivi').classList.toggle('actif', view==='suivi');
+  if(view==='suivi'){
+    const inp=document.getElementById('suivi-mois');
+    if(inp && !inp.value) inp.value=moisActuel();
+    renderSuiviPaiements();
+    renderListeMembres();
+    renderChartAnnuel();
+  }
+}
+
+// Chargement des membres depuis Firestore (collection anj_membres) → localStorage SK_ANJ_M
+async function chargerMembresAnj(){
+  if(!window._db || !window._fs) return;
+  try{
+    const snap=await window._fs.getDocs(window._fs.collection(window._db,'anj_membres'));
+    if(snap.empty) return;
+    const membres=[];
+    snap.forEach(function(ds){membres.push({...ds.data(),_id:ds.id});});
+    membres.sort(function(a,b){return (a.num||0)-(b.num||0);});
+    save(SK_ANJ_M, membres);
+  }catch(e){console.log('Erreur chargement membres Anjarako:', e.message);}
+}
+
+async function ajouterMembreAnj(){
+  const num=parseInt(document.getElementById('mb-num').value);
+  const nom=document.getElementById('mb-nom').value.trim();
+  if(!num){alert('Veuillez saisir un numéro de carte.');return;}
+  if(!nom){alert('Veuillez saisir un nom.');return;}
+  const membres=load(SK_ANJ_M);
+  if(membres.find(function(m){return m.num===num;})){alert('La carte n°'+num+' existe déjà.');return;}
+  const rec={num,nom,actif:true};
+  membres.push(rec);
+  membres.sort(function(a,b){return a.num-b.num;});
+  save(SK_ANJ_M,membres);
+  if(window._db && window._fs){
+    try{ await window._fs.addDoc(window._fs.collection(window._db,'anj_membres'), rec); }
+    catch(e){console.log('Firebase membre:',e.message);}
+  }
+  document.getElementById('mb-num').value='';
+  document.getElementById('mb-nom').value='';
+  renderListeMembres();
+  renderSuiviPaiements();
+}
+
+async function supprimerMembreAnj(num){
+  if(!confirm('Retirer la carte n°'+num+' de la liste des membres actifs ?'))return;
+  const membres=load(SK_ANJ_M);
+  const m=membres.find(function(x){return x.num===num;});
+  if(m) m.actif=false;
+  save(SK_ANJ_M,membres);
+  if(window._db && window._fs && m && m._id){
+    try{ await window._fs.updateDoc(window._fs.doc(window._db,'anj_membres',m._id), {actif:false}); }
+    catch(e){console.log('Firebase membre maj:',e.message);}
+  }
+  renderListeMembres();
+  renderSuiviPaiements();
+}
+
+function renderListeMembres(){
+  const el=document.getElementById('suivi-liste-membres');
+  if(!el) return;
+  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
+  document.getElementById('suivi-cnt-total').textContent=membres.length;
+  if(!membres.length){el.innerHTML='<div class="vide">Aucun membre enregistré — ajoutez-les un par un ci-dessus, ou demandez à Claude un import groupé.</div>';return;}
+  el.innerHTML=membres.map(function(m){
+    return '<div class="env-item"><div class="env-badge">'+m.num+'</div>'
+      +'<div style="flex:1;font-size:13px">'+(m.nom||'—')+'</div>'
+      +'<button class="env-del" onclick="supprimerMembreAnj('+m.num+')">✕</button></div>';
+  }).join('');
+}
+
+// Numéros de carte ayant payé pour un mois (YYYY-MM) donné, toutes dates confondues
+function cartesPayeesPourMois(ym){
+  const hist=load(SK_ANJ_H);
+  const set=new Set();
+  hist.forEach(function(h){
+    (h.enveloppes||[]).forEach(function(e){
+      if(e.mois===ym) set.add(e.carte);
+    });
+  });
+  return set;
+}
+
+function montantTotalMois(ym){
+  const hist=load(SK_ANJ_H);
+  let tot=0;
+  hist.forEach(function(h){ if(h.date&&h.date.startsWith(ym)) tot+=(h.total||0); });
+  return tot;
+}
+
+let suiviCollapsed={payes:false,nonpayes:false};
+function toggleSuiviListe(which){
+  suiviCollapsed[which]=!suiviCollapsed[which];
+  const listEl=document.getElementById('suivi-liste-'+which);
+  const btn=document.getElementById('suivi-toggle-'+which);
+  if(listEl) listEl.style.display=suiviCollapsed[which]?'none':'';
+  if(btn) btn.textContent=suiviCollapsed[which]?'▸ Afficher':'▾ Réduire';
+}
+
+function renderSuiviPaiements(){
+  const ym=document.getElementById('suivi-mois')?.value||moisActuel();
+  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
+  const cartesPayees=cartesPayeesPourMois(ym);
+  const payes=membres.filter(function(m){return cartesPayees.has(m.num);});
+  const nonPayes=membres.filter(function(m){return !cartesPayees.has(m.num);});
+  const pct=membres.length>0?Math.round((payes.length/membres.length)*100):0;
+
+  document.getElementById('suivi-pct').textContent=pct+'%';
+  document.getElementById('suivi-montant').textContent=fmt(montantTotalMois(ym))+' F';
+  document.getElementById('suivi-nonpayes').textContent=nonPayes.length;
+  document.getElementById('suivi-cnt-payes').textContent=payes.length;
+  document.getElementById('suivi-cnt-nonpayes').textContent=nonPayes.length;
+
+  const elP=document.getElementById('suivi-liste-payes');
+  const elN=document.getElementById('suivi-liste-nonpayes');
+  if(!membres.length){
+    elP.innerHTML='<div class="vide">Aucun membre enregistré pour l\'instant.</div>';
+    elN.innerHTML='';
+    return;
+  }
+  elP.innerHTML=payes.length?payes.map(function(m){
+    return '<div class="env-item"><div class="env-badge" style="background:var(--vert)">'+m.num+'</div><div style="flex:1;font-size:13px">'+m.nom+'</div></div>';
+  }).join(''):'<div class="vide">Personne n\'a encore payé ce mois-ci.</div>';
+  elN.innerHTML=nonPayes.length?nonPayes.map(function(m){
+    return '<div class="env-item"><div class="env-badge" style="background:var(--rouge)">'+m.num+'</div><div style="flex:1;font-size:13px">'+m.nom+'</div></div>';
+  }).join(''):'<div class="vide">Tout le monde a payé ! 🎉</div>';
+}
+
+function partagerWANonPayants(){
+  const ym=document.getElementById('suivi-mois')?.value||moisActuel();
+  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
+  const cartesPayees=cartesPayeesPourMois(ym);
+  const nonPayes=membres.filter(function(m){return !cartesPayees.has(m.num);});
+  let msg='📨 *ANJARAKO — '+moisLabel(ym)+'*\n';
+  msg+='❌ *'+nonPayes.length+' membre(s) n\'ont pas encore payé :*\n\n';
+  nonPayes.forEach(function(m){msg+='• '+m.nom+' (carte n°'+m.num+')\n';});
+  msg+='\n_FKMA Abidjan_';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function renderChartAnnuel(){
+  const el=document.getElementById('suivi-chart-annuel');
+  if(!el) return;
+  const annee=new Date().getFullYear();
+  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
+  if(!membres.length){el.innerHTML='<div class="vide">Ajoutez des membres pour voir le graphique.</div>';return;}
+  let html='';
+  for(let m=0;m<12;m++){
+    const ym=annee+'-'+String(m+1).padStart(2,'0');
+    const cartesPayees=cartesPayeesPourMois(ym);
+    const nb=membres.filter(function(x){return cartesPayees.has(x.num);}).length;
+    const pct=Math.round((nb/membres.length)*100);
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<span style="width:34px;font-size:11px;color:var(--texte2);flex-shrink:0">'+MOIS_FR[m].substring(0,3)+'</span>'
+      +'<div style="flex:1;height:16px;background:var(--gris1);border-radius:8px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+(pct>=80?'var(--vert)':pct>=40?'var(--or)':'var(--rouge)')+';border-radius:8px"></div></div>'
+      +'<span style="width:38px;font-size:11px;font-weight:600;text-align:right;flex-shrink:0">'+pct+'%</span>'
+      +'</div>';
+  }
+  el.innerHTML=html;
+}
 
 // ── ANJARAKO BILLETAGE ──────────────────────────────────────────
 let anjMode = 'billets'; // 'billets' ou 'total'
