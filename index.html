@@ -890,8 +890,8 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div id="env-zone-carte">
       <div class="grid2" style="margin-bottom:9px">
         <div class="champ carte-wrap">
-          <label>📇 N° de carte</label>
-          <input type="number" id="env-carte" min="1" placeholder="Ex: 47" inputmode="numeric"
+          <label>📇 N° carte ou Nom</label>
+          <input type="text" id="env-carte" placeholder="Ex: 47 ou Rakoto…" autocomplete="off"
             oninput="rechercherCarte(this.value)" onblur="fermerSugCarte()">
           <div class="carte-sug" id="carte-sug"></div>
         </div>
@@ -1033,7 +1033,10 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     </div>
 
     <div class="card">
-      <div class="card-titre">👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</div>
+      <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
+        <span>👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</span>
+        <button id="suivi-toggle-membres" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('membres')">▾ Réduire</button>
+      </div>
       <div class="grid2" style="margin-bottom:9px">
         <div class="champ"><label>🔢 N° carte</label><input type="number" id="mb-num" placeholder="Ex: 172" inputmode="numeric"></div>
         <div class="champ"><label>👤 Nom</label><input type="text" id="mb-nom" placeholder="Nom complet"></div>
@@ -2582,36 +2585,45 @@ function pickSug(id,nom){document.getElementById(id).value=nom;hideSug(id);}
 // ── ANJARAKO ─────────────────────────────────────────────────
 let enveloppesJour=[];
 
+let carteSelectionnee=null;
 function rechercherCarte(val){
+  carteSelectionnee=null;
   const sug=document.getElementById('carte-sug');
   const prev=document.getElementById('carte-preview');
   if(!val){sug.style.display='none';prev.style.display='none';return;}
   const membres=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  const f=membres.filter(m=>String(m.num).startsWith(val));
+  const valLower=val.toLowerCase();
+  const f=membres.filter(m=>String(m.num).startsWith(val)||(m.nom||'').toLowerCase().includes(valLower));
   if(!f.length){sug.style.display='none';prev.style.display='none';return;}
-  sug.innerHTML=f.slice(0,6).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarte(${m.num})"><strong>${m.num}</strong>${m.nom?' — '+m.nom:''}</div>`).join('');
+  sug.innerHTML=f.slice(0,8).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarte(${m.num})"><strong>${m.num}</strong>${m.nom?' — '+m.nom:''}</div>`).join('');
   sug.style.display='block';
-  const exact=membres.find(m=>m.num===parseInt(val));
-  if(exact){prev.style.display='block';prev.innerHTML=`✅ <strong>Carte n°${exact.num}</strong>${exact.nom?' — '+exact.nom:''}`;}
+  const exact=membres.find(m=>String(m.num)===val||(m.nom||'').toLowerCase()===valLower);
+  if(exact){prev.style.display='block';prev.innerHTML=`✅ <strong>Carte n°${exact.num}</strong>${exact.nom?' — '+exact.nom:''}`;carteSelectionnee=exact.num;}
   else prev.style.display='none';
 }
 function choisirCarte(num){
-  document.getElementById('env-carte').value=num;
-  document.getElementById('carte-sug').style.display='none';
+  carteSelectionnee=num;
   const m=load(SK_ANJ_M).find(m=>m.num===num);
+  document.getElementById('env-carte').value=m&&m.nom?num+' — '+m.nom:num;
+  document.getElementById('carte-sug').style.display='none';
   const p=document.getElementById('carte-preview');
   if(m){p.style.display='block';p.innerHTML=`✅ <strong>Carte n°${m.num}</strong>${m.nom?' — '+m.nom:''}`;}
 }
 function fermerSugCarte(){setTimeout(()=>{document.getElementById('carte-sug').style.display='none';},180);}
 
 function ajouterEnveloppe(){
-  const carte=parseInt(document.getElementById('env-carte').value);
+  let carte=carteSelectionnee;
+  if(!carte){
+    const val=document.getElementById('env-carte').value.trim();
+    carte=parseInt(val)||null;
+  }
   const mois=document.getElementById('env-mois').value;
-  if(!carte){alert('Veuillez saisir un numéro de carte.');return;}
+  if(!carte){alert('Veuillez saisir un numéro de carte, ou choisir un nom dans la liste proposée.');return;}
   if(!mois){alert('Veuillez choisir le mois payé.');return;}
   if(enveloppesJour.find(e=>e.carte===carte&&e.mois===mois)){alert(`Carte n°${carte} déjà enregistrée pour ${moisLabel(mois)}.`);return;}
   const m=load(SK_ANJ_M).find(m=>m.num===carte);
   enveloppesJour.push({carte,nom:m?m.nom||'':'',mois});
+  carteSelectionnee=null;
   document.getElementById('env-carte').value='';
   document.getElementById('carte-preview').style.display='none';
   document.getElementById('env-carte').focus();
@@ -3091,8 +3103,9 @@ function partagerWARakitra(){
   d.lp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});
   m+=`➜ *Rakitra : ${fmt(d.totalRakitra)} FCFA*\n`;
   if(d.rpOn){m+=`\n🍷 *Raki-pandraisana*\n`;d.lrpb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR')} F × ${l.q} = ${fmt(l.s)} F\n`;});d.lrpp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});m+=`➜ *Raki-pandraisana : ${fmt(d.totalRP)} FCFA*\n`;}
+  m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*\n`;
   if(d.rakis.length){
-    m+=`\n🎁 *Raki-pisaorana*\n`;
+    m+=`━━━━━━━━━━━━━━━━━\n🎁 *Raki-pisaorana (hors total ci-dessus)*\n`;
     d.rakis.forEach(r=>{
       m+=`  *${fmt(r.montant)} FCFA*${r.verset?' ('+r.verset+')':''}\n`;
       if(r.repartition&&r.repartition.length){
@@ -3102,7 +3115,6 @@ function partagerWARakitra(){
       }
     });
   }
-  m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*`;
   if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}`;
   m+=`\n_FKMA Abidjan_`;
   window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
@@ -3841,7 +3853,10 @@ function envoyerWA(){
   }
   if(d.faits&&d.faits.length){
     msg+=NL+"⭐ *Faits marquants :*"+NL;
-    d.faits.forEach(function(f){ msg+="  • "+f.label+(f.noms?" : "+f.noms:"")+NL; });
+    d.faits.forEach(function(f){
+      msg+="  • "+f.label+(f.noms?" : "+f.noms:"")+NL;
+      if(f.note) msg+="    "+f.note+NL;
+    });
   }
   msg+=NL+SEP+NL+"_FKMA Abidjan — Journal K45_";
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
