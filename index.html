@@ -17,7 +17,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence }
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app  = initializeApp({
@@ -34,6 +34,7 @@ window._app=app; window._db=db; window._auth=auth;
 window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
+window._sendReset=sendPasswordResetEmail;
 window._onAuth=onAuthStateChanged;
 // Essayer localStorage d'abord, fallback sur sessionStorage si échec (PC bloquant)
 setPersistence(auth, browserLocalPersistence).then(function(){
@@ -686,6 +687,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <input class="login-inp" type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password">
     <div class="login-err" id="login-err"></div>
     <button class="login-btn" id="login-btn" onclick="seConnecter()">Se connecter</button>
+    <button type="button" onclick="motDePasseOublie()" style="background:none;border:none;color:var(--bleu);font-size:12px;cursor:pointer;text-align:center;padding:4px;font-family:inherit">Mot de passe oublié ?</button>
   </div>
 </div>
 
@@ -2136,6 +2138,33 @@ async function seConnecter(){
 async function seDeconnecter(){
   if(!confirm('Se déconnecter ?')) return;
   if(window._signOut && window._auth) await window._signOut(window._auth);
+}
+
+async function motDePasseOublie(){
+  const email=document.getElementById('login-email').value.trim();
+  const err=document.getElementById('login-err');
+  if(!email){
+    err.style.color='red'; err.textContent='Saisissez d\'abord votre email ci-dessus, puis cliquez sur "Mot de passe oublié ?".';
+    return;
+  }
+  if(!ROLES_CONFIG[email]){
+    err.style.color='red'; err.textContent='Cet email n\'est pas reconnu dans l\'application.';
+    return;
+  }
+  if(!window._auth || !window._sendReset){
+    err.style.color='orange'; err.textContent='Connexion Firebase en cours — réessayez dans quelques secondes.';
+    return;
+  }
+  try{
+    await window._sendReset(window._auth, email);
+    err.style.color='#1a6b3c';
+    err.textContent='✅ Email envoyé à '+email+' — suivez le lien reçu pour choisir un nouveau mot de passe.';
+  }catch(e){
+    err.style.color='red';
+    err.textContent=e.code==='auth/user-not-found'
+      ? 'Aucun compte Firebase pour cet email — contactez la secrétaire.'
+      : 'Erreur : '+e.message;
+  }
 }
 
 // Appeler initAuth au chargement
