@@ -1472,6 +1472,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
   <!-- Export -->
   <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel — Fiangonana</button>
+  <button class="btn btn-gris" id="btn-rattraper-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
 
   <!-- Historique -->
   <div class="card">
@@ -1862,6 +1863,8 @@ function appliquerRole(role){
   if(tabServices) tabServices.style.display='';
   const sdAdmin=document.getElementById('sd-admin-panel');
   if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
+  const btnRattraper=document.getElementById('btn-rattraper-gl');
+  if(btnRattraper) btnRattraper.style.display=(role==='secretaire'||role==='diacre')?'':'none';
 
   // "Suivi paiements" (Anjarako) : réservé à la secrétaire et au président des diacres
   const suiviBtn=document.getElementById('anj-view-btn-suivi');
@@ -3081,14 +3084,56 @@ function ajouterDepense(livre){
 }
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
-  save(SK_DEP,load(SK_DEP).filter(d=>d.id!==id));
+  const dep=load(SK_DEP);
+  const rec=dep.find(d=>d.id===id);
+  save(SK_DEP,dep.filter(d=>d.id!==id));
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(_db){try{
     const col=_fs.collection(_db,'depenses');
     const snap=await _fs.getDocs(col);
     for(const ds of snap.docs){if(ds.data().id===id){await _fs.deleteDoc(ds.ref);break;}}
+    // Supprimer aussi la copie liée dans le Grand Livre Fiangonana, pour ne pas laisser d'écriture orpheline
+    if(rec&&rec.livre==='fiang'){
+      const colGL=_fs.collection(_db,'grandlivre_fiang');
+      const snapGL=await _fs.getDocs(colGL);
+      for(const ds of snapGL.docs){if(ds.data().depenseId===id){await _fs.deleteDoc(ds.ref);break;}}
+    }
   }catch(e){console.log('Firebase delete:',e.message);}}
   afficherDepenses('fiang');afficherDepenses('anj');
+}
+
+// Rattrapage : recopie vers le Grand Livre Fiangonana toute dépense qui n'y a pas encore de copie liée
+// (utile pour les anciennes dépenses saisies avant que cette synchronisation automatique existe)
+async function rattraperDepensesGL(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté.');return;}
+  if(!confirm("Vérifier et recopier vers le Grand Livre toutes les dépenses Fiangonana qui n'y sont pas encore ? (Les dépenses déjà présentes ne seront pas dupliquées.)"))return;
+  try{
+    const depSnap=await _fs.getDocs(_fs.collection(_db,'depenses'));
+    const glSnap=await _fs.getDocs(_fs.collection(_db,'grandlivre_fiang'));
+    const glDepenseIds=new Set();
+    glSnap.forEach(function(ds){const d=ds.data();if(d.depenseId)glDepenseIds.add(d.depenseId);});
+    let ajoutees=0;
+    const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+    const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
+    const now=new Date().toISOString();
+    for(const ds of depSnap.docs){
+      const d=ds.data();
+      if(d.livre!=='fiang') continue;
+      if(glDepenseIds.has(d.id)) continue;
+      const glRec={
+        date:d.date,montant:d.montant,es:'S',source:d.source||'caisse',
+        rubrique:d.cat||'DEP',libelle:d.desc||d.cat||'Dépense',
+        piece:d.piece||'',page:d.page||'',
+        createdBy:d.createdBy||userEmail,createdByNom:d.createdByNom||userNom,createdAt:d.createdAt||now,
+        savedAt:now,depenseId:d.id
+      };
+      await _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec);
+      ajoutees++;
+    }
+    alert(ajoutees>0?('✅ '+ajoutees+' dépense(s) recopiée(s) dans le Grand Livre.'):'✅ Tout est déjà à jour, rien à recopier.');
+    if(typeof chargerTout==='function') chargerTout();
+  }catch(e){alert('Erreur : '+e.message);}
 }
 function afficherDepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);
