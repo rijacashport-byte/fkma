@@ -1205,6 +1205,17 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <button class="yr-btn" onclick="changerAnnee(1)">▶</button>
   </div>
 
+  <div class="card">
+    <div class="card-titre">💰 Disponibilités Caisse &amp; Banque</div>
+    <div class="solrow"><span class="sollab">💵 Caisse Rakitra (Fiangonana)</span><span class="solval" id="dash-sol-caisse-fiang">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB Rakitra</span><span class="solval" id="dash-sol-banque-fiang">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">💵 Caisse Anjarako</span><span class="solval" id="dash-sol-caisse-anj">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB Anjarako</span><span class="solval" id="dash-sol-banque-anj">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">💵 Caisse K45 <span style="font-size:10px;color:var(--texte2);font-weight:400">(temporaire)</span></span><span class="solval" id="dash-sol-caisse-k45">0 FCFA</span></div>
+    <div class="solrow"><span class="sollab">🏦 SIB K45 <span style="font-size:10px;color:var(--texte2);font-weight:400">(temporaire)</span></span><span class="solval" id="dash-sol-banque-k45">0 FCFA</span></div>
+    <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL GÉNÉRAL</span><span class="solval" id="dash-sol-total">0 FCFA</span></div>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi kv"><div class="kpi-icon">🙏</div><div class="kpi-val" id="kpi-rakitra">0 F</div><div class="kpi-lab">Total Rakitra</div></div>
     <div class="kpi kb"><div class="kpi-icon">📨</div><div class="kpi-val" id="kpi-anjarako">0 F</div><div class="kpi-lab">Total Anjarako</div></div>
@@ -1985,7 +1996,7 @@ function showGestTab(tab, btn){
     const el=document.getElementById('tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
-  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();}
+  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');}
   if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
@@ -4101,6 +4112,21 @@ function renderFiang(){renderLivre('fiang');renderSoldes('fiang');}
 function renderAnj(){renderLivre('anj');renderSoldes('anj');}
 
 // ── SOLDES ────────────────────────────────────────────────────
+let SOLDES_DASH={fiang:{caisse:0,banque:0},anj:{caisse:0,banque:0},k45:{caisse:0,banque:0}};
+function majSoldesDashboard(){
+  const setEl=(id,val)=>{
+    const el=document.getElementById(id);
+    if(el){el.textContent=fmt(val)+' FCFA';el.className='solval '+(val>=0?'spos':'sneg');}
+  };
+  setEl('dash-sol-caisse-fiang',SOLDES_DASH.fiang.caisse);
+  setEl('dash-sol-banque-fiang',SOLDES_DASH.fiang.banque);
+  setEl('dash-sol-caisse-anj',SOLDES_DASH.anj.caisse);
+  setEl('dash-sol-banque-anj',SOLDES_DASH.anj.banque);
+  setEl('dash-sol-caisse-k45',SOLDES_DASH.k45.caisse);
+  setEl('dash-sol-banque-k45',SOLDES_DASH.k45.banque);
+  const total=SOLDES_DASH.fiang.caisse+SOLDES_DASH.fiang.banque+SOLDES_DASH.anj.caisse+SOLDES_DASH.anj.banque+SOLDES_DASH.k45.caisse+SOLDES_DASH.k45.banque;
+  setEl('dash-sol-total',total);
+}
 function renderSoldes(livre){
   const list=GL[livre]||[];
   const initC=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
@@ -4121,6 +4147,7 @@ function renderSoldes(livre){
   setEl(livre+'-sol-caisse',caisse);
   setEl(livre+'-sol-banque',banque);
   setEl(livre+'-sol-total',tot);
+  if(SOLDES_DASH[livre]){SOLDES_DASH[livre]={caisse,banque};majSoldesDashboard();}
 }
 
 // ── SYNTHÈSE ──────────────────────────────────────────────────
