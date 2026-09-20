@@ -15,7 +15,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -30,6 +30,14 @@ const app  = initializeApp({
 });
 const db   = getFirestore(app);
 const auth = getAuth(app);
+// Persistance hors-ligne : garde les écritures en attente sur l'appareil si la connexion coupe
+// pile au moment d'enregistrer, et les envoie automatiquement dès que la connexion revient.
+// Sans ça, un message "✅ enregistré" pouvait s'afficher alors que l'écriture ne partait jamais.
+enableIndexedDbPersistence(db).catch(function(err){
+  console.log('Persistance hors-ligne non activée :', err.code);
+  // err.code==='failed-precondition' -> plusieurs onglets ouverts en même temps
+  // err.code==='unimplemented' -> navigateur trop ancien / non supporté
+});
 window._app=app; window._db=db; window._auth=auth;
 window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where};
 window._signIn=signInWithEmailAndPassword;
@@ -715,6 +723,10 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 <div class="fb-status" id="fb-status">
   <div class="fb-dot" id="fb-dot"></div>
   <span id="fb-txt">Connexion Firebase…</span>
+</div>
+
+<div id="offline-banner" style="display:none;background:#fdecea;color:#c0392b;text-align:center;font-size:12px;font-weight:700;padding:8px;border-radius:8px;margin-bottom:10px;">
+  📡 Pas de connexion internet — ce que vous enregistrez ne sera envoyé que lorsque la connexion reviendra. Vérifiez avant de fermer l'appli !
 </div>
 
 
@@ -4407,6 +4419,15 @@ document.addEventListener('DOMContentLoaded',function(){
     const el=document.getElementById(id);if(el)el.valueAsDate=new Date();
   });
 });
+
+// Bannière hors-ligne : avertit clairement quand la connexion internet est coupée
+function majBanniereOffline(){
+  const b=document.getElementById('offline-banner');
+  if(b) b.style.display=navigator.onLine?'none':'block';
+}
+window.addEventListener('online',majBanniereOffline);
+window.addEventListener('offline',majBanniereOffline);
+document.addEventListener('DOMContentLoaded',majBanniereOffline);
 
 
 // Timeout Firebase — afficher erreur si pas connecté après 10s
