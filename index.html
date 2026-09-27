@@ -1013,6 +1013,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div class="card">
       <div class="card-titre">📊 Suivi des paiements — Anjarako</div>
       <div class="champ"><label>📆 Mois</label><input type="month" id="suivi-mois" onchange="renderSuiviPaiements()"></div>
+      <button class="btn btn-excel btn-full" onclick="exporterExcelSuiviAnjarako()" style="margin-top:8px"><span>📊</span> Exporter Excel (membres + mois + année)</button>
     </div>
 
     <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr">
@@ -2920,6 +2921,46 @@ function toggleSuiviListe(which){
   const btn=document.getElementById('suivi-toggle-'+which);
   if(listEl) listEl.style.display=suiviCollapsed[which]?'none':'';
   if(btn) btn.textContent=suiviCollapsed[which]?'▸ Afficher':'▾ Réduire';
+}
+
+function exporterExcelSuiviAnjarako(){
+  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;}).sort(function(a,b){return a.num-b.num;});
+  const ym=document.getElementById('suivi-mois')?.value||moisActuel();
+  const annee=new Date().getFullYear();
+  const wb=XLSX.utils.book_new();
+
+  // ── Feuille 1 : Membres ──
+  const rowsMembres=[['N° carte','Nom']];
+  membres.forEach(function(m){rowsMembres.push([m.num,m.nom||'']);});
+  const wsMembres=XLSX.utils.aoa_to_sheet(rowsMembres);
+  wsMembres['!cols']=[{wch:10},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,wsMembres,'Membres');
+
+  // ── Feuille 2 : Mois sélectionné ──
+  const cartesPayees=cartesPayeesPourMois(ym);
+  const rowsMois=[['N° carte','Nom','Statut',moisLabel(ym)]];
+  membres.forEach(function(m){
+    rowsMois.push([m.num,m.nom||'',cartesPayees.has(m.num)?'Payé':'Non payé','']);
+  });
+  const wsMois=XLSX.utils.aoa_to_sheet(rowsMois);
+  wsMois['!cols']=[{wch:10},{wch:30},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsMois,moisLabel(ym).replace(' ','_'));
+
+  // ── Feuille 3 : Vue annuelle ──
+  const rowsAnnee=[['N° carte','Nom'].concat(MOIS_FR)];
+  membres.forEach(function(m){
+    const row=[m.num,m.nom||''];
+    for(let i=0;i<12;i++){
+      const ymi=annee+'-'+String(i+1).padStart(2,'0');
+      row.push(cartesPayeesPourMois(ymi).has(m.num)?'✓':'✗');
+    }
+    rowsAnnee.push(row);
+  });
+  const wsAnnee=XLSX.utils.aoa_to_sheet(rowsAnnee);
+  wsAnnee['!cols']=[{wch:10},{wch:30}].concat(MOIS_FR.map(function(){return{wch:9};}));
+  XLSX.utils.book_append_sheet(wb,wsAnnee,'Année '+annee);
+
+  XLSX.writeFile(wb,'suivi_paiements_anjarako_'+ym+'.xlsx');
 }
 
 function renderSuiviPaiements(){
