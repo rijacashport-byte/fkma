@@ -2789,7 +2789,7 @@ async function enregistrerAnjarako(){
   if(!date){alert('Veuillez renseigner la date.');return;}
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
-  const rec={date,total,enveloppes:[...enveloppesJour],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
+  const rec={date,total,enveloppes:[...enveloppesJour],valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
   const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
@@ -3310,17 +3310,28 @@ function exportExcelRakitra(){
 
 function exporterExcelAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
-  const total=parseInt(document.getElementById('anj-total')?.value)||0;
+  let total=parseInt(document.getElementById('anj-total')?.value)||0;
+  let envs=enveloppesJour;
+  let valos=valopyListe||[];
+  // Si la saisie en mémoire est vide (ex: page rechargée depuis), reprendre ce qui a déjà été enregistré pour cette date
+  if(envs.length===0 && valos.length===0){
+    const saved=load(SK_ANJ_H).find(h=>h.date===date);
+    if(saved){
+      envs=saved.enveloppes||[];
+      valos=saved.valopy||[];
+      if(!total) total=saved.total||0;
+    }
+  }
   const wb=XLSX.utils.book_new();
-  const rows=[['ANJARAKO FKMA'],['Date',date,'Total',total,'Enveloppes',enveloppesJour.length],[],['N° Carte','Famille','Mois payé']];
-  enveloppesJour.forEach(e=>rows.push([e.carte,e.nom||'',moisLabel(e.mois)]));
+  const rows=[['ANJARAKO FKMA'],['Date',date,'Total',total,'Enveloppes',envs.length],[],['N° Carte','Famille','Mois payé']];
+  envs.forEach(e=>rows.push([e.carte,e.nom||'',moisLabel(e.mois)]));
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'Anjarako');
 
   // Détail du comptage des montants d'enveloppes (valopy)
-  const totalValopy=(valopyListe||[]).reduce((a,m)=>a+m,0);
-  const rowsValopy=[['VALOPY — Comptage des montants d\'enveloppes'],['Date',date,'Nb enveloppes comptées',(valopyListe||[]).length],[],['#','Montant (F)']];
-  (valopyListe||[]).forEach((m,i)=>rowsValopy.push([i+1,m]));
+  const totalValopy=valos.reduce((a,m)=>a+m,0);
+  const rowsValopy=[['VALOPY — Comptage des montants d\'enveloppes'],['Date',date,'Nb enveloppes comptées',valos.length],[],['#','Montant (F)']];
+  valos.forEach((m,i)=>rowsValopy.push([i+1,m]));
   rowsValopy.push([],['TOTAL VALOPY',totalValopy],['TOTAL BILLETAGE (anj-total)',total],['ÉCART',total-totalValopy]);
   const wsValopy=XLSX.utils.aoa_to_sheet(rowsValopy);wsValopy['!cols']=[{wch:26},{wch:16}];
   XLSX.utils.book_append_sheet(wb,wsValopy,'Valopy');
