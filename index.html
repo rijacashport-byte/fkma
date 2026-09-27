@@ -3315,7 +3315,17 @@ function exporterExcelAnjarako(){
   const rows=[['ANJARAKO FKMA'],['Date',date,'Total',total,'Enveloppes',enveloppesJour.length],[],['N° Carte','Famille','Mois payé']];
   enveloppesJour.forEach(e=>rows.push([e.carte,e.nom||'',moisLabel(e.mois)]));
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:16}];
-  XLSX.utils.book_append_sheet(wb,ws,'Anjarako');XLSX.writeFile(wb,`anjarako_fkma_${date||'date'}.xlsx`);
+  XLSX.utils.book_append_sheet(wb,ws,'Anjarako');
+
+  // Détail du comptage des montants d'enveloppes (valopy)
+  const totalValopy=(valopyListe||[]).reduce((a,m)=>a+m,0);
+  const rowsValopy=[['VALOPY — Comptage des montants d\'enveloppes'],['Date',date,'Nb enveloppes comptées',(valopyListe||[]).length],[],['#','Montant (F)']];
+  (valopyListe||[]).forEach((m,i)=>rowsValopy.push([i+1,m]));
+  rowsValopy.push([],['TOTAL VALOPY',totalValopy],['TOTAL BILLETAGE (anj-total)',total],['ÉCART',total-totalValopy]);
+  const wsValopy=XLSX.utils.aoa_to_sheet(rowsValopy);wsValopy['!cols']=[{wch:26},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsValopy,'Valopy');
+
+  XLSX.writeFile(wb,`anjarako_fkma_${date||'date'}.xlsx`);
 }
 
 function exporterExcelDepenses(livre){
