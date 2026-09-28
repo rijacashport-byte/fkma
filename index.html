@@ -952,6 +952,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       <span id="env-count" style="background:var(--orange);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
     </div>
     <div id="liste-enveloppes"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div></div>
+    <div id="env-verif" style="display:none;font-size:12px;text-align:center;padding:7px;border-radius:6px;font-weight:600;margin-top:8px"></div>
   </div>
 
   <div class="card" id="valopy-card" style="border-left:4px solid var(--violet)">
@@ -2700,19 +2701,61 @@ function afficherEnveloppesJour(){
     <button class="env-del" onclick="supprimerEnveloppe(${i})">✕</button>
   </div>`).join('');
 }
+// ── COMPTAGE DES ENVELOPPES ANJARAKO ──────────────────────────
+// Règle : le nombre retenu est celui des n° de carte saisis (ou du nombre saisi directement, en mode
+// "Nombre direct"). S'il n'y en a pas, on prend le nombre d'enveloppes comptées avec les montants (valopy).
+function compteEnveloppes(){
+  const nbCartes=enveloppesJour.length;
+  const nbDirect=envMode==='nb'?(parseInt(document.getElementById('env-nb-direct')?.value)||0):0;
+  const nbCompte=(typeof valopyListe!=='undefined'&&valopyListe)?valopyListe.length:0;
+  const nbDeclare=nbDirect>0?nbDirect:nbCartes;
+  const officiel=nbDeclare>0?nbDeclare:nbCompte;
+  const libDeclare=nbDirect>0?'nombre saisi directement':'n° de carte saisis';
+  return {nbCartes,nbDirect,nbCompte,nbDeclare,officiel,libDeclare};
+}
+// Même règle appliquée à un enregistrement déjà sauvegardé (les anciens enregistrements n'ont pas de valopy)
+function nbEnvelopesRec(h){
+  const cartes=(h.enveloppes||[]).length;
+  const direct=h.nbDirect||0;
+  const declare=direct>0?direct:cartes;
+  return declare>0?declare:((h.valopy||[]).length);
+}
+// Ordre chronologique fiable : date, puis heure de saisie, sinon ordre d'arrivée
+function cmpChrono(a,b){
+  const d=(a.date||'').localeCompare(b.date||'');
+  if(d!==0)return d;
+  return (a.createdAt||a.savedAt||'').localeCompare(b.createdAt||b.savedAt||'');
+}
+function afficherControleEnveloppes(){
+  const el=document.getElementById('env-verif');
+  if(!el)return;
+  const c=compteEnveloppes();
+  if(c.nbDeclare>0&&c.nbCompte>0){
+    el.style.display='block';
+    if(c.nbDeclare===c.nbCompte){
+      el.textContent='✅ Cohérent : '+c.nbDeclare+' '+c.libDeclare+' = '+c.nbCompte+' enveloppes comptées.';
+      el.style.background='#e8f5ee';el.style.color='var(--vert)';
+    }else{
+      el.textContent='⚠️ '+c.nbDeclare+' '+c.libDeclare+' mais '+c.nbCompte+' enveloppes comptées (écart de '+Math.abs(c.nbDeclare-c.nbCompte)+'). Une confirmation sera demandée à l\'enregistrement.';
+      el.style.background='#fff3d6';el.style.color='#8a6200';
+    }
+  }else if(c.nbDeclare===0&&c.nbCompte>0){
+    el.style.display='block';
+    el.textContent='ℹ️ Aucun n° de carte saisi : le nombre retenu est celui des enveloppes comptées ('+c.nbCompte+').';
+    el.style.background='#eaf0fb';el.style.color='var(--bleu)';
+  }else{
+    el.style.display='none';
+  }
+}
 function mettreAJourBannerAnj(){
-  // Nombre d'enveloppes selon le mode
-  const nbDirect = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
-
+  const c=compteEnveloppes();
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
-  const nb=enveloppesJour.length;
   const membres=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  const nbTotal = nb + nbDirect; // cartes + nombre direct
-  const total2 = parseInt(document.getElementById('anj-total')?.value)||0;
-  document.getElementById('anj-banner-total').innerHTML=`${fmt(total2)} <span>FCFA</span>`;
-  document.getElementById('anj-nb-env-disp').textContent=nbTotal;
-  document.getElementById('anj-moy-disp').textContent=nb>0?fmt(Math.round(total/nb))+' F':'—';
-  document.getElementById('anj-pct-disp').textContent=membres.length>0?Math.round((nb/membres.length)*100)+'%':'—';
+  document.getElementById('anj-banner-total').innerHTML=`${fmt(total)} <span>FCFA</span>`;
+  document.getElementById('anj-nb-env-disp').textContent=c.officiel;
+  document.getElementById('anj-moy-disp').textContent=c.officiel>0?fmt(Math.round(total/c.officiel))+' F':'—';
+  document.getElementById('anj-pct-disp').textContent=membres.length>0?Math.round((c.nbCartes/membres.length)*100)+'%':'—';
+  afficherControleEnveloppes();
   verifierValopy();
 }
 
@@ -2746,6 +2789,7 @@ function renderValopy(){
   const nbEl=document.getElementById('valopy-nb'); if(nbEl) nbEl.textContent=valopyListe.length;
   const totEl=document.getElementById('valopy-total'); if(totEl) totEl.textContent=fmt(total);
   verifierValopy();
+  mettreAJourBannerAnj();
 }
 function verifierValopy(){
   const el=document.getElementById('valopy-verif');
@@ -2772,8 +2816,8 @@ function calculerAnjMoisCourant(){
   const mc7=mc.substring(0,7);
   let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+(h.total||0),0)
     +(parseInt(document.getElementById('anj-total')?.value)||0);
-  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+(h.enveloppes||[]).length,0)
-    +enveloppesJour.length;
+  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+nbEnvelopesRec(h),0)
+    +compteEnveloppes().officiel;
   const pctM=obj>0?Math.min((cumulM/obj)*100,150):0;
   const pctE=objE>0?Math.min((cumulE/objE)*100,150):0;
   const lm=document.getElementById('anj-pct-label');const bm=document.getElementById('anj-pct-bar');
@@ -2787,9 +2831,15 @@ async function enregistrerAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
   if(!date){alert('Veuillez renseigner la date.');return;}
+  // Contrôle : n° de carte saisis (ou nombre saisi) et enveloppes comptées avec les montants doivent coïncider
+  const cEnv=compteEnveloppes();
+  if(cEnv.nbDeclare>0&&cEnv.nbCompte>0&&cEnv.nbDeclare!==cEnv.nbCompte){
+    const ecartEnv=Math.abs(cEnv.nbDeclare-cEnv.nbCompte);
+    if(!confirm('⚠️ Attention : '+cEnv.nbDeclare+' '+cEnv.libDeclare+' mais '+cEnv.nbCompte+' enveloppes comptées avec les montants (écart de '+ecartEnv+').\n\nLe nombre retenu sera '+cEnv.nbDeclare+'.\n\nEnregistrer quand même ?'))return;
+  }
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
-  const rec={date,total,enveloppes:[...enveloppesJour],valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode};
+  const rec={date,total,enveloppes:[...enveloppesJour],valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
   const hist=load(SK_ANJ_H);
   const idx=hist.findIndex(h=>h.date===date);
   if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
@@ -3200,7 +3250,7 @@ async function rattraperDepensesGL(){
   }catch(e){alert('Erreur : '+e.message);}
 }
 function afficherDepenses(livre){
-  const all=load(SK_DEP).filter(d=>d.livre===livre);
+  const all=load(SK_DEP).filter(d=>d.livre===livre).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||((b.id||0)-(a.id||0)));
   const total=all.reduce((a,d)=>a+d.montant,0);
   const p=livre==='fiang'?'vf':'va';
   const tEl=document.getElementById(p+'-total');
@@ -3262,9 +3312,8 @@ function partagerWARakitra(){
 function partagerWAAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
-  // Privilégier le nombre direct saisi (pas le décompte des numéros)
-  const nbDirect=parseInt(document.getElementById('env-nb-direct')?.value)||0;
-  const nb = nbDirect > 0 ? nbDirect : enveloppesJour.length;
+  // Nombre retenu : n° de carte saisis (ou nombre saisi directement) ; à défaut, enveloppes comptées avec les montants
+  const nb = compteEnveloppes().officiel;
   let m=`📨 *ANJARAKO — ${date}*\n📩 ${nb} enveloppes | 💰 ${fmt(total)} FCFA\n`;
   const parMois={};
   enveloppesJour.forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
@@ -3313,17 +3362,19 @@ function exporterExcelAnjarako(){
   let total=parseInt(document.getElementById('anj-total')?.value)||0;
   let envs=enveloppesJour;
   let valos=valopyListe||[];
+  let nbOff=compteEnveloppes().officiel;
   // Si la saisie en mémoire est vide (ex: page rechargée depuis), reprendre ce qui a déjà été enregistré pour cette date
   if(envs.length===0 && valos.length===0){
     const saved=load(SK_ANJ_H).find(h=>h.date===date);
     if(saved){
       envs=saved.enveloppes||[];
       valos=saved.valopy||[];
+      nbOff=nbEnvelopesRec(saved);
       if(!total) total=saved.total||0;
     }
   }
   const wb=XLSX.utils.book_new();
-  const rows=[['ANJARAKO FKMA'],['Date',date,'Total',total,'Enveloppes',envs.length],[],['N° Carte','Famille','Mois payé']];
+  const rows=[['ANJARAKO FKMA'],['Date',date,'Total',total,'Enveloppes (retenu)',nbOff],['N° de carte saisis',envs.length,'Enveloppes comptées (valopy)',valos.length],[],['N° Carte','Famille','Mois payé']];
   envs.forEach(e=>rows.push([e.carte,e.nom||'',moisLabel(e.mois)]));
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:10},{wch:22},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'Anjarako');
@@ -3529,6 +3580,14 @@ async function chargerAnjHist(){
   const totalInp=document.getElementById('anj-total');
   if(totalInp) totalInp.value=anj.total||'';
   enveloppesJour=[...(anj.enveloppes||[])];
+  valopyListe=[...(anj.valopy||[])];
+  // Remettre le mode "Nombre direct" tel qu'il avait été enregistré
+  const inpNb=document.getElementById('env-nb-direct');
+  const inpMoisD=document.getElementById('env-mois-direct');
+  if(inpNb)inpNb.value=anj.nbDirect>0?anj.nbDirect:'';
+  if(inpMoisD)inpMoisD.value=anj.moisDirect||'';
+  showEnvMode(anj.nbDirect>0?'nb':'carte');
+  renderValopy();
   afficherEnveloppesJour();
   alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
 }
@@ -4129,7 +4188,7 @@ async function chargerTout(){
       const snap=await fs.getDocs(fs.collection(db,'grandlivre_'+livre));
       GL[livre]=[];
       snap.forEach(ds=>GL[livre].push({...ds.data(),_id:ds.id}));
-      GL[livre].sort((a,b)=>a.date.localeCompare(b.date));
+      GL[livre].sort(cmpChrono);
       renderLivre(livre);
       renderSoldes(livre);
     }catch(e){console.log('GL '+livre+':',e.message);}
@@ -4141,7 +4200,7 @@ async function chargerTout(){
 function renderLivre(livre){
   const el=document.getElementById(livre+'-liste');
   if(!el)return;
-  const list=GL[livre];
+  const list=(GL[livre]||[]).slice().sort(cmpChrono);
   if(!list.length){el.innerHTML='<div class="vide">Aucune \u00e9criture pour l\u0027instant — saisis dans Gestion pour voir les données ici</div>';return;}
 
   const initCaisse=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
@@ -4179,7 +4238,7 @@ function renderLivre(livre){
       +'</div>'
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
-  }).join('');
+  }).reverse().join('');
 }
 
 function renderFiang(){renderLivre('fiang');renderSoldes('fiang');}
@@ -4341,7 +4400,7 @@ async function enregistrerK45(){
   try{
     const docRef=await fs.addDoc(fs.collection(db,'grandlivre_k45'),rec);
     GL['k45'].push({...rec,_id:docRef.id});
-    GL['k45'].sort((a,b)=>a.date.localeCompare(b.date));
+    GL['k45'].sort(cmpChrono);
     renderLivre('k45');renderSoldes('k45');renderSynth();
     ['k45-date','k45-montant','k45-page','k45-lettrage','k45-libelle','k45-piece'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.value='';
