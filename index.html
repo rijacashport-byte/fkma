@@ -5182,7 +5182,7 @@ async function rafraichirModalPieces(){
     }else{
       el.innerHTML=docs.map(function(d){
         return '<div style="position:relative;display:inline-block;margin:4px">'
-          +'<img src="'+d.img+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="window.open(this.src)">'
+          +'<img src="'+d.img+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
           +'<button type="button" onclick="supprimerPiece(\''+d.id+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
           +'</div>';
       }).join('');
@@ -5224,6 +5224,27 @@ async function supprimerPiecesPourOp(opId){
     const snap=await window._fs.getDocs(window._fs.query(window._fs.collection(window._db,'pieces'),window._fs.where('opId','==',String(opId))));
     for(const d of snap.docs){ await window._fs.deleteDoc(d.ref); }
   }catch(e){ console.log('Erreur suppression pièces:',e.message); }
+}
+
+// Affiche une photo en plein écran, sans ouvrir de nouvel onglet (window.open sur une image
+// stockée en mémoire donne un écran noir sur la plupart des navigateurs mobiles).
+function voirPiecePleinEcran(src){
+  let v=document.getElementById('piece-fullscreen');
+  if(!v){
+    v=document.createElement('div');
+    v.id='piece-fullscreen';
+    v.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10000;align-items:center;justify-content:center;flex-direction:column;padding:16px';
+    v.innerHTML='<img id="piece-fullscreen-img" style="max-width:100%;max-height:85vh;border-radius:6px">'
+      +'<button type="button" onclick="fermerPiecePleinEcran()" style="margin-top:14px;background:#fff;border:none;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer">Fermer</button>';
+    v.onclick=function(e){ if(e.target===v) fermerPiecePleinEcran(); };
+    document.body.appendChild(v);
+  }
+  document.getElementById('piece-fullscreen-img').src=src;
+  v.style.display='flex';
+}
+function fermerPiecePleinEcran(){
+  const v=document.getElementById('piece-fullscreen');
+  if(v) v.style.display='none';
 }
 
 </script>
