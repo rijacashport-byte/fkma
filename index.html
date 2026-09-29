@@ -2846,9 +2846,13 @@ function calculerAnjMoisCourant(){
   const obj=parseInt(document.getElementById('anj-objectif')?.value)||1100000;
   const objE=parseInt(document.getElementById('anj-obj-env')?.value)||90;
   const mc7=mc.substring(0,7);
-  let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+(h.total||0),0)
+  // Le jour affiché à l'écran ne doit être compté qu'une fois : on exclut sa version déjà
+  // enregistrée dans l'historique, et on ajoute la saisie en cours à la place (nouvelle ou en
+  // train d'être corrigée). Sans ça, rouvrir l'onglet après un enregistrement comptait ce jour deux fois.
+  const dateEnCours=document.getElementById('rak-date-input')?.value||'';
+  let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==dateEnCours).reduce((a,h)=>a+(h.total||0),0)
     +(parseInt(document.getElementById('anj-total')?.value)||0);
-  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)).reduce((a,h)=>a+nbEnvelopesRec(h),0)
+  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==dateEnCours).reduce((a,h)=>a+nbEnvelopesRec(h),0)
     +compteEnveloppes().officiel;
   const pctM=obj>0?Math.min((cumulM/obj)*100,150):0;
   const pctE=objE>0?Math.min((cumulE/objE)*100,150):0;
@@ -2886,6 +2890,7 @@ async function enregistrerAnjarako(){
     // Écriture automatique dans le Grand Livre Anjarako
     await ecrireGrandLivreAnj(rec);
     alert('✅ Anjarako du '+date+' enregistré !');
+    calculerAnjMoisCourant();
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
   else alert('✅ Anjarako enregistré localement.');
 }
