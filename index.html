@@ -4510,77 +4510,101 @@ async function supprimerEcritureGL(btn){
 }
 
 // ── EXPORT EXCEL ──────────────────────────────────────────────
-function buildSheetRakitra(){
+// Construit une table opId -> lien(s) Drive, en une seule lecture de la collection "pieces",
+// pour ajouter une colonne "Photos" dans les exports sans une requête par ligne.
+async function construirePiecesIndex(){
+  const index={};
+  if(!window._db||!window._fs) return index;
+  try{
+    const snap=await window._fs.getDocs(window._fs.collection(window._db,'pieces'));
+    snap.forEach(function(ds){
+      const d=ds.data();
+      const key=String(d.opId);
+      if(!index[key]) index[key]=[];
+      index[key].push(d.driveUrl||'(photo dans l\'appli, pas encore sur Drive)');
+    });
+  }catch(e){ console.log('Erreur lecture pièces pour export :',e.message); }
+  return index;
+}
+function liensPour(index,opId){
+  if(!opId) return '';
+  const arr=index[String(opId)];
+  return arr?arr.join(' | '):'';
+}
+
+function buildSheetRakitra(piecesIndex){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['N° Opération','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push(['',new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
+  const rows=[['N° Opération','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde','Photos']];
+  rows.push(['',new Date(2026,0,1),'','','Solde initial','','',initC,'',initC,'']);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
 
-function buildSheetBanqueRakitra(){
+function buildSheetBanqueRakitra(piecesIndex){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
-  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Photos']];
+  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB,'']);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
 
-function buildSheetAnjarako(){
+function buildSheetAnjarako(piecesIndex){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['N° Opération','Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push(['',new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  const rows=[['N° Opération','Date','Page','Libellé','Entrée','Sortie','Solde','Photos']];
+  rows.push(['',new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB,'']);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
 
-function buildSheetBanqueAnjarako(){
+function buildSheetBanqueAnjarako(piecesIndex){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Photos']];
+  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB,'']);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
 
-function exporterExcel(livre){
+async function exporterExcel(livre){
+  const piecesIndex=await construirePiecesIndex();
   const wb=XLSX.utils.book_new();
   if(livre==='fiang'){
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra(piecesIndex)),'Rakitra');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra(piecesIndex)),'Banque Rakitra');
   } else {
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako(piecesIndex)),'Anjarako');
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako(piecesIndex)),'Banque Anjarako');
   }
   XLSX.writeFile(wb,'FKMA_GrandLivre_'+(livre==='fiang'?'Fiangonana':'Anjarako')+'_2026.xlsx');
 }
 
-function exporterExcelComplet(){
+async function exporterExcelComplet(){
+  const piecesIndex=await construirePiecesIndex();
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra()),'Rakitra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra()),'Banque Rakitra');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako()),'Anjarako');
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako()),'Banque Anjarako');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra(piecesIndex)),'Rakitra');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra(piecesIndex)),'Banque Rakitra');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako(piecesIndex)),'Anjarako');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako(piecesIndex)),'Banque Anjarako');
   XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');
 }
 
@@ -5077,6 +5101,25 @@ const PIECES_TAILLE_MAX=250*1024; // 250 Ko : au-delà on recompresse plus fort
 let piecesEnAttente=[];   // photos compressées en attente, avant que l'opération n'ait un identifiant
 let pieceOpIdCourant=null;
 
+// Relais Google Apps Script : reçoit une photo et la dépose dans le dossier Drive "FKMA Photos"
+// du compte FKMA dédié, partagée en "Toute personne disposant du lien peut voir".
+const APPS_SCRIPT_PHOTOS_URL='https://script.google.com/macros/s/AKfycbyYT_la_lr3PWbVcEuOpjd1iF1zM-EnIt3aJYQrKa9a5rWQVTW2ikc00aDTIEzw7dUD/exec';
+
+// Envoie une photo (déjà compressée, en data URL) vers Drive via le relais.
+// Renvoie {viewUrl, imgUrl, fileId} en cas de succès, ou null si ça échoue (hors-ligne, relais indisponible…) :
+// dans ce cas on la garde quand même dans Firestore (solution de secours), rien n'est perdu.
+async function envoyerVersDrive(dataUrl,filename){
+  try{
+    const resp=await fetch(APPS_SCRIPT_PHOTOS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // évite une requête OPTIONS que le relais ne gère pas
+      body:JSON.stringify({base64:dataUrl,mimeType:'image/jpeg',filename:filename||('fkma_'+Date.now())})
+    });
+    const json=await resp.json();
+    return json&&json.ok?json:null;
+  }catch(e){ console.log('Erreur envoi vers Drive (on garde la photo dans Firestore) :',e.message); return null; }
+}
+
 function peutVoirPieces(){
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const role=(ROLES_CONFIG[userEmail]||{}).role||window._currentRole||'';
@@ -5141,11 +5184,15 @@ async function sauverPiecesPourOp(opId){
   if(!piecesEnAttente.length) return;
   if(!window._db||!window._fs) return;
   const email=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  let i=0;
   for(const img of piecesEnAttente){
+    i++;
+    const drive=await envoyerVersDrive(img,'fkma_'+opId+'_'+i);
+    const rec={opId:String(opId), createdAt:new Date().toISOString(), createdBy:email};
+    if(drive){ rec.driveUrl=drive.viewUrl; rec.driveImgUrl=drive.imgUrl; rec.driveFileId=drive.fileId; }
+    else{ rec.img=img; } // repli : Drive indisponible, on garde la photo dans Firestore pour ne rien perdre
     try{
-      await window._fs.addDoc(window._fs.collection(window._db,'pieces'),{
-        opId:String(opId), img, createdAt:new Date().toISOString(), createdBy:email
-      });
+      await window._fs.addDoc(window._fs.collection(window._db,'pieces'),rec);
     }catch(e){ console.log('Erreur sauvegarde pièce:',e.message); }
   }
   await misAJourCompteurPieces(opId);
@@ -5230,8 +5277,11 @@ async function rafraichirModalPieces(){
       el.innerHTML='<div class="vide">Aucune photo pour l\'instant.</div>';
     }else{
       el.innerHTML=docs.map(function(d){
+        const src=d.driveImgUrl||d.img;
+        const lien=d.driveUrl?'<a href="'+d.driveUrl+'" target="_blank" style="position:absolute;bottom:-6px;left:-6px;background:#1a73e8;color:#fff;border-radius:4px;font-size:9px;padding:2px 4px;text-decoration:none">Drive</a>':'';
         return '<div style="position:relative;display:inline-block;margin:4px">'
-          +'<img src="'+d.img+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
+          +'<img src="'+src+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
+          +lien
           +'<button type="button" onclick="supprimerPiece(\''+d.id+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
           +'</div>';
       }).join('');
@@ -5247,9 +5297,11 @@ async function ajouterPieceModal(input){
   try{
     const dataUrl=await compresserImage(input.files[0]);
     const email=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
-    await window._fs.addDoc(window._fs.collection(window._db,'pieces'),{
-      opId:pieceOpIdCourant, img:dataUrl, createdAt:new Date().toISOString(), createdBy:email
-    });
+    const drive=await envoyerVersDrive(dataUrl,'fkma_'+pieceOpIdCourant+'_'+Date.now());
+    const rec={opId:pieceOpIdCourant, createdAt:new Date().toISOString(), createdBy:email};
+    if(drive){ rec.driveUrl=drive.viewUrl; rec.driveImgUrl=drive.imgUrl; rec.driveFileId=drive.fileId; }
+    else{ rec.img=dataUrl; }
+    await window._fs.addDoc(window._fs.collection(window._db,'pieces'),rec);
     await rafraichirModalPieces();
     await misAJourCompteurPieces(pieceOpIdCourant);
   }catch(e){ alert('Erreur : '+e.message); }
