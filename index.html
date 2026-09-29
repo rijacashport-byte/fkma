@@ -4523,7 +4523,7 @@ async function construirePiecesIndex(){
       const d=ds.data();
       const key=String(d.opId);
       if(!index[key]) index[key]=[];
-      index[key].push(d.driveImgUrl||d.driveUrl||'(photo dans l\'appli, pas encore sur Drive)');
+      index[key].push(d.driveUrl||d.driveImgUrl||'(photo dans l\'appli, pas encore sur Drive)');
     });
   }catch(e){ console.log('Erreur lecture pièces pour export :',e.message); }
   return index;
@@ -5110,6 +5110,17 @@ const APPS_SCRIPT_PHOTOS_URL='https://script.google.com/macros/s/AKfycbyYT_la_lr
 // Envoie une photo (déjà compressée, en data URL) vers Drive via le relais.
 // Renvoie {viewUrl, imgUrl, fileId} en cas de succès, ou null si ça échoue (hors-ligne, relais indisponible…) :
 // dans ce cas on la garde quand même dans Firestore (solution de secours), rien n'est perdu.
+async function supprimerFichierDrive(fileId){
+  if(!fileId) return;
+  try{
+    await fetch(APPS_SCRIPT_PHOTOS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'delete',fileId:fileId})
+    });
+  }catch(e){ console.log('Erreur suppression Drive (le fichier restera dans le dossier) :',e.message); }
+}
+
 async function envoyerVersDrive(dataUrl,filename){
   try{
     const resp=await fetch(APPS_SCRIPT_PHOTOS_URL,{
@@ -5328,12 +5339,18 @@ async function rafraichirModalPieces(){
     }else{
       el.innerHTML=docs.map(function(d){
         const src=d.driveImgUrl||d.img;
-        const lienOuverture=d.driveImgUrl||d.driveUrl;
+        // Le bouton "Drive" pointe vers la page de visionnage (confirmée fiable), pas vers la
+        // miniature directe : si la miniature échoue à charger, on garde toujours un moyen sûr de voir la photo.
+        const lienOuverture=d.driveUrl||d.driveImgUrl;
         const lien=lienOuverture?'<a href="'+lienOuverture+'" target="_blank" style="position:absolute;bottom:-6px;left:-6px;background:#1a73e8;color:#fff;border-radius:4px;font-size:9px;padding:2px 4px;text-decoration:none">Drive</a>':'';
+        // Repli propre si la miniature ne charge pas (au lieu d'une icône d'image cassée)
+        const onerr=d.driveUrl?" onerror=\"this.style.display='none';this.nextElementSibling.style.display='flex'\"":'';
+        const secours=d.driveUrl?'<div style="display:none;width:90px;height:90px;border-radius:8px;border:1px solid var(--gris2);align-items:center;justify-content:center;font-size:26px;background:var(--gris1)" onclick="window.open(\''+d.driveUrl+'\')">📄</div>':'';
         return '<div style="position:relative;display:inline-block;margin:4px">'
-          +'<img src="'+src+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
+          +'<img src="'+src+'"'+onerr+' style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
+          +secours
           +lien
-          +'<button type="button" onclick="supprimerPiece(\''+d.id+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
+          +'<button type="button" onclick="supprimerPiece(\''+d.id+'\',\''+(d.driveFileId||'')+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
           +'</div>';
       }).join('');
     }
@@ -5361,10 +5378,11 @@ async function ajouterPieceModal(input){
   input.value='';
 }
 
-async function supprimerPiece(docId){
-  if(!confirm('Supprimer cette photo ?')) return;
+async function supprimerPiece(docId,driveFileId){
+  if(!confirm('Supprimer cette photo ? (elle sera aussi retirée de Google Drive)')) return;
   try{
     await window._fs.deleteDoc(window._fs.doc(window._db,'pieces',docId));
+    if(driveFileId) await supprimerFichierDrive(driveFileId);
     await rafraichirModalPieces();
     await misAJourCompteurPieces(pieceOpIdCourant);
   }catch(e){ alert('Erreur : '+e.message); }
@@ -5376,7 +5394,11 @@ async function supprimerPiecesPourOp(opId){
   if(!window._db||!window._fs) return;
   try{
     const snap=await window._fs.getDocs(window._fs.query(window._fs.collection(window._db,'pieces'),window._fs.where('opId','==',String(opId))));
-    for(const d of snap.docs){ await window._fs.deleteDoc(d.ref); }
+    for(const d of snap.docs){
+      const fileId=d.data().driveFileId;
+      await window._fs.deleteDoc(d.ref);
+      if(fileId) await supprimerFichierDrive(fileId);
+    }
   }catch(e){ console.log('Erreur suppression pièces:',e.message); }
 }
 
