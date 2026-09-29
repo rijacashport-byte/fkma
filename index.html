@@ -1143,7 +1143,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="vf-auteur" placeholder="Nom du responsable"></div>
       <div class="champ piece-champ" style="margin-bottom:10px">
         <label>📎 Pièce jointe (facultatif)</label>
-        <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="vf-photo-input">
+        <input type="file" accept="image/*" onchange="choisirPhotoAttente(this)" style="display:none" id="vf-photo-input">
         <button type="button" class="btn btn-gris" onclick="document.getElementById('vf-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
         <div id="dep-photos-attente" style="margin-top:6px"></div>
       </div>
@@ -1197,7 +1197,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="va-auteur" placeholder="Nom du responsable"></div>
       <div class="champ piece-champ" style="margin-bottom:10px">
         <label>📎 Pièce jointe (facultatif)</label>
-        <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="va-photo-input">
+        <input type="file" accept="image/*" onchange="choisirPhotoAttente(this)" style="display:none" id="va-photo-input">
         <button type="button" class="btn btn-gris" onclick="document.getElementById('va-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
         <div id="dep-photos-attente" style="margin-top:6px"></div>
       </div>
@@ -1452,7 +1452,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <button class="btn-add" onclick="ajouterFait()"><i class="ti ti-plus"></i> Ajouter un fait marquant</button>
     <div class="piece-champ" style="margin-top:10px">
       <label>📎 Photo(s) liée(s) à cette fiche (facultatif)</label>
-      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="k45-photo-input">
+      <input type="file" accept="image/*" onchange="choisirPhotoAttente(this)" style="display:none" id="k45-photo-input">
       <button type="button" class="btn btn-gris" onclick="document.getElementById('k45-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
       <div id="dep-photos-attente" style="margin-top:6px"></div>
     </div>
@@ -1772,7 +1772,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div class="ch"><label>🔢 N° Bordereau</label><input type="text" id="tr-piece" placeholder="Ex: BV-001"></div>
     <div class="ch piece-champ">
       <label>📎 Pièce jointe (facultatif)</label>
-      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="tr-photo-input">
+      <input type="file" accept="image/*" onchange="choisirPhotoAttente(this)" style="display:none" id="tr-photo-input">
       <button type="button" class="btn btn-gris" onclick="document.getElementById('tr-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
       <div id="dep-photos-attente" style="margin-top:6px"></div>
     </div>
@@ -1818,7 +1818,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     </div>
     <div class="ch piece-champ">
       <label>📎 Pièce jointe (facultatif)</label>
-      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="ob-photo-input">
+      <input type="file" accept="image/*" onchange="choisirPhotoAttente(this)" style="display:none" id="ob-photo-input">
       <button type="button" class="btn btn-gris" onclick="document.getElementById('ob-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
       <div id="dep-photos-attente" style="margin-top:6px"></div>
     </div>
@@ -5447,7 +5447,7 @@ function fermerPiecePleinEcran(){
       <button onclick="fermerPieces()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--texte2)">×</button>
     </div>
     <div id="pieces-liste" style="display:flex;flex-wrap:wrap;gap:6px;min-height:40px"></div>
-    <input type="file" accept="image/*" capture="environment" onchange="ajouterPieceModal(this)" style="display:none" id="pieces-modal-input">
+    <input type="file" accept="image/*" onchange="ajouterPieceModal(this)" style="display:none" id="pieces-modal-input">
     <button type="button" class="btn btn-gris btn-full" style="margin-top:12px" onclick="document.getElementById('pieces-modal-input').click()">📷 Ajouter une photo</button>
   </div>
 </div>
