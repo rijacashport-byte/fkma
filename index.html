@@ -15,7 +15,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -39,7 +39,7 @@ enableIndexedDbPersistence(db).catch(function(err){
   // err.code==='unimplemented' -> navigateur trop ancien / non supporté
 });
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where};
+window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._sendReset=sendPasswordResetEmail;
@@ -1448,6 +1448,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div class="ctit"><i class="ti ti-star"></i>Faits marquants</div>
     <div id="faits-liste"></div>
     <button class="btn-add" onclick="ajouterFait()"><i class="ti ti-plus"></i> Ajouter un fait marquant</button>
+    <div class="piece-champ" style="margin-top:10px">
+      <label>📎 Photo(s) liée(s) à cette fiche (facultatif)</label>
+      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="k45-photo-input">
+      <button type="button" class="btn btn-gris" onclick="document.getElementById('k45-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
+      <div id="dep-photos-attente" style="margin-top:6px"></div>
+    </div>
   </div>
 
   <!-- APERÇU -->
@@ -3165,7 +3171,7 @@ function setSrcDep(livre,src,btn){
   document.getElementById(p+'-src-banque').classList.toggle('actif',src==='banque');
 }
 
-function ajouterDepense(livre){
+async function ajouterDepense(livre){
   const p=livre==='fiang'?'vf':'va';
   const date=document.getElementById(p+'-date').value;
   const montant=parseInt(document.getElementById(p+'-montant').value)||0;
@@ -3199,11 +3205,12 @@ function ajouterDepense(livre){
       _fs.addDoc(_fs.collection(_db,'depenses'),rec).catch(e=>console.log('FB dep:',e.message));
       // Écriture automatique dans le Grand Livre Fiangonana
       if(livre==='fiang'){
+        const numOp=await prochainNumeroOp();
         const glRec={
           date,montant,es:'S',source,
           rubrique:cat||'DEP',
           libelle:desc||cat||'Dépense',
-          piece,page,
+          piece,page,numOp,
           createdBy:userEmail,createdByNom:userNom,createdAt:now,
           savedAt:now,depenseId:rec.id
         };
@@ -3261,10 +3268,11 @@ async function rattraperDepensesGL(){
       const d=ds.data();
       if(d.livre!=='fiang') continue;
       if(glDepenseIds.has(d.id)) continue;
+      const numOp=await prochainNumeroOp();
       const glRec={
         date:d.date,montant:d.montant,es:'S',source:d.source||'caisse',
         rubrique:d.cat||'DEP',libelle:d.desc||d.cat||'Dépense',
-        piece:d.piece||'',page:d.page||'',
+        piece:d.piece||'',page:d.page||'',numOp,
         createdBy:d.createdBy||userEmail,createdByNom:d.createdByNom||userNom,createdAt:d.createdAt||now,
         savedAt:now,depenseId:d.id
       };
@@ -3458,8 +3466,11 @@ async function ecrireGrandLivreFiang(d){
   const toDelete=[];
   existing.forEach(function(ds){if(ds.data().date===d.date&&ds.data().source==='caisse'&&!ds.data().transfert)toDelete.push(ds.ref);});
   for(const ref of toDelete) await _fs.deleteDoc(ref);
-  // Écrire les nouvelles
-  for(const ec of ecritures) await _fs.addDoc(col,ec);
+  // Écrire les nouvelles, chacune avec son propre numéro
+  for(const ec of ecritures){
+    ec.numOp=await prochainNumeroOp();
+    await _fs.addDoc(col,ec);
+  }
 }
 
 async function ecrireGrandLivreAnj(rec){
@@ -3472,7 +3483,7 @@ async function ecrireGrandLivreAnj(rec){
   existing.forEach(function(ds){if(ds.data().date===rec.date&&ds.data().auto===true)toDelete.push(ds.ref);});
   for(const ref of toDelete) await _fs.deleteDoc(ref);
   // Écriture entrée Anjarako voaray
-  await _fs.addDoc(col,{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true});
+  await _fs.addDoc(col,{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true,numOp:await prochainNumeroOp()});
 }
 // ── CHARGEMENT FIREBASE AU DÉMARRAGE ─────────────────────────
 async function chargerDepenses(){
@@ -3992,9 +4003,11 @@ async function enregistrer(){
       const data=docSnap.data();
       if(data.date===d.date && data.type===d.type) existId=docSnap.id;
     });
+    let docIdFinal=null;
     if(_ficheEnCoursId){
       // Mode modification — mettre à jour la fiche existante
       await fs.updateDoc(fs.doc(db,'journal_k45',_ficheEnCoursId), d);
+      docIdFinal=_ficheEnCoursId;
       alert('✅ Fiche mise à jour !');
       _ficheEnCoursId=null;
       btn.innerHTML='<i class="ti ti-device-floppy"></i> Enregistrer dans Firebase';
@@ -4006,11 +4019,14 @@ async function enregistrer(){
         return;
       }
       await fs.updateDoc(fs.doc(db,'journal_k45',existId), d);
+      docIdFinal=existId;
       alert('✅ Fiche mise à jour dans Firebase !');
     } else {
-      await fs.addDoc(colRef, d);
+      const docRef=await fs.addDoc(colRef, d);
+      docIdFinal=docRef.id;
       alert('✅ Nouvelle page enregistrée dans Firebase !');
     }
+    await sauverPiecesPourOp(docIdFinal);
     chargerHistorique();
   } catch(err){
     alert('Erreur Firebase : '+err.message);
@@ -4051,6 +4067,7 @@ async function chargerHistorique(){
               ${d.mitory?`<span>📖 ${d.mitory}</span>`:''}
               ${d.photoNum?`<span>📷 ${d.photoNum}</span>`:''}
               ${d.faits?.length?`<span>⭐ ${d.faits.length} fait(s)</span>`:''}
+              ${badgePieces(docId,d.nbPieces)}
             </div>
           </div>
           <button onclick="modifierFiche('${docId}')"
@@ -4249,7 +4266,7 @@ function renderLivre(livre){
     const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
-      +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+'</span>'
+      +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+(e.numOp?' · <span style="color:var(--bleu);font-weight:600">'+e.numOp+'</span>':'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
       +(e.rubrique?'<div class="erub">'+e.rubrique+'</div>':'')
@@ -4346,9 +4363,9 @@ async function faireTransfert(){
   const base={date,page,montant,comment,piece,transfert:true,opId,savedAt:new Date().toISOString()};
   try{
     // Sortie caisse
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'});
+    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
     // Entrée banque
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'});
+    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
     alert('✅ Transfert enregistré !');
     ['tr-date','tr-montant','tr-page','tr-comment','tr-piece'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     await sauverPiecesPourOp(opId);
@@ -4370,7 +4387,7 @@ async function enregistrerOpBancaire(){
     await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
       date,montant,es:obES,source:'banque',rubrique:nature,
       libelle:document.getElementById('ob-nature').options[document.getElementById('ob-nature').selectedIndex].text,
-      comment,opbancaire:true,opId,savedAt:new Date().toISOString()
+      comment,opbancaire:true,opId,numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()
     });
     alert('✅ Opération bancaire enregistrée !');
     ['ob-date','ob-montant','ob-comment'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -4427,6 +4444,7 @@ async function enregistrerK45(){
     libelle:document.getElementById('k45-libelle').value||'',
     piece:document.getElementById('k45-piece').value||'',
     saispar:document.getElementById('k45-saispar').value||'',
+    numOp:await prochainNumeroOp(),
     savedAt:new Date().toISOString()
   };
   try{
@@ -4494,26 +4512,26 @@ async function supprimerEcritureGL(btn){
 // ── EXPORT EXCEL ──────────────────────────────────────────────
 function buildSheetRakitra(){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
-  const rows=[['Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
+  const rows=[['N° Opération','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde']];
+  rows.push(['',new Date(2026,0,1),'','','Solde initial','','',initC,'',initC]);
   let solde=initC;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueRakitra(){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -4521,26 +4539,26 @@ function buildSheetBanqueRakitra(){
 function buildSheetAnjarako(){
   const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Page','Libellé','Entrée','Sortie','Solde']];
-  rows.push([new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
+  const rows=[['N° Opération','Date','Page','Libellé','Entrée','Sortie','Solde']];
+  rows.push(['',new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB]);
   let solde=initC+initB;
   (GL['anj']||[]).forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde]);
   });
   return rows;
 }
 
 function buildSheetBanqueAnjarako(){
   const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
-  rows.push([new Date(2026,0,1),'Solde initial','','','',initB]);
+  const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde']];
+  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB]);
   let solde=initB;
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde]);
   });
   return rows;
 }
@@ -5027,9 +5045,33 @@ function sdRenderFivoriana(){
 }
 
 // ══════════════════════════════════════════════════════════════
-// ── PIÈCES JOINTES (photos liées aux dépenses, versements et opérations bancaires) ─
+// ── NUMÉROTATION AUTOMATIQUE DES ÉCRITURES ───────────────────
 // ══════════════════════════════════════════════════════════════
-// Visibles et modifiables uniquement par secrétaire, trésorière et diacre.
+// Une seule séquence pour toutes les écritures (Rakitra, Anjarako, K45, dépenses, transferts,
+// opérations bancaires), qui repart de 0001 chaque année : OP-2026-0001, OP-2026-0002…
+// Pour Rakitra et Anjarako, dont les lignes sont recréées à chaque correction d'une saisie,
+// une correction consomme un nouveau numéro (l'ancien reste inutilisé) — accepté tel quel.
+async function prochainNumeroOp(){
+  if(!window._db||!window._fs||!window._fs.runTransaction) return null;
+  const annee=new Date().getFullYear();
+  const ref=window._fs.doc(window._db,'compteurs','operations_'+annee);
+  try{
+    const num=await window._fs.runTransaction(window._db,async function(tx){
+      const snap=await tx.get(ref);
+      const dernier=snap.exists()?(snap.data().dernier||0):0;
+      const nouveau=dernier+1;
+      tx.set(ref,{dernier:nouveau},{merge:true});
+      return nouveau;
+    });
+    return 'OP-'+annee+'-'+String(num).padStart(4,'0');
+  }catch(e){ console.log('Erreur numérotation:',e.message); return null; }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── PIÈCES JOINTES (photos liées aux dépenses, versements, opérations bancaires,
+//    et faits marquants du Journal K45) ───────────────────────
+// ══════════════════════════════════════════════════════════════
+// Visibles et modifiables par secrétaire, trésorière, diacre et diacre_journal.
 const PIECES_MAX=3;
 const PIECES_TAILLE_MAX=250*1024; // 250 Ko : au-delà on recompresse plus fort
 let piecesEnAttente=[];   // photos compressées en attente, avant que l'opération n'ait un identifiant
@@ -5038,7 +5080,7 @@ let pieceOpIdCourant=null;
 function peutVoirPieces(){
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const role=(ROLES_CONFIG[userEmail]||{}).role||window._currentRole||'';
-  return role==='secretaire'||role==='diacre'||role==='tresoriere';
+  return role==='secretaire'||role==='diacre'||role==='tresoriere'||role==='diacre_journal';
 }
 
 function compresserImage(file){
@@ -5150,7 +5192,14 @@ async function misAJourCompteurPieces(opId){
       }
     }catch(e){ console.log('Erreur maj compteur GL '+livre+':',e.message); }
   }
+
+  // Journal K45 (une fiche, opId = identifiant du document lui-même)
+  try{
+    await window._fs.updateDoc(window._fs.doc(window._db,'journal_k45',String(opId)),{nbPieces:n});
+  }catch(e){ /* ce n'est pas une fiche du Journal K45, rien à faire */ }
+
   if(typeof afficherDepenses==='function'){ afficherDepenses('fiang'); afficherDepenses('anj'); }
+  if(typeof chargerHistorique==='function'){ chargerHistorique(); }
   if(typeof renderLivre==='function'){ ['fiang','anj','k45'].forEach(function(l){ renderLivre(l); }); }
   return n;
 }
