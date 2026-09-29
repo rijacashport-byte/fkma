@@ -1139,6 +1139,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       </div>
       <div class="champ" style="margin-bottom:9px"><label>📝 Description / Commentaire</label><input type="text" id="vf-desc" placeholder="Détail de la dépense…"></div>
       <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="vf-auteur" placeholder="Nom du responsable"></div>
+      <div class="champ piece-champ" style="margin-bottom:10px">
+        <label>📎 Pièce jointe (facultatif)</label>
+        <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="vf-photo-input">
+        <button type="button" class="btn btn-gris" onclick="document.getElementById('vf-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
+        <div id="dep-photos-attente" style="margin-top:6px"></div>
+      </div>
       <button class="btn btn-vert" onclick="ajouterDepense('fiang')"><span>➕</span> Enregistrer</button>
     </div>
     <div class="total-banner rouge">
@@ -1187,6 +1193,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
       </div>
       <div class="champ" style="margin-bottom:9px"><label>📝 Description</label><input type="text" id="va-desc" placeholder="Détail…"></div>
       <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="va-auteur" placeholder="Nom du responsable"></div>
+      <div class="champ piece-champ" style="margin-bottom:10px">
+        <label>📎 Pièce jointe (facultatif)</label>
+        <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="va-photo-input">
+        <button type="button" class="btn btn-gris" onclick="document.getElementById('va-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
+        <div id="dep-photos-attente" style="margin-top:6px"></div>
+      </div>
       <button class="btn btn-or" onclick="ajouterDepense('anj')"><span>➕</span> Enregistrer</button>
     </div>
     <div class="total-banner orange">
@@ -1750,6 +1762,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     </div>
     <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
     <div class="ch"><label>🔢 N° Bordereau</label><input type="text" id="tr-piece" placeholder="Ex: BV-001"></div>
+    <div class="ch piece-champ">
+      <label>📎 Pièce jointe (facultatif)</label>
+      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="tr-photo-input">
+      <button type="button" class="btn btn-gris" onclick="document.getElementById('tr-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
+      <div id="dep-photos-attente" style="margin-top:6px"></div>
+    </div>
     <button class="btn bv" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
   </div>
 
@@ -1789,6 +1807,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     <div class="g2">
       <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
       <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
+    </div>
+    <div class="ch piece-champ">
+      <label>📎 Pièce jointe (facultatif)</label>
+      <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="ob-photo-input">
+      <button type="button" class="btn btn-gris" onclick="document.getElementById('ob-photo-input').click()" style="width:auto;padding:7px 12px">📷 Ajouter une photo</button>
+      <div id="dep-photos-attente" style="margin-top:6px"></div>
     </div>
     <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
   </div>
@@ -3162,7 +3186,7 @@ function ajouterDepense(livre){
 
   const rec={
     id:Date.now(),livre,date,montant,cat,piece,page,desc,auteur,source,
-    createdBy:userEmail,createdByNom:userNom,createdAt:now
+    createdBy:userEmail,createdByNom:userNom,createdAt:now,nbPieces:piecesEnAttente.length
   };
 
   const dep=load(SK_DEP);
@@ -3193,6 +3217,7 @@ function ajouterDepense(livre){
   if(document.getElementById(p+'-piece'))document.getElementById(p+'-piece').value='';
   if(document.getElementById(p+'-page'))document.getElementById(p+'-page').value='';
   document.getElementById(p+'-desc').value='';
+  sauverPiecesPourOp(rec.id);
   afficherDepenses(livre);
   alert('✅ Dépense enregistrée !');
 }
@@ -3212,6 +3237,7 @@ async function supprimerDepense(id){
       const snapGL=await _fs.getDocs(colGL);
       for(const ds of snapGL.docs){if(ds.data().depenseId===id){await _fs.deleteDoc(ds.ref);break;}}
     }
+    await supprimerPiecesPourOp(id);
   }catch(e){console.log('Firebase delete:',e.message);}}
   afficherDepenses('fiang');afficherDepenses('anj');
 }
@@ -3263,6 +3289,7 @@ function afficherDepenses(livre){
       <span style="font-size:11px;color:var(--texte2)">${d.date}</span>
       <span class="depense-cat">${d.cat||'—'}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
+      ${badgePieces(d.id,d.nbPieces)}
       <button onclick="supprimerDepense(${d.id})" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
     </div>
         <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${d.page}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${d.piece}</span>`:''}</div>
@@ -4236,6 +4263,7 @@ function renderLivre(livre){
       +(e.modifiedByNom?'<span style="color:#aaa;font-size:10px"> · ✏️ '+e.modifiedByNom+' ('+((e.modifiedAt||'').slice(0,10))+')</span>':'')
       +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
       +'</div>'
+      +((e.depenseId||e.transfert||e.opbancaire)?'<div style="margin-top:6px">'+badgePieces(e.depenseId||e.opId,e.nbPieces)+'</div>':'')
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).reverse().join('');
@@ -4314,7 +4342,8 @@ async function faireTransfert(){
   const comment=document.getElementById('tr-comment').value;
   const piece=document.getElementById('tr-piece').value;
   if(!date||!montant){alert('Date et montant requis.');return;}
-  const base={date,page,montant,comment,piece,transfert:true,savedAt:new Date().toISOString()};
+  const opId=Date.now();
+  const base={date,page,montant,comment,piece,transfert:true,opId,savedAt:new Date().toISOString()};
   try{
     // Sortie caisse
     await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'});
@@ -4322,6 +4351,7 @@ async function faireTransfert(){
     await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'});
     alert('✅ Transfert enregistré !');
     ['tr-date','tr-montant','tr-page','tr-comment','tr-piece'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    await sauverPiecesPourOp(opId);
     await chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
 }
@@ -4335,14 +4365,16 @@ async function enregistrerOpBancaire(){
   const nature=document.getElementById('ob-nature').value;
   const comment=document.getElementById('ob-comment').value;
   if(!date||!montant||!nature){alert('Date, montant et nature requis.');return;}
+  const opId=Date.now();
   try{
     await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
       date,montant,es:obES,source:'banque',rubrique:nature,
       libelle:document.getElementById('ob-nature').options[document.getElementById('ob-nature').selectedIndex].text,
-      comment,opbancaire:true,savedAt:new Date().toISOString()
+      comment,opbancaire:true,opId,savedAt:new Date().toISOString()
     });
     alert('✅ Opération bancaire enregistrée !');
     ['ob-date','ob-montant','ob-comment'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    await sauverPiecesPourOp(opId);
     await chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
 }
@@ -4994,6 +5026,219 @@ function sdRenderFivoriana(){
   if(el) el.innerHTML=html;
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── PIÈCES JOINTES (photos liées aux dépenses, versements et opérations bancaires) ─
+// ══════════════════════════════════════════════════════════════
+// Visibles et modifiables uniquement par secrétaire, trésorière et diacre.
+const PIECES_MAX=3;
+const PIECES_TAILLE_MAX=250*1024; // 250 Ko : au-delà on recompresse plus fort
+let piecesEnAttente=[];   // photos compressées en attente, avant que l'opération n'ait un identifiant
+let pieceOpIdCourant=null;
+
+function peutVoirPieces(){
+  const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  const role=(ROLES_CONFIG[userEmail]||{}).role||window._currentRole||'';
+  return role==='secretaire'||role==='diacre'||role==='tresoriere';
+}
+
+function compresserImage(file){
+  return new Promise(function(resolve,reject){
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const img=new Image();
+      img.onload=function(){ essayerQualitePiece(img,0.65,resolve); };
+      img.onerror=function(){ reject(new Error('Image illisible')); };
+      img.src=e.target.result;
+    };
+    reader.onerror=function(){ reject(new Error('Lecture du fichier impossible')); };
+    reader.readAsDataURL(file);
+  });
+}
+function essayerQualitePiece(img,qualite,resolve){
+  const MAX_COTE=1200;
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(w>h && w>MAX_COTE){ h=Math.round(h*MAX_COTE/w); w=MAX_COTE; }
+  else if(h>=w && h>MAX_COTE){ w=Math.round(w*MAX_COTE/h); h=MAX_COTE; }
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(img,0,0,w,h);
+  const dataUrl=canvas.toDataURL('image/jpeg',qualite);
+  const approxOctets=Math.round(dataUrl.length*0.75);
+  if(approxOctets>PIECES_TAILLE_MAX && qualite>0.35){
+    essayerQualitePiece(img,qualite-0.15,resolve);
+  }else{
+    resolve(dataUrl);
+  }
+}
+
+async function choisirPhotoAttente(input){
+  if(!input.files||!input.files.length) return;
+  if(piecesEnAttente.length>=PIECES_MAX){ alert('Maximum '+PIECES_MAX+' photos.'); input.value=''; return; }
+  try{
+    const dataUrl=await compresserImage(input.files[0]);
+    piecesEnAttente.push(dataUrl);
+    renderPiecesEnAttente();
+  }catch(e){ alert('Erreur photo : '+e.message); }
+  input.value='';
+}
+function renderPiecesEnAttente(){
+  document.querySelectorAll('#dep-photos-attente').forEach(function(el){
+    el.innerHTML=piecesEnAttente.map(function(src,i){
+      return '<div style="position:relative;display:inline-block;margin-right:6px">'
+        +'<img src="'+src+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--gris2)">'
+        +'<button type="button" onclick="retirerPieceAttente('+i+')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1">×</button>'
+        +'</div>';
+    }).join('');
+  });
+}
+function retirerPieceAttente(i){ piecesEnAttente.splice(i,1); renderPiecesEnAttente(); }
+
+// À appeler juste après qu'une opération (dépense, transfert, opération bancaire) a été enregistrée
+// avec succès et a un identifiant (opId). Envoie les photos mises de côté, puis vide l'attente.
+async function sauverPiecesPourOp(opId){
+  if(!piecesEnAttente.length) return;
+  if(!window._db||!window._fs) return;
+  const email=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  for(const img of piecesEnAttente){
+    try{
+      await window._fs.addDoc(window._fs.collection(window._db,'pieces'),{
+        opId:String(opId), img, createdAt:new Date().toISOString(), createdBy:email
+      });
+    }catch(e){ console.log('Erreur sauvegarde pièce:',e.message); }
+  }
+  await misAJourCompteurPieces(opId);
+  piecesEnAttente=[];
+  renderPiecesEnAttente();
+}
+
+// Recompte les photos d'une opération et reporte le total sur les documents liés
+// (depenses + sa copie Grand Livre pour une dépense ; le ou les documents Grand Livre pour un
+// transfert/une opération bancaire), pour que la pastille 📎 s'affiche sans requête supplémentaire
+// à chaque affichage de liste.
+async function misAJourCompteurPieces(opId){
+  if(!window._db||!window._fs) return 0;
+  let n=0;
+  try{
+    const snap=await window._fs.getDocs(window._fs.query(window._fs.collection(window._db,'pieces'),window._fs.where('opId','==',String(opId))));
+    n=snap.size;
+  }catch(e){ console.log('Erreur comptage pièces:',e.message); }
+
+  // Dépense (collection depenses, champ numérique id)
+  try{
+    const depSnap=await window._fs.getDocs(window._fs.collection(window._db,'depenses'));
+    for(const ds of depSnap.docs){
+      if(String(ds.data().id)===String(opId)){
+        await window._fs.updateDoc(ds.ref,{nbPieces:n});
+        const dep=load(SK_DEP); const rec=dep.find(function(d){return String(d.id)===String(opId);});
+        if(rec){ rec.nbPieces=n; save(SK_DEP,dep); }
+        break;
+      }
+    }
+  }catch(e){ console.log('Erreur maj compteur dépense:',e.message); }
+
+  // Grand Livre (dépense copiée via depenseId, ou transfert/opération bancaire via opId)
+  for(const livre of ['fiang','anj','k45']){
+    try{
+      const glSnap=await window._fs.getDocs(window._fs.collection(window._db,'grandlivre_'+livre));
+      for(const ds of glSnap.docs){
+        const d=ds.data();
+        if(String(d.depenseId)===String(opId)||String(d.opId)===String(opId)){
+          await window._fs.updateDoc(ds.ref,{nbPieces:n});
+          const item=(GL[livre]||[]).find(function(x){return x._id===ds.id;});
+          if(item) item.nbPieces=n;
+        }
+      }
+    }catch(e){ console.log('Erreur maj compteur GL '+livre+':',e.message); }
+  }
+  if(typeof afficherDepenses==='function'){ afficherDepenses('fiang'); afficherDepenses('anj'); }
+  if(typeof renderLivre==='function'){ ['fiang','anj','k45'].forEach(function(l){ renderLivre(l); }); }
+  return n;
+}
+
+function badgePieces(opId,nbPieces){
+  if(!peutVoirPieces()) return '';
+  const n=nbPieces||0;
+  return '<button type="button" onclick="ouvrirPieces(\''+opId+'\')" style="background:none;border:1px solid var(--gris2);border-radius:5px;color:var(--texte2);font-size:11px;cursor:pointer;padding:2px 8px">📎'+(n>0?(' '+n):'')+'</button>';
+}
+
+async function ouvrirPieces(opId){
+  if(!peutVoirPieces()){ alert("Vous n'avez pas accès aux pièces jointes."); return; }
+  pieceOpIdCourant=String(opId);
+  document.getElementById('pieces-modal').style.display='flex';
+  document.getElementById('pieces-liste').innerHTML='<div class="vide">Chargement…</div>';
+  await rafraichirModalPieces();
+}
+function fermerPieces(){ document.getElementById('pieces-modal').style.display='none'; }
+
+async function rafraichirModalPieces(){
+  const opId=pieceOpIdCourant;
+  if(!window._db||!window._fs) return;
+  try{
+    const snap=await window._fs.getDocs(window._fs.query(window._fs.collection(window._db,'pieces'),window._fs.where('opId','==',opId)));
+    const docs=[]; snap.forEach(function(d){ docs.push(Object.assign({id:d.id},d.data())); });
+    const el=document.getElementById('pieces-liste');
+    if(!docs.length){
+      el.innerHTML='<div class="vide">Aucune photo pour l\'instant.</div>';
+    }else{
+      el.innerHTML=docs.map(function(d){
+        return '<div style="position:relative;display:inline-block;margin:4px">'
+          +'<img src="'+d.img+'" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="window.open(this.src)">'
+          +'<button type="button" onclick="supprimerPiece(\''+d.id+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
+          +'</div>';
+      }).join('');
+    }
+    const cnt=document.getElementById('pieces-count'); if(cnt) cnt.textContent=docs.length;
+  }catch(e){ document.getElementById('pieces-liste').innerHTML='<div class="vide">Erreur : '+e.message+'</div>'; }
+}
+
+async function ajouterPieceModal(input){
+  if(!input.files||!input.files.length) return;
+  const n=parseInt(document.getElementById('pieces-count')?.textContent)||0;
+  if(n>=PIECES_MAX){ alert('Maximum '+PIECES_MAX+' photos par pièce.'); input.value=''; return; }
+  try{
+    const dataUrl=await compresserImage(input.files[0]);
+    const email=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+    await window._fs.addDoc(window._fs.collection(window._db,'pieces'),{
+      opId:pieceOpIdCourant, img:dataUrl, createdAt:new Date().toISOString(), createdBy:email
+    });
+    await rafraichirModalPieces();
+    await misAJourCompteurPieces(pieceOpIdCourant);
+  }catch(e){ alert('Erreur : '+e.message); }
+  input.value='';
+}
+
+async function supprimerPiece(docId){
+  if(!confirm('Supprimer cette photo ?')) return;
+  try{
+    await window._fs.deleteDoc(window._fs.doc(window._db,'pieces',docId));
+    await rafraichirModalPieces();
+    await misAJourCompteurPieces(pieceOpIdCourant);
+  }catch(e){ alert('Erreur : '+e.message); }
+}
+
+// Supprime toutes les photos liées à une opération (utilisé quand la dépense elle-même est supprimée,
+// pour ne pas laisser de pièces orphelines).
+async function supprimerPiecesPourOp(opId){
+  if(!window._db||!window._fs) return;
+  try{
+    const snap=await window._fs.getDocs(window._fs.query(window._fs.collection(window._db,'pieces'),window._fs.where('opId','==',String(opId))));
+    for(const d of snap.docs){ await window._fs.deleteDoc(d.ref); }
+  }catch(e){ console.log('Erreur suppression pièces:',e.message); }
+}
+
 </script>
+
+<div id="pieces-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;padding:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:700;font-size:14px">📎 Pièces jointes (<span id="pieces-count">0</span>/3)</div>
+      <button onclick="fermerPieces()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--texte2)">×</button>
+    </div>
+    <div id="pieces-liste" style="display:flex;flex-wrap:wrap;gap:6px;min-height:40px"></div>
+    <input type="file" accept="image/*" capture="environment" onchange="ajouterPieceModal(this)" style="display:none" id="pieces-modal-input">
+    <button type="button" class="btn btn-gris btn-full" style="margin-top:12px" onclick="document.getElementById('pieces-modal-input').click()">📷 Ajouter une photo</button>
+  </div>
+</div>
+
 </body>
 </html>
