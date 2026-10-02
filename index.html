@@ -732,6 +732,15 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     grid-column:1/-1;
   }
   #zone-raki-pandraisana{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+  /* ── GESTION → ANJARAKO (SAISIE DU JOUR) EN PLUSIEURS COLONNES ──
+     Collecte + Enveloppes côte à côte, puis Liste des enveloppes + Valopy
+     côte à côte. Le bandeau de total et les objectifs restent pleine largeur. */
+  #anj-view-saisie{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  #anj-view-saisie > .total-banner,
+  #anj-view-saisie > .card:nth-of-type(6) /* Objectifs mensuels */ {
+    grid-column:1/-1;
+  }
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
