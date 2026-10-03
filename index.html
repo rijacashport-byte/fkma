@@ -741,6 +741,20 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   #anj-view-saisie > .card:nth-of-type(6) /* Objectifs mensuels */ {
     grid-column:1/-1;
   }
+
+  /* ── GESTION → VOLA MIVOAKA EN 2 COLONNES ───────────────────
+     Le formulaire de nouvelle dépense à gauche, l'historique à droite —
+     pour voir la liste se mettre à jour sans avoir à descendre. */
+  #vola-fiang,
+  #vola-anj {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    align-items:start;
+  }
+
+  /* ── DASHBOARD : indicateurs sur 3 colonnes au lieu de 2 ────── */
+  #tab-dashboard .kpi-grid{grid-template-columns:repeat(3,1fr);}
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
