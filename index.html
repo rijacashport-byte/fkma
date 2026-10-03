@@ -4843,6 +4843,13 @@ async function sdChargerDonnees(){
   Object.keys(SD_CONTACTS).forEach(function(n){ SD_GENRE[n]=SD_CONTACTS[n].genre; SD_ALL_NAMES.push(n); });
   if(!sdCurDiacre || SD_ALL_NAMES.indexOf(sdCurDiacre)<0) sdCurDiacre=SD_ALL_NAMES[0];
   if(sdCurMois>=SD_PLANNING.length) sdCurMois=0;
+  // Par défaut (premier chargement), se positionner sur le mois en cours plutôt que sur le premier
+  // mois du planning, pour ne pas avoir à chercher.
+  if(sdCurMois===0){
+    const sdNow=new Date();
+    const sdIdxCourant=SD_PLANNING.findIndex(function(m){return m.mn===(sdNow.getMonth()+1)&&m.a===sdNow.getFullYear();});
+    if(sdIdxCourant>=0){ sdCurMois=sdIdxCourant; if(sdCurRappelMois===0) sdCurRappelMois=sdIdxCourant; }
+  }
   const periodeEl=document.getElementById('sd-periode');
   if(periodeEl && SD_PLANNING.length){
     const premier=SD_PLANNING[0], dernier=SD_PLANNING[SD_PLANNING.length-1];
