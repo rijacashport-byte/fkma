@@ -782,6 +782,30 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   #gl-tab-k45 > .card:nth-of-type(4) {   /* Historique K45 */
     grid-column:1/-1;
   }
+
+  /* ── DIACRES : listes en plusieurs colonnes ─────────────────
+     Les cartes (jours de service, rappels WhatsApp, fitaovana, fivoriana)
+     se répartissent automatiquement selon la largeur disponible, au lieu
+     de s'empiler en une seule colonne. */
+  #sd-joursContainer,
+  #sd-rappelContainer,
+  #sd-list-fitaovana,
+  #sd-list-fivoriana {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:12px;
+    align-items:start;
+  }
+  #sd-joursContainer > .jour-card,
+  #sd-rappelContainer > .rappel-card,
+  #sd-list-fitaovana > .task-card,
+  #sd-list-fivoriana > .fiv-card {
+    margin-bottom:0;
+  }
+  #sd-list-fitaovana > .annee-header,
+  #sd-list-fivoriana > .annee-header {
+    grid-column:1/-1;
+  }
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
