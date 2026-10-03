@@ -755,6 +755,33 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 
   /* ── DASHBOARD : indicateurs sur 3 colonnes au lieu de 2 ────── */
   #tab-dashboard .kpi-grid{grid-template-columns:repeat(3,1fr);}
+
+  /* ── JOURNAL K45 EN 2 COLONNES ───────────────────────────────
+     Les 6 cartes de saisie se répartissent 2 par 2. L'aperçu et les
+     boutons restent pleine largeur, en bas. */
+  #k45-tab-saisie{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  #k45-tab-saisie > .ap,
+  #k45-tab-saisie > .btn {
+    grid-column:1/-1;
+  }
+
+  /* ── GRAND LIVRE EN 2 COLONNES ───────────────────────────────
+     Les deux cartes de soldes côte à côte ; le registre lui-même
+     (souvent long) reste pleine largeur pour rester lisible. */
+  #gl-tab-fiang,
+  #gl-tab-anj,
+  #gl-tab-k45 {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    align-items:start;
+  }
+  #gl-tab-fiang > .card:nth-of-type(3),  /* Livre de caisse — Fiangonana */
+  #gl-tab-anj > .card:nth-of-type(3),    /* Livre Anjarako */
+  #gl-tab-k45 > .card:nth-of-type(3),    /* Nouvelle écriture K45 */
+  #gl-tab-k45 > .card:nth-of-type(4) {   /* Historique K45 */
+    grid-column:1/-1;
+  }
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
