@@ -807,6 +807,35 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     grid-column:1/-1;
   }
 }
+
+/* ── ANIMATIONS LÉGÈRES ─────────────────────────────────────────
+   Un léger fondu à l'ouverture d'un écran ou d'une carte, et un effet
+   doux au clic des boutons. Rien d'autre n'est modifié : uniquement
+   l'apparence au moment où ces éléments apparaissent ou sont touchés. */
+@keyframes fkmaFadeIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
+#tab-rakitra, #tab-anjarako, #tab-vola, #tab-dashboard,
+#section-k45, #section-gl, #section-ops, #section-services,
+.card{
+  animation:fkmaFadeIn .25s ease;
+}
+.btn, .main-tab, .nav-btn, .dtab, .sub-btn, .btn-add, .btn-deco{
+  transition:transform .12s ease, box-shadow .12s ease, background-color .15s ease, opacity .15s ease;
+}
+.btn:active, .main-tab:active, .nav-btn:active, .dtab:active, .sub-btn:active{
+  transform:scale(.97);
+}
+.btn:hover:not(:disabled){
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+@media (prefers-reduced-motion:reduce){
+  #tab-rakitra, #tab-anjarako, #tab-vola, #tab-dashboard,
+  #section-k45, #section-gl, #section-ops, #section-services,
+  .card{animation:none;}
+  .btn, .main-tab, .nav-btn, .dtab, .sub-btn, .btn-add, .btn-deco{transition:none;}
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
