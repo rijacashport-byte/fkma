@@ -741,6 +741,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   #anj-view-saisie > .card:nth-of-type(6) /* Objectifs mensuels */ {
     grid-column:1/-1;
   }
+  #anj-view-saisie > #anj-correction-banner{grid-column:1/-1;}
 
   /* ── GESTION → VOLA MIVOAKA EN 2 COLONNES ───────────────────
      Le formulaire de nouvelle dépense à gauche, l'historique à droite —
@@ -807,6 +808,13 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
     grid-column:1/-1;
   }
 }
+
+/* ── BANDEAU DE CORRECTION D'UN DIMANCHE ANJARAKO ───────────── */
+#anj-correction-banner{display:none;position:sticky;top:0;z-index:20;margin-bottom:12px;padding:10px 12px;
+  border-radius:9px;border-left:4px solid var(--or);background:#fff3d6;color:#6b4e00;font-size:12.5px;line-height:1.45;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);}
+#anj-correction-banner.alerte{background:#fdecea;border-left-color:var(--rouge);color:#8a2a1e;}
+#anj-correction-banner .acb-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
 
 /* ── LISTES DÉROULANTES À VALEURS PARTAGÉES ─────────────────── */
 select.choix-liste{
@@ -1026,6 +1034,7 @@ select.choix-liste{
  </div>
 
  <div id="anj-view-saisie">
+  <aside id="anj-correction-banner"></aside>
 
  <div class="card">
  <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
@@ -2232,7 +2241,7 @@ function showGestTab(tab, btn){
     if(el) el.style.display=t===tab?'':'none';
   });
   if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');}
-  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();}
+  if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();majBannerCorrectionAnj();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
 }
 
@@ -3057,6 +3066,10 @@ async function enregistrerAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
   if(!date){alert('Veuillez renseigner la date.');return;}
+  // Garde-fou : des données rechargées pour correction ne doivent pas partir sous une autre date par erreur
+  if(correctionAnjSource && date!==correctionAnjSource){
+    if(!confirm('Ces données viennent du dimanche du '+fmtDateFr(correctionAnjSource)+' mais vont être enregistrées sous le '+fmtDateFr(date)+'.\n\nLe dimanche du '+fmtDateFr(correctionAnjSource)+' ne sera pas modifié.\n\nEnregistrer quand même ?'))return;
+  }
   // Contrôle : n° de carte saisis (ou nombre saisi) et enveloppes comptées avec les montants doivent coïncider
   const cEnv=compteEnveloppes();
   if(cEnv.nbDeclare>0&&cEnv.nbCompte>0&&cEnv.nbDeclare!==cEnv.nbCompte){
@@ -3081,17 +3094,14 @@ async function enregistrerAnjarako(){
     await ecrireGrandLivreAnj(rec);
     alert('✅ Anjarako du '+date+' enregistré !');
     calculerAnjMoisCourant();
+    correctionAnjSource=null; majBannerCorrectionAnj();
   }catch(e){alert('Local OK — Firebase: '+e.message);}}
-  else alert('✅ Anjarako enregistré localement.');
+  else { alert('✅ Anjarako enregistré localement.'); correctionAnjSource=null; majBannerCorrectionAnj(); }
 }
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
-  enveloppesJour=[];
-  valopyListe=[];
-  document.getElementById('anj-total').value='';
-  document.getElementById('env-carte').value='';
-  document.getElementById('carte-preview').style.display='none';
-  afficherEnveloppesJour();mettreAJourBannerAnj();renderValopy();
+  viderSaisieAnj();
+  correctionAnjSource=null; majBannerCorrectionAnj();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3897,6 +3907,7 @@ async function chargerAnjHist(){
   showEnvMode(anj.nbDirect>0?'nb':'carte');
   renderValopy();
   afficherEnveloppesJour();
+  correctionAnjSource=anj.date; majBannerCorrectionAnj();
   alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
 }
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -5817,7 +5828,68 @@ function corrigerAnjDepuisGL(date){
   chargerAnjHist();
 }
 
+// ── CORRECTION D'UN DIMANCHE ANJARAKO : BANDEAU DE PROTECTION ──
+// Une saisie rechargée pour correction vit seulement dans la mémoire de la page : rien n'est
+// enregistré tant qu'on n'a pas cliqué sur « Enregistrer ». Le bandeau le rappelle et alerte
+// si la date à l'écran ne correspond plus au dimanche rechargé.
+let correctionAnjSource=null; // date AAAA-MM-JJ du dimanche rechargé, sinon null
+function fmtDateFr(iso){ const d=(iso||'').split('-'); return d.length===3?(d[2]+'/'+d[1]+'/'+d[0]):(iso||''); }
+function majBannerCorrectionAnj(){
+  const b=document.getElementById('anj-correction-banner'); if(!b) return;
+  if(!correctionAnjSource){ b.style.display='none'; b.innerHTML=''; b.className=''; return; }
+  const dateEcran=(document.getElementById('rak-date-input')||{}).value||'';
+  const ecart=!!dateEcran && dateEcran!==correctionAnjSource;
+  const src=fmtDateFr(correctionAnjSource);
+  b.className=ecart?'alerte':'';
+  b.style.display='block';
+  b.innerHTML=(ecart
+    ? '<b>⚠️ Attention :</b> ces données viennent du dimanche du '+src+', mais la date à l\'écran est le '+fmtDateFr(dateEcran)+'. Si tu enregistres, elles seront enregistrées sous le '+fmtDateFr(dateEcran)+' et le dimanche du '+src+' ne sera pas modifié.'
+    : '<b>✏️ Correction du dimanche du '+src+' en cours.</b> Rien n\'est modifié tant que tu n\'as pas cliqué sur « Enregistrer ».')
+    +'<div class="acb-actions">'
+    +'<button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px" onclick="annulerCorrectionAnj()">✖ Annuler la correction</button>'
+    +(ecart?'<button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px" onclick="remettreDateCorrectionAnj()">↩ Remettre la date du '+src+'</button>':'')
+    +'</div>';
+}
+function remettreDateCorrectionAnj(){
+  const i=document.getElementById('rak-date-input');
+  if(i && correctionAnjSource) i.value=correctionAnjSource;
+  majBannerCorrectionAnj();
+}
+// Remet réellement à zéro la saisie du jour : cartes, montants comptés, billetage, montant direct, total
+function viderSaisieAnj(){
+  enveloppesJour=[]; valopyListe=[];
+  BILLETS.forEach(function(b){ const el=document.getElementById('anj_b_'+b.v); if(el) el.value=''; });
+  ['anj-total-direct','env-nb-direct','env-mois-direct','env-carte','valopy-autre'].forEach(function(id){
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const cp=document.getElementById('carte-preview'); if(cp) cp.style.display='none';
+  carteSelectionnee=null;
+  calculerAnjTotal();
+  afficherEnveloppesJour(); renderValopy();
+}
+function annulerCorrectionAnj(){
+  if(!correctionAnjSource) return;
+  if(!confirm('Annuler la correction du dimanche du '+fmtDateFr(correctionAnjSource)+' ?\n\nLes modifications non enregistrées seront perdues. Le dimanche enregistré reste inchangé.')) return;
+  viderSaisieAnj();
+  correctionAnjSource=null; majBannerCorrectionAnj();
+}
+function initCorrectionAnjDate(){
+  const inp=document.getElementById('rak-date-input'); if(!inp) return;
+  inp.addEventListener('change',function(){
+    if(correctionAnjSource && this.value && this.value!==correctionAnjSource){
+      const tab=document.getElementById('tab-anjarako');
+      const surAnjarako=tab && tab.style.display!=='none';
+      if(surAnjarako){
+        const garder=confirm('Tu es en train de corriger le dimanche du '+fmtDateFr(correctionAnjSource)+'.\n\nSi tu changes la date en '+fmtDateFr(this.value)+', ces données seront enregistrées sous cette nouvelle date (le dimanche du '+fmtDateFr(correctionAnjSource)+' ne sera pas modifié).\n\nOK : garder la nouvelle date\nAnnuler : remettre la date du '+fmtDateFr(correctionAnjSource));
+        if(!garder) this.value=correctionAnjSource;
+      }
+    }
+    majBannerCorrectionAnj();
+  });
+}
+
 peuplerChoix();
+initCorrectionAnjDate();
 
 </script>
 
