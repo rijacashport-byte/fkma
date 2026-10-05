@@ -10,6 +10,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>FKMA Abidjan — Gestion · Journal · Grand Livre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -852,6 +855,267 @@ select.choix-liste{
   .card{animation:none;}
   .btn, .main-tab, .nav-btn, .dtab, .sub-btn, .btn-add, .btn-deco{transition:none;}
 }
+
+/* ══ FINITIONS VISUELLES & ANIMATIONS ════════════════════════════
+   Uniquement de l'apparence : aucune règle ci-dessous ne change la
+   logique, les calculs ou ce qui est affiché/masqué par l'appli. */
+:root{
+  --ombre1:0 1px 2px rgba(16,40,70,.05),0 2px 8px rgba(16,40,70,.06);
+  --ombre2:0 4px 12px rgba(16,40,70,.08),0 12px 28px rgba(16,40,70,.08);
+  --ressort:cubic-bezier(.34,1.56,.64,1);
+  --doux:cubic-bezier(.22,.61,.36,1);
+}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:linear-gradient(180deg,#eef2f7 0,var(--gris1) 320px) fixed;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;}
+::selection{background:rgba(44,62,140,.18);}
+
+/* ── Écran de connexion ── */
+#login-screen{background:radial-gradient(circle at 20% 15%,#3a5fa0 0,transparent 45%),
+  radial-gradient(circle at 85% 90%,#c49a2a55 0,transparent 40%),
+  linear-gradient(160deg,#1D4E7A 0,#2c3e8c 100%);overflow:hidden;}
+#login-screen::before,#login-screen::after{content:"";position:absolute;border-radius:50%;
+  background:rgba(255,255,255,.06);pointer-events:none;animation:fkFlotte 9s ease-in-out infinite;}
+#login-screen::before{width:320px;height:320px;top:-90px;right:-110px;}
+#login-screen::after{width:220px;height:220px;bottom:-70px;left:-80px;animation-delay:-4s;}
+#login-screen .login-logo{width:92px;height:92px;border:3px solid rgba(255,255,255,.85);
+  box-shadow:0 8px 28px rgba(0,0,0,.25),0 0 0 8px rgba(255,255,255,.08);
+  animation:fkLogoIn .7s var(--ressort) both, fkHalo 3.2s ease-in-out .8s infinite;position:relative;z-index:1;}
+#login-screen .login-titre{color:#fff;font-size:22px;letter-spacing:.3px;animation:fkMonte .5s var(--doux) .15s both;position:relative;z-index:1;}
+#login-screen .login-sub{color:rgba(255,255,255,.75);animation:fkMonte .5s var(--doux) .25s both;position:relative;z-index:1;}
+#login-screen .login-form{background:#fff;border-radius:16px;padding:22px 20px 14px;
+  box-shadow:0 20px 50px rgba(0,0,0,.25);animation:fkMonte .55s var(--doux) .35s both;position:relative;z-index:1;}
+.login-inp{transition:border-color .2s,box-shadow .2s,background-color .2s;background:#fafbfc;}
+.login-inp:focus{background:#fff;box-shadow:0 0 0 4px rgba(44,62,140,.12);}
+.login-btn{background:linear-gradient(135deg,var(--vert),var(--bleu));
+  box-shadow:0 6px 16px rgba(44,62,140,.3);transition:transform .15s,box-shadow .2s,filter .2s;}
+.login-btn:hover:not(:disabled){filter:brightness(1.08);box-shadow:0 8px 22px rgba(44,62,140,.38);}
+.login-btn:active{transform:scale(.98);}
+.login-err.fk-secoue{animation:fkSecoue .45s ease;}
+
+/* ── En-tête & barre utilisateur ── */
+#app{animation:fkFondu .4s ease;}
+.entete{position:relative;overflow:hidden;box-shadow:var(--ombre1);
+  background:linear-gradient(120deg,#fff 55%,#f3f6fb 100%);}
+.entete::after{content:"";position:absolute;top:-4px;left:-40%;width:40%;height:4px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);animation:fkReflet 4s ease-in-out 1s infinite;}
+.entete .logo{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(196,154,42,.45);transition:transform .4s var(--ressort);}
+.entete:hover .logo{transform:rotate(-8deg) scale(1.06);}
+.entete h1{font-size:14px;letter-spacing:.2px;}
+.user-bar{box-shadow:var(--ombre1);animation:fkMonte .35s var(--doux) both;}
+.user-avatar{background:linear-gradient(135deg,var(--vert2),var(--bleu));box-shadow:0 2px 6px rgba(44,62,140,.35);}
+.btn-deco{transition:all .2s;}
+.btn-deco:hover{border-color:var(--rouge);color:var(--rouge);background:#fdecea;}
+
+/* ── Onglets principaux & sous-onglets ── */
+.main-tabs,.nav-tabs,.tabs,.sub-nav{box-shadow:var(--ombre1);}
+.main-tab,.nav-btn,.tab-btn,.sub-btn{position:relative;transition:color .2s,background-color .25s,border-color .25s,transform .12s;}
+.main-tab.actif,.nav-btn.actif,.tab-btn.actif{animation:fkActif .35s var(--ressort);}
+.dtab,.diacre-btn,.filter-chip,.es-btn,.src-btn,.src-toggle-btn{transition:all .2s var(--doux);}
+.dtab.actif,.es-btn.actif,.src-btn.actif,.src-toggle-btn.actif{box-shadow:0 3px 10px rgba(44,62,140,.18);}
+
+/* ── Cartes : apparition en cascade ── */
+.card,.kpi,.ap,.total-banner,.hist-item,.eitem,.depense-item,.env-item,.solrow{
+  animation:fkMonte .38s var(--doux) both;}
+:where(#tab-rakitra,#tab-anjarako,#tab-vola,#tab-dashboard,[id^="anj-view"],[id^="vola-"],[id^="k45-tab"],[id^="gl-tab"],.kpi-grid,div) > :nth-child(2){animation-delay:.04s;}
+:where(#tab-rakitra,#tab-anjarako,#tab-vola,#tab-dashboard,[id^="anj-view"],[id^="vola-"],[id^="k45-tab"],[id^="gl-tab"],.kpi-grid,div) > :nth-child(3){animation-delay:.08s;}
+:where(#tab-rakitra,#tab-anjarako,#tab-vola,#tab-dashboard,[id^="anj-view"],[id^="vola-"],[id^="k45-tab"],[id^="gl-tab"],.kpi-grid,div) > :nth-child(4){animation-delay:.12s;}
+:where(#tab-rakitra,#tab-anjarako,#tab-vola,#tab-dashboard,[id^="anj-view"],[id^="vola-"],[id^="k45-tab"],[id^="gl-tab"],.kpi-grid,div) > :nth-child(5){animation-delay:.16s;}
+:where(#tab-rakitra,#tab-anjarako,#tab-vola,#tab-dashboard,[id^="anj-view"],[id^="vola-"],[id^="k45-tab"],[id^="gl-tab"],.kpi-grid,div) > :nth-child(n+6){animation-delay:.2s;}
+.card{box-shadow:var(--ombre1);border-radius:12px;transition:box-shadow .25s,transform .25s var(--doux);}
+.card-titre,.ctit{letter-spacing:.6px;}
+
+/* ── Bandeaux de total ── */
+.total-banner{position:relative;overflow:hidden;border-radius:14px;}
+.total-banner::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.18) 50%,transparent 65%);
+  transform:translateX(-100%);animation:fkBrille 5s ease-in-out 1.2s infinite;}
+.total-banner::before{content:"";position:absolute;width:160px;height:160px;border-radius:50%;
+  right:-50px;top:-70px;background:rgba(255,255,255,.08);pointer-events:none;}
+.total-montant{display:inline-block;transform-origin:left center;}
+
+/* Chiffre qui vient de changer */
+.fk-pop{animation:fkPop .45s var(--ressort);}
+
+/* ── KPI ── */
+.kpi{transition:transform .25s var(--doux),box-shadow .25s;box-shadow:var(--ombre1);border-radius:11px;}
+.kpi-icon{display:inline-block;transition:transform .35s var(--ressort);}
+.pct-fill{transition:width .8s var(--doux);background-image:linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.35),rgba(255,255,255,0));
+  background-size:200% 100%;animation:fkBarre 2.4s linear infinite;}
+
+/* ── Champs de saisie ── */
+.champ input,.champ select,.champ textarea,.ch input,.ch select,.ch textarea,
+.qty-input,.fs,.finp,.fait-item select,.fait-item input,.tw{
+  transition:border-color .2s,box-shadow .2s,background-color .2s;}
+.champ input:focus,.champ select:focus,.champ textarea:focus,.ch input:focus,.ch select:focus,
+.ch textarea:focus,.qty-input:focus,.tw:focus-within,.fs:focus,.finp:focus{
+  box-shadow:0 0 0 3px rgba(29,78,122,.13);}
+.qty-input:not(:placeholder-shown):not([value="0"]){border-color:#b9cde0;}
+
+/* ── Tableaux ── */
+.tbl tbody tr,.dtbl tbody tr{transition:background-color .15s;}
+.tbl thead tr,.dtbl thead tr{background-image:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.08));}
+
+/* ── Boutons ── */
+.btn,.login-btn,.main-tab,.nav-btn,.tab-btn,.sub-btn,.btn-add,.btn-add-item{position:relative;overflow:hidden;}
+.btn{border-radius:10px;transition:transform .12s,box-shadow .2s,filter .2s,opacity .15s;}
+.btn-vert,.bv{background:linear-gradient(135deg,var(--vert),var(--vert2));}
+.btn-bleu,.bb{background:linear-gradient(135deg,var(--bleu),#3a52b8);}
+.btn:disabled{filter:grayscale(.3);cursor:not-allowed;}
+.btn-add,.btn-add-item{transition:background-color .2s,border-color .2s,transform .12s;}
+.fk-onde{position:absolute;border-radius:50%;transform:scale(0);pointer-events:none;
+  background:currentColor;opacity:.22;animation:fkOnde .6s ease-out forwards;}
+
+/* ── Interrupteurs ── */
+.toggle-slider,.sl{transition:background-color .3s;}
+.toggle-slider:before,.sl:before{transition:transform .35s var(--ressort),width .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.toggle-switch input:checked+.toggle-slider,.sw input:checked+.sl{background:linear-gradient(135deg,var(--vert2),var(--bleu));}
+
+/* ── Listes, suggestions, statuts ── */
+.carte-sug,.acl{animation:fkDeroule .18s var(--doux);transform-origin:top center;}
+.carte-sug-item,.aci{transition:background-color .12s,color .12s,padding-left .15s;}
+.carte-sug-item:hover,.aci:hover{padding-left:16px;}
+.fb-status,#offline-banner{animation:fkMonte .3s var(--doux);}
+.fb-dot.ok{box-shadow:0 0 0 0 rgba(29,78,122,.5);animation:fkPing 2s ease-out infinite;}
+#offline-banner{animation:fkMonte .3s var(--doux),fkClignote 2.5s ease-in-out .3s infinite;}
+#anj-correction-banner{animation:fkMonte .3s var(--doux);}
+
+/* ── Diacres ── */
+#section-services .jour-card,#section-services .task-card,#section-services .fiv-card,
+#section-services .rappel-card,#section-services .mois-row,#section-services .stat-card{
+  animation:fkMonte .35s var(--doux) both;transition:transform .2s var(--doux),box-shadow .2s,border-color .2s;}
+#section-services .postes-body.open{animation:fkDeroule .25s var(--doux);}
+#section-services .chevron{transition:transform .3s var(--ressort);}
+#section-services .membre{transition:transform .15s;}
+
+/* ── Fenêtres modales ── */
+#pieces-modal > div{animation:fkGlisseHaut .32s var(--doux);}
+#crop-modal{animation:fkFondu .25s ease;}
+
+/* ── Animations ── */
+@keyframes fkFondu{from{opacity:0}to{opacity:1}}
+@keyframes fkMonte{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fkLogoIn{from{opacity:0;transform:scale(.4) rotate(-20deg)}to{opacity:1;transform:none}}
+@keyframes fkHalo{0%,100%{box-shadow:0 8px 28px rgba(0,0,0,.25),0 0 0 8px rgba(255,255,255,.08)}50%{box-shadow:0 8px 28px rgba(0,0,0,.25),0 0 0 16px rgba(255,255,255,.04)}}
+@keyframes fkFlotte{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,22px)}}
+@keyframes fkSecoue{0%,100%{transform:none}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes fkReflet{0%{left:-40%}60%,100%{left:120%}}
+@keyframes fkBrille{0%{transform:translateX(-100%)}40%,100%{transform:translateX(100%)}}
+@keyframes fkPop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes fkActif{from{transform:scale(.94)}to{transform:none}}
+@keyframes fkOnde{to{transform:scale(2.6);opacity:0}}
+@keyframes fkDeroule{from{opacity:0;transform:scaleY(.92) translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes fkGlisseHaut{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fkPing{0%{box-shadow:0 0 0 0 rgba(29,78,122,.45)}70%,100%{box-shadow:0 0 0 7px rgba(29,78,122,0)}}
+@keyframes fkClignote{0%,100%{opacity:1}50%{opacity:.75}}
+@keyframes fkBarre{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* ── Survol : uniquement avec souris (PC), jamais au toucher ── */
+@media (hover:hover) and (pointer:fine){
+  .card:hover{box-shadow:var(--ombre2);}
+  .kpi:hover{transform:translateY(-3px);box-shadow:var(--ombre2);}
+  .kpi:hover .kpi-icon{transform:scale(1.25) rotate(-8deg);}
+  .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.14);filter:brightness(1.05);}
+  .btn:active:not(:disabled){transform:scale(.97);}
+  .main-tab:not(.actif):hover,.nav-btn:not(.actif):hover,.tab-btn:not(.actif):hover,.sub-btn:not(.actif):hover{background:#f5f8fc;color:var(--vert);}
+  .dtab:not(.actif):hover,.filter-chip:not(.active):hover,.diacre-btn:not(.active):hover{border-color:var(--bleu);color:var(--bleu);transform:translateY(-1px);}
+  .btn-add:hover,.btn-add-item:hover{background:#fff;transform:translateY(-1px);}
+  .hist-item,.eitem,.env-item,.depense-item{transition:transform .2s var(--doux),box-shadow .2s,background-color .2s;}
+  .hist-item:hover,.eitem:hover,.env-item:hover,.depense-item:hover{transform:translateX(3px);box-shadow:var(--ombre1);}
+  #section-services .jour-card:hover,#section-services .task-card:hover,#section-services .fiv-card:hover,
+  #section-services .rappel-card:hover,#section-services .mois-row:hover{transform:translateY(-2px);box-shadow:var(--ombre2);}
+  #section-services .membre:hover{transform:scale(1.05);}
+  .yr-btn{transition:all .2s;}
+  .yr-btn:hover{background:#fff;border-color:var(--bleu);}
+  /* Barres de défilement fines */
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#c5cdd8;border-radius:10px;border:2px solid transparent;background-clip:padding-box;}
+  ::-webkit-scrollbar-thumb:hover{background:#9fabbb;background-clip:padding-box;border:2px solid transparent;}
+  ::-webkit-scrollbar-track{background:transparent;}
+}
+
+/* ── Téléphone (< 900px) ── */
+@media (max-width:899px){
+  /* Barre d'onglets principale collée en haut pendant le défilement */
+  .main-tabs{position:sticky;top:6px;z-index:60;background:rgba(255,255,255,.88);
+    -webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);
+    border:1px solid rgba(255,255,255,.7);}
+  .main-tab{background:transparent;font-size:11.5px;padding:9px 2px;}
+  .main-tab.actif{background:rgba(234,242,248,.9);border-radius:0;}
+  .main-tab.actif .mt-ico{display:inline-block;animation:fkPop .45s var(--ressort);}
+  #anj-correction-banner{top:64px;}
+  .card{border-radius:12px;}
+  .btn{min-height:46px;}
+  .total-montant{font-size:28px;}
+  #app{padding-bottom:calc(80px + env(safe-area-inset-bottom)) !important;}
+  #pieces-modal > div{padding-bottom:calc(16px + env(safe-area-inset-bottom)) !important;}
+}
+@media (max-width:380px){
+  .main-tab{font-size:10.5px;}
+  .nav-btn{font-size:9.5px;}
+  .total-montant{font-size:24px;}
+  .kpi-val{font-size:14px;}
+}
+
+/* ── Ordinateur (≥ 900px) ── */
+@media (min-width:900px){
+  body{background:linear-gradient(180deg,#eef2f7 0,var(--gris1) 420px) fixed;}
+  #app{padding:0 !important;}
+  .entete{border-radius:0;margin-bottom:0;padding:14px 28px;border-top-width:4px;
+    position:sticky;top:0;z-index:70;
+    background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);}
+  .entete h1{font-size:16px;}
+  .entete p{font-size:11px;}
+  #user-bar{border-radius:0;margin-bottom:0;padding:8px 28px;border-top:1px solid var(--gris2);}
+  .main-tabs{background:linear-gradient(180deg,#fff,#f8fafc);padding:18px 10px;gap:4px;
+    top:72px;height:calc(100vh - 72px);border-right:1px solid var(--gris2);}
+  .main-tab{border-radius:10px;border-left:none !important;padding:11px 16px;font-size:13.5px;
+    display:flex;align-items:center;gap:10px;line-height:1.2;}
+  .main-tab br{display:none;}
+  .mt-ico{font-size:17px;width:22px;text-align:center;transition:transform .3s var(--ressort);}
+  .main-tab:hover .mt-ico{transform:scale(1.2);}
+  .main-tab.actif{background:linear-gradient(135deg,var(--vert),var(--bleu));color:#fff;
+    box-shadow:0 6px 16px rgba(29,78,122,.28);}
+  .main-tab:not(.actif):hover{transform:translateX(3px);}
+  #app-content{max-width:1500px;width:100%;}
+  .card{padding:16px 18px;}
+  .total-montant{font-size:32px;}
+  .total-banner{padding:18px 22px;}
+  .kpi{padding:14px;}
+  .kpi-val{font-size:18px;}
+  .nav-tabs,.tabs,.sub-nav{border-radius:12px;}
+  .nav-btn{font-size:12px;padding:11px 4px;}
+  #pieces-modal{align-items:center !important;}
+  #pieces-modal > div{border-radius:16px !important;animation:fkMonte .3s var(--doux);}
+}
+
+/* ── RETOUCHES (après les finitions visuelles) ────────────────────
+   1) Les cartes et éléments qui apparaissent en fondu gardaient l'état final de l'animation
+      (animation-fill-mode:both). Or une animation prime sur les règles normales : l'effet « léger
+      soulèvement au survol » (transform) ne pouvait donc jamais s'appliquer. On ne garde le style
+      de départ que pendant le délai (backwards) : l'apparence finale est identique, le survol marche.
+   2) Dans les longues listes (Grand Livre, historiques, enveloppes), toute la liste est recréée à
+      chaque mise à jour : seuls les 12 premiers éléments rejouent l'apparition, pour éviter un
+      scintillement et des centaines d'animations simultanées. */
+.card,.kpi,.ap,.total-banner,.hist-item,.eitem,.depense-item,.env-item,.solrow,.user-bar,
+#section-services .jour-card,#section-services .task-card,#section-services .fiv-card,
+#section-services .rappel-card,#section-services .mois-row,#section-services .stat-card{
+  animation-fill-mode:backwards;
+}
+.hist-item:nth-child(n+13),.eitem:nth-child(n+13),.depense-item:nth-child(n+13),.env-item:nth-child(n+13){
+  animation:none;
+}
+
+@media print{
+  .card,.kpi,.total-banner,.hist-item,.eitem{animation:none !important;box-shadow:none !important;}
+  .total-banner::after,.total-banner::before,.entete::after{display:none;}
+  body{background:#fff;}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -889,11 +1153,11 @@ select.choix-liste{
 
 
 <div class="main-tabs" id="main-nav">
- <button class="main-tab actif" id="mnav-gest" onclick="showMain('gest',this)">🙏<br>Gestion</button>
- <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)">📖<br>Journal</button>
- <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)">📒<br>Grand Livre</button>
- <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none">🏦<br>Opérations</button>
- <button class="main-tab" id="mnav-services" onclick="showMain('services',this)">🤝<br>Diacres</button>
+ <button class="main-tab actif" id="mnav-gest" onclick="showMain('gest',this)"><span class="mt-ico">🙏</span><br>Gestion</button>
+ <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)"><span class="mt-ico">📖</span><br>Journal</button>
+ <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)"><span class="mt-ico">📒</span><br>Grand Livre</button>
+ <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none"><span class="mt-ico">🏦</span><br>Opérations</button>
+ <button class="main-tab" id="mnav-services" onclick="showMain('services',this)"><span class="mt-ico">🤝</span><br>Diacres</button>
 </div>
 
 <div id="app-content">
@@ -2465,7 +2729,8 @@ function fbOK(){
   document.getElementById('fb-status').style.background='#eaf2f8';
   document.getElementById('fb-status').style.color='#1D4E7A';
   document.getElementById('fb-dot').style.background='#1D4E7A';
-  document.getElementById('fb-dot').style.animation='none';
+  document.getElementById('fb-dot').style.animation='';
+  document.getElementById('fb-dot').classList.add('ok');
   document.getElementById('fb-txt').textContent='Firebase connecté ✓';
   // Charger les données depuis Firebase au démarrage
   chargerDepenses();
@@ -5919,5 +6184,54 @@ initCorrectionAnjDate();
  </div>
 </div>
 
+<script>
+/* ── FINITIONS VISUELLES (apparence uniquement, n'interagit pas avec les données) ── */
+(function(){
+  var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Onde au toucher / clic sur les boutons
+  var SEL_ONDE = '.btn,.login-btn,.main-tab,.nav-btn,.tab-btn,.sub-btn,.btn-add,.btn-add-item';
+  document.addEventListener('pointerdown', function(e){
+    if(calme) return;
+    var b = e.target.closest && e.target.closest(SEL_ONDE);
+    if(!b || b.disabled) return;
+    var r = b.getBoundingClientRect(), d = Math.max(r.width, r.height);
+    var o = document.createElement('span');
+    o.className = 'fk-onde';
+    o.setAttribute('aria-hidden','true');
+    o.style.width = o.style.height = d + 'px';
+    o.style.left = (e.clientX - r.left - d/2) + 'px';
+    o.style.top  = (e.clientY - r.top  - d/2) + 'px';
+    b.appendChild(o);
+    setTimeout(function(){ if(o.parentNode) o.parentNode.removeChild(o); }, 650);
+  }, {passive:true});
+
+  // Petit « pop » quand un montant change
+  function pop(el){
+    if(calme) return;
+    el.classList.remove('fk-pop'); void el.offsetWidth; el.classList.add('fk-pop');
+  }
+  var SEL_MONTANT = '.total-montant,.st-val,.kpi-val,.solval,#raki-total-val';
+  function observer(){
+    document.querySelectorAll(SEL_MONTANT).forEach(function(el){
+      if(el.__fkObs) return;
+      el.__fkObs = true;
+      var avant = el.textContent;
+      new MutationObserver(function(){
+        if(el.textContent !== avant){ avant = el.textContent; pop(el); }
+      }).observe(el, {childList:true, characterData:true, subtree:true});
+    });
+  }
+  observer();
+  // Les KPI / soldes sont parfois recréés : on ré-observe de temps en temps
+  setInterval(observer, 3000);
+
+  // Secousse du message d'erreur de connexion
+  var err = document.getElementById('login-err');
+  if(err) new MutationObserver(function(){
+    if(err.textContent.trim()){ err.classList.remove('fk-secoue'); void err.offsetWidth; err.classList.add('fk-secoue'); }
+  }).observe(err, {childList:true, characterData:true, subtree:true});
+})();
+</script>
 </body>
 </html>
