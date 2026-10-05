@@ -808,6 +808,14 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
   }
 }
 
+/* ── LISTES DÉROULANTES À VALEURS PARTAGÉES ─────────────────── */
+select.choix-liste{
+  -webkit-appearance:none;-moz-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23666' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px !important;
+  background-color:white;
+}
+
 /* ── ANIMATIONS LÉGÈRES ─────────────────────────────────────────
    Un léger fondu à l'ouverture d'un écran ou d'une carte, et un effet
    doux au clic des boutons. Rien d'autre n'est modifié : uniquement
@@ -982,7 +990,8 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  <div class="card" style="border-left:4px solid var(--or)">
  <div class="card-titre" style="color:var(--or)">🏦 Réception — Trésorier</div>
  <div class="grid2">
- <div class="champ"><label>👤 Nom du trésorier</label><input type="text" id="tres-nom" placeholder="Nom complet"></div>
+ <div class="champ"><label>👤 Nom du trésorier</label><select id="tres-nom" class="choix-liste" data-liste="personnes" onchange="choixChange(this)"></select>
+<input type="text" id="tres-nom-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('tres-nom')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
  <div class="champ"><label>📅 Date réception</label><input type="date" id="tres-date"></div>
  <div class="champ full"><label>✍️ Observations</label><input type="text" id="tres-obs" placeholder="Remarques…"></div>
  </div>
@@ -1111,7 +1120,10 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  <div class="card">
  <div class="card-titre">
  <span>📋 Enveloppes du dimanche</span>
+ <span style="display:flex;align-items:center;gap:8px">
  <span id="env-count" style="background:var(--orange);color:white;font-size:10px;padding:2px 7px;border-radius:10px">0</span>
+ <button id="env-toggle-liste" type="button" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleListeGen('liste-enveloppes','env-toggle-liste')">▾ Réduire</button>
+ </span>
  </div>
  <div id="liste-enveloppes"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div></div>
  <div id="env-verif" style="display:none;font-size:12px;text-align:center;padding:7px;border-radius:6px;font-weight:600;margin-top:8px"></div>
@@ -1308,7 +1320,8 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  </div>
  </div>
  <div class="champ" style="margin-bottom:9px"><label>📝 Description / Commentaire</label><input type="text" id="vf-desc" placeholder="Détail de la dépense…"></div>
- <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="vf-auteur" placeholder="Nom du responsable"></div>
+ <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><select id="vf-auteur" class="choix-liste" data-liste="personnes" onchange="choixChange(this)"></select>
+<input type="text" id="vf-auteur-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('vf-auteur')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
  <div class="champ piece-champ" style="margin-bottom:10px">
  <label>📎 Pièce jointe (facultatif)</label>
  <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="vf-photo-input-cam">
@@ -1359,14 +1372,12 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  </div>
  <div class="champ" style="margin-bottom:9px">
  <label>📂 Catégorie</label>
- <input type="text" id="va-cat" list="cat-anj" placeholder="Ex: Aide membre…">
- <datalist id="cat-anj">
- <option>Aide à un membre</option><option>Projet communautaire</option>
- <option>Frais administratifs</option><option>Autre</option>
- </datalist>
+ <select id="va-cat" class="choix-liste" data-liste="catAnj" onchange="choixChange(this)"></select>
+<input type="text" id="va-cat-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('va-cat')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
  </div>
  <div class="champ" style="margin-bottom:9px"><label>📝 Description</label><input type="text" id="va-desc" placeholder="Détail…"></div>
- <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><input type="text" id="va-auteur" placeholder="Nom du responsable"></div>
+ <div class="champ" style="margin-bottom:10px"><label>✍️ Autorisé par</label><select id="va-auteur" class="choix-liste" data-liste="personnes" onchange="choixChange(this)"></select>
+<input type="text" id="va-auteur-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('va-auteur')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
  <div class="champ piece-champ" style="margin-bottom:10px">
  <label>📎 Pièce jointe (facultatif)</label>
  <input type="file" accept="image/*" capture="environment" onchange="choisirPhotoAttente(this)" style="display:none" id="va-photo-input-cam">
@@ -1523,28 +1534,13 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  </div>
  <div class="ch">
  <label>Type de culte</label>
- <input type="text" id="f-type" list="tl" placeholder="Ex: Culte dimanche">
- <datalist id="tl">
- <option>Culte du dimanche matin</option>
- <option>Culte après midi</option>
- <option>Alahady Fandraisana</option>
- <option>Culte de jeûne</option>
- <option>Alahady Manga</option>
- <option>Culte de Pâques</option>
- <option>Culte de Noël</option>
- <option>Fanokanana Diakona</option>
- <option>Culte K45</option>
- </datalist>
+ <select id="f-type" class="choix-liste" data-liste="typeCulte" onchange="choixChange(this)"></select>
+<input type="text" id="f-type-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('f-type')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
  </div>
  <div class="ch full">
  <label>Lieu</label>
- <input type="text" id="f-lieu" list="ll" value="Temple Béatitude Plateau">
- <datalist id="ll">
- <option>Temple Béatitude Plateau</option>
- <option>CELAF Riviera 3</option>
- <option>ICTJ Angré</option>
- <option>Salle CORAIL</option>
- </datalist>
+ <select id="f-lieu" class="choix-liste" data-liste="lieu" data-defaut="Temple Béatitude Plateau" onchange="choixChange(this)"></select>
+<input type="text" id="f-lieu-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('f-lieu')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">
  </div>
  </div>
  </div>
@@ -1803,7 +1799,8 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
  <div class="ch"><label>📝 Libellé</label><input type="text" id="k45-libelle" placeholder="Description…"></div>
  <div class="g2">
  <div class="ch"><label>🔢 N° Pièce</label><input type="text" id="k45-piece" placeholder="Ex: P-001"></div>
- <div class="ch"><label>✍️ Saisi par</label><input type="text" id="k45-saispar" placeholder="Nom"></div>
+ <div class="ch"><label>✍️ Saisi par</label><select id="k45-saispar" class="choix-liste" data-liste="personnes" onchange="choixChange(this)"></select>
+<input type="text" id="k45-saispar-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('k45-saispar')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
  </div>
  <button class="btn bo" id="k45-save-btn" onclick="enregistrerK45()">
       💾 Enregistrer écriture K45
@@ -2111,6 +2108,9 @@ function appliquerRole(role){
   if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
   const btnRattraper=document.getElementById('btn-rattraper-gl');
   if(btnRattraper) btnRattraper.style.display=(role==='secretaire'||role==='diacre')?'':'none';
+
+  // Listes déroulantes à valeurs partagées (types de culte, lieux, catégories, noms)
+  if(window._db){ chargerChoix(); }
 
   // "Suivi paiements" (Anjarako) : réservé à la secrétaire et au président des diacres
   const suiviBtn=document.getElementById('anj-view-btn-suivi');
@@ -2462,6 +2462,7 @@ function fbOK(){
   chargerDepenses();
   chargerAnjarako();
   chargerMembresAnj();
+  chargerChoix();
 }
 function fbErr(msg){
   document.getElementById('fb-status').style.background='#fdecea';
@@ -3860,7 +3861,7 @@ async function chargerRakitraHist(){
     const found=rak.lp?rak.lp.find(function(x){return x.v===p.v;}):null;
     if(el) el.value=found&&found.q>0?found.q:'';
   });
-  if(document.getElementById('tres-nom')) document.getElementById('tres-nom').value=rak.tresNom||'';
+  if(document.getElementById('tres-nom')) setChoix('tres-nom',rak.tresNom||'');
   if(document.getElementById('tres-obs')) document.getElementById('tres-obs').value=rak.tresObs||'';
   if(document.getElementById('observations')) document.getElementById('observations').value=rak.obs||'';
   calculerRakitra();
@@ -3881,8 +3882,11 @@ async function chargerAnjHist(){
   document.querySelectorAll('.nav-btn')[1].click();
   const dateInp=document.getElementById('rak-date-input');
   if(dateInp) dateInp.value=anj.date;
-  const totalInp=document.getElementById('anj-total');
-  if(totalInp) totalInp.value=anj.total||'';
+  // Le billetage (nombre de billets par valeur) n'est pas conservé, seul le total l'est :
+  // on passe en saisie du montant direct pour que le total reste modifiable et cohérent.
+  const totDir=document.getElementById('anj-total-direct');
+  if(totDir) totDir.value=anj.total||'';
+  showAnjMode('total');
   enveloppesJour=[...(anj.enveloppes||[])];
   valopyListe=[...(anj.valopy||[])];
   // Remettre le mode "Nombre direct" tel qu'il avait été enregistré
@@ -4409,8 +4413,8 @@ async function modifierFiche(docId){
     document.querySelectorAll('.tab-btn')[0].click();
     // Remplir les champs
     document.getElementById('f-date').value=d.date||'';
-    document.getElementById('f-type').value=d.type||'';
-    document.getElementById('f-lieu').value=d.lieu||'';
+    setChoix('f-type',d.type||'');
+    setChoix('f-lieu',d.lieu||'');
     document.getElementById('f-mpitarika').value=d.mpitarika||'';
     document.getElementById('f-mitory').value=d.mitory||'';
     document.getElementById('f-vavaka').value=d.vavaka||'';
@@ -4735,6 +4739,9 @@ function modifierEcritureGL(btn){
   var ec=null;
   if(GL[livre]) GL[livre].forEach(function(e){if(e._id===id)ec=e;});
   if(!ec){alert('Écriture introuvable.');return;}
+  // Ligne automatique « Anjarako voaray » : on rouvre la saisie complète du dimanche
+  // (cartes, enveloppes, montants, total) plutôt que de ne changer que cette ligne.
+  if(livre==='anj' && ec.auto===true && ec.rubrique==='ANJ-E1' && ec.date){ corrigerAnjDepuisGL(ec.date); return; }
 
   var date=prompt('Date (AAAA-MM-JJ):',ec.date||'');
   if(!date)return;
@@ -5693,6 +5700,124 @@ function fermerPiecePleinEcran(){
   const v=document.getElementById('piece-fullscreen');
   if(v) v.style.display='none';
 }
+
+
+// ══════════════════════════════════════════════════════════════
+// ── LISTES DÉROULANTES À VALEURS PARTAGÉES ───────────────────
+// ══════════════════════════════════════════════════════════════
+// Chaque liste = valeurs par défaut (ci-dessous) + valeurs ajoutées via « ➕ Autre… ».
+// Ces ajouts sont enregistrés dans Firebase (listes_choix/valeurs) et deviennent
+// visibles par tout le monde, dans tous les champs qui utilisent la même liste.
+const CHOIX_DEFAUT={
+  typeCulte:['Culte du dimanche matin','Culte après midi','Alahady Fandraisana','Culte de jeûne','Alahady Manga','Culte de Pâques','Culte de Noël','Fanokanana Diakona','Culte K45'],
+  lieu:['Temple Béatitude Plateau','CELAF Riviera 3','ICTJ Angré','Salle CORAIL'],
+  catAnj:['Aide à un membre','Projet communautaire','Frais administratifs'],
+  personnes:[]   // complétée par les noms de l'équipe (voir nomsEquipe)
+};
+let CHOIX_EXTRAS={typeCulte:[],lieu:[],catAnj:[],personnes:[]};
+
+function escChoix(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function nomsEquipe(){
+  const vus=[];
+  Object.keys(ROLES_CONFIG||{}).forEach(function(e){
+    const n=(ROLES_CONFIG[e].nom||'').trim();
+    if(n && !/test/i.test(n) && !vus.some(function(x){return x.toLowerCase()===n.toLowerCase();})) vus.push(n);
+  });
+  return vus;
+}
+function listeChoix(key){
+  const base=(key==='personnes'?nomsEquipe():(CHOIX_DEFAUT[key]||[])).concat(CHOIX_EXTRAS[key]||[]);
+  const res=[];
+  base.forEach(function(v){ if(v && !res.some(function(x){return x.toLowerCase()===v.toLowerCase();})) res.push(v); });
+  return res;
+}
+function peuplerChoix(){
+  document.querySelectorAll('select.choix-liste').forEach(function(sel){
+    const key=sel.getAttribute('data-liste');
+    const courant=sel.value;
+    const vals=listeChoix(key);
+    let h='<option value="">— Choisir —</option>';
+    vals.forEach(function(v){ h+='<option value="'+escChoix(v)+'">'+escChoix(v)+'</option>'; });
+    h+='<option value="" data-autre="1">➕ Autre…</option>';
+    sel.innerHTML=h;
+    setChoix(sel.id, courant || sel.getAttribute('data-defaut') || '');
+  });
+}
+// Affecte une valeur à une liste (ajoute l'option si elle n'y est pas encore, sans l'enregistrer pour les autres)
+function setChoix(id,val){
+  const sel=document.getElementById(id); if(!sel) return;
+  val=val||'';
+  if(val && !Array.prototype.some.call(sel.options,function(o){return o.value===val;})){
+    const o=document.createElement('option'); o.value=val; o.textContent=val;
+    sel.insertBefore(o, sel.options[sel.options.length-1]);
+  }
+  sel.value=val;
+  const aut=document.getElementById(id+'-autre'); if(aut) aut.style.display='none';
+}
+function choixChange(sel){
+  const o=sel.options[sel.selectedIndex];
+  const aut=document.getElementById(sel.id+'-autre');
+  if(!aut) return;
+  if(o && o.getAttribute('data-autre')==='1'){ aut.style.display=''; aut.value=''; aut.focus(); }
+  else { aut.style.display='none'; aut.value=''; }
+}
+function choixAutreValider(id){
+  const sel=document.getElementById(id), aut=document.getElementById(id+'-autre');
+  if(!sel||!aut) return;
+  const v=(aut.value||'').replace(/\s+/g,' ').trim();
+  const key=sel.getAttribute('data-liste');
+  if(v.length<2){ sel.value=''; aut.style.display='none'; aut.value=''; return; }
+  const existante=listeChoix(key).filter(function(x){return x.toLowerCase()===v.toLowerCase();})[0];
+  const finale=existante||v;
+  if(!existante){ CHOIX_EXTRAS[key].push(v); sauverChoix(); }
+  peuplerChoix();
+  setChoix(id,finale);
+  aut.value=''; aut.style.display='none';
+  sel.dispatchEvent(new Event('input',{bubbles:true}));
+  sel.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function fusionnerChoix(distant){
+  Object.keys(CHOIX_EXTRAS).forEach(function(k){
+    const u=(Array.isArray(distant&&distant[k])?distant[k]:[]).slice();
+    CHOIX_EXTRAS[k].forEach(function(v){ if(!u.some(function(x){return String(x).toLowerCase()===v.toLowerCase();})) u.push(v); });
+    CHOIX_EXTRAS[k]=u;
+  });
+}
+async function chargerChoix(){
+  if(!window._db||!window._fs) return;
+  try{
+    const snap=await window._fs.getDoc(window._fs.doc(window._db,'listes_choix','valeurs'));
+    if(snap.exists()) fusionnerChoix(snap.data());
+  }catch(e){ console.log('Listes de choix : lecture impossible (valeurs par défaut utilisées) :',e.message); }
+  peuplerChoix();
+}
+async function sauverChoix(){
+  if(!window._db||!window._fs) return;
+  const ref=window._fs.doc(window._db,'listes_choix','valeurs');
+  try{
+    try{ const snap=await window._fs.getDoc(ref); if(snap.exists()) fusionnerChoix(snap.data()); }catch(e){}
+    await window._fs.setDoc(ref,CHOIX_EXTRAS,{merge:true});
+  }catch(e){ console.log('Listes de choix : enregistrement impossible, la valeur reste utilisable sur cet appareil :',e.message); }
+}
+
+// Réduire / afficher une longue liste
+function toggleListeGen(listId,btnId){
+  const l=document.getElementById(listId), b=document.getElementById(btnId);
+  if(!l) return;
+  const cache=l.style.display==='none';
+  l.style.display=cache?'':'none';
+  if(b) b.textContent=cache?'▾ Réduire':'▸ Afficher';
+}
+
+// Grand Livre → Anjarako : « Modifier » ouvre la saisie complète du dimanche
+function corrigerAnjDepuisGL(date){
+  _dateSelectionnee=date;
+  showMain('gest',document.getElementById('mnav-gest'));
+  showAnjView('saisie');
+  chargerAnjHist();
+}
+
+peuplerChoix();
 
 </script>
 
