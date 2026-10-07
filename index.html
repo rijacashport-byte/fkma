@@ -1046,7 +1046,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   .main-tab{background:transparent;font-size:11.5px;padding:9px 2px;}
   .main-tab.actif{background:rgba(234,242,248,.9);border-radius:0;}
   .main-tab.actif .mt-ico{display:inline-block;animation:fkPop .45s var(--ressort);}
-  #anj-correction-banner{top:64px;}
+  #anj-correction-banner,#ops-correction-banner{top:64px;}
   .card{border-radius:12px;}
   .btn{min-height:46px;}
   .total-montant{font-size:28px;}
@@ -1118,6 +1118,53 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
     transition-duration:.01ms !important;scroll-behavior:auto !important;}
 }
+
+/* ── Champs de montant formatés (1 250 000) ── */
+input.champ-montant{font-variant-numeric:tabular-nums;}
+/* ── Valopy : boutons et billetage en bâtons ── */
+.valopy-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:9px;}
+.valopy-btn{padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;
+  background:#fff;border:1.5px solid #e3d3ec;color:var(--violet);transition:transform .12s,background-color .15s,border-color .15s;}
+.valopy-btn:hover{background:#f5eef8;border-color:var(--violet);}
+.valopy-btn:active{transform:scale(.94);background:#ead9f2;}
+.valopy-billetage{margin-bottom:9px;}
+.valopy-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.valopy-tbl thead tr{background:var(--violet);color:#fff;}
+.valopy-tbl th{padding:6px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;text-align:left;}
+.valopy-tbl th:nth-child(3),.valopy-tbl th:nth-child(4){text-align:right;}
+.valopy-tbl td{padding:6px 8px;border-bottom:1px solid var(--gris1);vertical-align:middle;}
+.valopy-tbl .vm{font-weight:700;white-space:nowrap;}
+.valopy-tbl .vb{cursor:pointer;line-height:0;}
+.valopy-tbl .vn{text-align:right;font-weight:700;color:var(--violet);}
+.valopy-tbl .vs{text-align:right;font-weight:600;white-space:nowrap;}
+.valopy-tbl tr.flash td{animation:fkValopyFlash .6s ease;}
+@keyframes fkValopyFlash{from{background:#f1e4f7;}to{background:transparent;}}
+.batons{display:inline-block;max-width:100%;overflow:visible;}
+.batons line{stroke:#3b2a4a;stroke-width:1.8;stroke-linecap:round;}
+.batons line.diag{stroke:var(--violet);stroke-width:2;}
+.batons line.nouveau{stroke-dasharray:24;stroke-dashoffset:24;animation:fkTrait .35s ease forwards;}
+@keyframes fkTrait{to{stroke-dashoffset:0;}}
+.valopy-moins{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--gris2);background:#fff;color:var(--rouge);
+  font-size:16px;font-weight:700;line-height:1;cursor:pointer;font-family:inherit;}
+.valopy-moins:hover{border-color:var(--rouge);background:#fdecea;}
+@media (max-width:420px){ .valopy-tbl th:nth-child(4),.valopy-tbl td.vs{display:none;} }
+/* ── Opérations : liste et correction ── */
+#ops-correction-banner{display:none;position:sticky;top:0;z-index:20;margin-bottom:12px;padding:10px 12px;border-radius:9px;
+  border-left:4px solid var(--or);background:#fff3d6;color:#6b4e00;font-size:12.5px;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+#ops-correction-banner .acb-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+.card.en-correction{outline:2px solid var(--or);outline-offset:-2px;}
+.op-item{background:var(--gris1);border-radius:9px;padding:10px 12px;margin-bottom:8px;border-left:4px solid var(--bleu);}
+.op-item.en-cours{border-left-color:var(--or);background:#fff8e7;}
+.op-haut{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.op-date{font-size:12px;font-weight:700;}
+.op-mnt{font-size:15px;font-weight:700;color:var(--bleu);white-space:nowrap;}
+.op-titre{font-size:12.5px;font-weight:600;color:var(--texte);margin-top:3px;}
+.op-sens{font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;margin-left:4px;}
+.op-sens.e{background:#eaf2f8;color:var(--vert);}
+.op-sens.s{background:#fdecea;color:var(--rouge);}
+.op-meta{font-size:11px;color:var(--texte2);margin-top:3px;}
+.op-charger{width:auto;padding:6px 12px;margin:8px 0 0;font-size:12px;}
+@media (min-width:900px){ #gl-tab-ops > #ops-correction-banner, #gl-tab-ops > #ops-liste-card{grid-column:1/-1;} }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1320,7 +1367,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div id="anj-zone-total" style="display:none">
  <div class="champ">
  <label>💰 Montant total (FCFA)</label>
- <input type="number" id="anj-total-direct" min="0" placeholder="0"
+ <input type="number" data-montant id="anj-total-direct" min="0" placeholder="0"
  inputmode="numeric" oninput="calculerAnjTotal()">
  </div>
  </div>
@@ -1402,22 +1449,24 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
  <div class="card" id="valopy-card" style="border-left:4px solid var(--violet)">
  <div class="card-titre" style="color:var(--violet)">💰 Montants des enveloppes (valopy)</div>
- <div class="note" style="margin-bottom:9px">Pour chaque enveloppe en main, clique une fois sur son montant. Une enveloppe = un clic.</div>
- <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:9px">
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(5000)">5 000</button>
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(10000)">10 000</button>
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(15000)">15 000</button>
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(20000)">20 000</button>
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(25000)">25 000</button>
- <button class="btn-gris" style="padding:12px 4px;border-radius:8px;font-weight:700;font-size:13px" onclick="ajouterValopy(30000)">30 000</button>
+ <div class="note" style="margin-bottom:9px">Pour chaque enveloppe en main, clique une fois sur son montant. Une enveloppe = un clic. Les bâtons se regroupent par 5 (carré barré), comme sur la feuille.</div>
+ <div class="valopy-btns">
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(1000)">1 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(2000)">2 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(5000)">5 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(10000)">10 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(15000)">15 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(20000)">20 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(25000)">25 000</button>
+ <button type="button" class="valopy-btn" onclick="ajouterValopy(30000)">30 000</button>
  </div>
  <div class="grid2" style="margin-bottom:9px">
- <div class="champ"><label>Autre montant</label><input type="number" id="valopy-autre" min="0" placeholder="Ex: 7500" inputmode="numeric"></div>
+ <div class="champ"><label>Autre montant</label><input type="number" data-montant id="valopy-autre" min="0" placeholder="Ex: 7500" inputmode="numeric"></div>
  <div style="display:flex;align-items:flex-end">
  <button class="btn btn-gris" style="margin-bottom:0" onclick="ajouterValopyAutre()">➕ Ajouter</button>
  </div>
  </div>
- <div id="valopy-liste" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px"></div>
+ <div id="valopy-liste" class="valopy-billetage"></div>
  <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
  <span style="color:var(--texte2)"><span id="valopy-nb">0</span> enveloppe(s) comptée(s)</span>
  <span style="font-weight:700;color:var(--violet)">Total : <span id="valopy-total">0</span> F</span>
@@ -1428,7 +1477,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="card" style="border-left:4px solid var(--orange)">
  <div class="card-titre" style="color:var(--orange)">📊 Objectifs mensuels (cumul)</div>
  <div class="grid2" style="margin-bottom:10px">
- <div class="champ"><label>🎯 Objectif montant (FCFA)</label><input type="number" id="anj-objectif" value="1100000" inputmode="numeric" oninput="calculerAnjMoisCourant()"></div>
+ <div class="champ"><label>🎯 Objectif montant (FCFA)</label><input type="number" data-montant id="anj-objectif" value="1100000" inputmode="numeric" oninput="calculerAnjMoisCourant()"></div>
  <div class="champ"><label>📊 Objectif enveloppes</label><input type="number" id="anj-obj-env" value="90" inputmode="numeric" oninput="calculerAnjMoisCourant()"></div>
  </div>
  <div style="font-size:11px;color:var(--texte2);margin-bottom:5px;display:flex;justify-content:space-between">
@@ -1471,7 +1520,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="card-titre" style="color:var(--vert)">➕ Nouvelle dépense — Fiangonana</div>
  <div class="grid2" style="margin-bottom:9px">
  <div class="champ"><label>📅 Date</label><input type="date" id="vf-date"></div>
- <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
+ <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
  </div>
  <div style="display:flex;gap:8px;margin-bottom:9px">
  <button class="src-toggle-btn actif" id="vf-src-caisse" onclick="setSrcDep('fiang','caisse',this)">💵 Caisse</button>
@@ -1563,7 +1612,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="card-titre" style="color:var(--orange)">➕ Nouvelle sortie — Anjarako</div>
  <div class="grid2" style="margin-bottom:9px">
  <div class="champ"><label>📅 Date</label><input type="date" id="va-date"></div>
- <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
+ <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
  </div>
  <div style="display:flex;gap:8px;margin-bottom:9px">
  <button class="src-toggle-btn actif" id="va-src-caisse" onclick="setSrcDep('anj','caisse',this)">💵 Caisse</button>
@@ -1952,10 +2001,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ctit">🏁 Soldes initiaux 2026</div>
  <div class="g2">
  <div class="ch"><label>💵 Caisse initiale</label>
- <input type="number" id="fiang-init-caisse" value="0" inputmode="numeric" oninput="renderFiang()">
+ <input type="number" data-montant id="fiang-init-caisse" value="0" inputmode="numeric" oninput="renderFiang()">
  </div>
  <div class="ch"><label>🏦 Banque SIB initiale</label>
- <input type="number" id="fiang-init-banque" value="0" inputmode="numeric" oninput="renderFiang()">
+ <input type="number" data-montant id="fiang-init-banque" value="0" inputmode="numeric" oninput="renderFiang()">
  </div>
  </div>
  <div class="note" style="margin-bottom:0">💡 Ces montants correspondent au solde au 1er janvier 2026. À renseigner lors de la passation.</div>
@@ -1986,10 +2035,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ctit">🏁 Soldes initiaux 2026</div>
  <div class="g2">
  <div class="ch"><label>💵 Caisse initiale</label>
- <input type="number" id="anj-init-caisse" value="0" inputmode="numeric" oninput="renderAnj()">
+ <input type="number" data-montant id="anj-init-caisse" value="0" inputmode="numeric" oninput="renderAnj()">
  </div>
  <div class="ch"><label>🏦 Banque SIB initiale</label>
- <input type="number" id="anj-init-banque" value="0" inputmode="numeric" oninput="renderAnj()">
+ <input type="number" data-montant id="anj-init-banque" value="0" inputmode="numeric" oninput="renderAnj()">
  </div>
  </div>
  <div class="note" style="margin-bottom:0">💡 Solde au 1er janvier 2026 — à renseigner lors de la passation.</div>
@@ -2019,10 +2068,10 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ctit">🏁 Soldes initiaux K45</div>
  <div class="g2">
  <div class="ch"><label>💵 Caisse initiale</label>
- <input type="number" id="k45-init-caisse" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
+ <input type="number" data-montant id="k45-init-caisse" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
  </div>
  <div class="ch"><label>🏦 Banque SIB initiale</label>
- <input type="number" id="k45-init-banque" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
+ <input type="number" data-montant id="k45-init-banque" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
  </div>
  </div>
  <div class="note" style="margin-bottom:0">💡 Normalement 0 pour un événement qui démarre à zéro.</div>
@@ -2048,7 +2097,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ch"><label>📄 N° Page</label><input type="number" id="k45-page" min="1" placeholder="Ex: 5" inputmode="numeric"></div>
  </div>
  <div class="g2">
- <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="k45-montant" min="0" placeholder="0" inputmode="numeric"></div>
+ <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="k45-montant" min="0" placeholder="0" inputmode="numeric"></div>
  <div class="ch"><label>🔤 Lettrage</label><input type="text" id="k45-lettrage" placeholder="A, B…" style="text-transform:uppercase"></div>
  </div>
  <div class="ch">
@@ -2096,10 +2145,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="note" style="margin-bottom:10px">
     🏦 Opérations bancaires — SIB Rakitra, SIB Anjarako & SIB K45
  </div>
+ <aside id="ops-correction-banner"></aside>
  
 
  <!-- Transfert Caisse → Banque -->
- <div class="card">
+ <div class="card" id="tr-card">
  <div class="ctit">🔄 Transfert Caisse → Banque</div>
  <div class="note">Quand tu verses de la caisse à la SIB — double écriture automatique.</div>
 
@@ -2114,7 +2164,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
  </div>
  <div class="g2">
- <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
+ <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="tr-montant" min="0" placeholder="0" inputmode="numeric"></div>
  <div class="ch"><label>📄 N° Page livre</label><input type="number" id="tr-page" min="1" placeholder="Ex: 12" inputmode="numeric"></div>
  </div>
  <div class="ch"><label>💬 Commentaire</label><input type="text" id="tr-comment" placeholder="Ex: Versement semaine du 13 juil…"></div>
@@ -2129,11 +2179,11 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  </div>
  <div id="dep-photos-attente" style="margin-top:6px"></div>
  </div>
- <button class="btn bv" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
+ <button class="btn bv" id="tr-btn-save" onclick="faireTransfert()">🔄 Enregistrer le transfert</button>
  </div>
 
  <!-- Opérations bancaires directes (frais, agios…) -->
- <div class="card">
+ <div class="card" id="ob-card">
  <div class="ctit">🏦 Opération bancaire directe</div>
  <div class="note">Frais bancaires, agios, timbres, chèques — opérations sur le relevé SIB.</div>
 
@@ -2166,7 +2216,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  </select>
  </div>
  <div class="g2">
- <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
+ <div class="ch"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="ob-montant" min="0" placeholder="0" inputmode="numeric"></div>
  <div class="ch"><label>💬 Commentaire</label><input type="text" id="ob-comment" placeholder="Précision…"></div>
  </div>
  <div class="ch piece-champ">
@@ -2179,7 +2229,31 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  </div>
  <div id="dep-photos-attente" style="margin-top:6px"></div>
  </div>
- <button class="btn bb" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
+ <button class="btn bb" id="ob-btn-save" onclick="enregistrerOpBancaire()">🏦 Enregistrer</button>
+ </div>
+
+ <!-- Opérations déjà enregistrées : rechargement pour correction -->
+ <div class="card" id="ops-liste-card">
+ <div class="ctit">📋 Opérations enregistrées</div>
+ <div class="note">Clique sur « ✏️ Charger » pour remettre une opération dans le formulaire, la corriger puis l'enregistrer.</div>
+ <div class="g2">
+ <div class="ch"><label>📂 Livre</label>
+ <select id="ops-filtre-livre" onchange="renderOpsListe()">
+ <option value="">Tous</option>
+ <option value="fiang">📗 Fiangonana</option>
+ <option value="anj">📘 Anjarako</option>
+ <option value="k45">📙 K45</option>
+ </select>
+ </div>
+ <div class="ch"><label>🔎 Type</label>
+ <select id="ops-filtre-type" onchange="renderOpsListe()">
+ <option value="">Tous</option>
+ <option value="tr">🔄 Transferts</option>
+ <option value="ob">🏦 Opérations directes</option>
+ </select>
+ </div>
+ </div>
+ <div id="ops-liste"><div class="vide">Chargement…</div></div>
  </div>
 
  <!-- Rapprochement bancaire -->
@@ -2197,7 +2271,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
  </div>
  <div class="ch"><label>💰 Solde relevé SIB (FCFA)</label>
- <input type="number" id="rp-solde-reel" placeholder="Solde selon relevé bancaire" inputmode="numeric">
+ <input type="number" data-montant id="rp-solde-reel" placeholder="Solde selon relevé bancaire" inputmode="numeric">
  </div>
  <button class="btn bo" onclick="faireRapprochement()">✅ Calculer l'écart</button>
  <div id="rp-resultat" style="display:none;margin-top:10px;background:var(--gris1);border-radius:8px;padding:12px">
@@ -2719,7 +2793,9 @@ const MOIS_FR        = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "
 // ── STOCKAGE ─────────────────────────────────────────────────
 function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{return[];}}
 function save(k,d){localStorage.setItem(k,JSON.stringify(d));}
-function fmt(n){return Number(n||0).toLocaleString('fr-FR');}
+// Séparateur de milliers : espace insécable de largeur normale (l'espace fine du format
+// français est presque invisible dans la police de l'appli : « 1250 000 »)
+function fmt(n){return Number(n||0).toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0');}
 function moisLabel(ym){if(!ym)return'—';const p=ym.split('-');return MOIS_FR[parseInt(p[1])-1]+' '+p[0];}
 
 const SK_CULTES  = 'fkma_cultes';
@@ -2880,7 +2956,7 @@ function buildTableaux(){
       tr.innerHTML=`
         <td><div class="badge-coupure">
           <div class="dot" style="background:${item.color}"></div>
-          <strong>${item.v.toLocaleString('fr-FR')} FCFA</strong>
+          <strong>${item.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} FCFA</strong>
         </div></td>
         <td><input class="qty-input" type="number" id="${eid}" min="0" inputmode="numeric" oninput="calculerRakitra()"></td>
         <td id="st_${eid}">—</td>`;
@@ -2916,7 +2992,7 @@ function ajouterRaki(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px">
       <div class="champ">
         <label>💰 Montant total (FCFA)</label>
-        <input type="number" id="${id}_m" min="0" placeholder="0" inputmode="numeric"
+        <input type="number" data-montant id="${id}_m" min="0" placeholder="0" inputmode="numeric"
           oninput="calculerRaki();calculerRepartition('${id}')">
       </div>
       <div class="champ">
@@ -2969,7 +3045,7 @@ function ajouterLigneDest(rakiId){
           padding:7px 8px;font-size:13px;font-family:inherit">
     </div>
     <div style="display:flex;gap:5px;align-items:center">
-      <input type="number" id="${lid}_m" min="0" placeholder="0" inputmode="numeric"
+      <input type="number" data-montant id="${lid}_m" min="0" placeholder="0" inputmode="numeric"
         style="width:105px;border:1.5px solid var(--gris2);border-radius:6px;
           padding:7px 8px;font-size:13px;font-family:inherit;text-align:right"
         oninput="calculerRepartition('${rakiId}')">
@@ -3266,6 +3342,7 @@ function mettreAJourBannerAnj(){
 let valopyListe=[];
 function ajouterValopy(montant){
   valopyListe.push(montant);
+  _valopyDernier=montant;
   renderValopy();
 }
 function ajouterValopyAutre(){
@@ -3280,13 +3357,51 @@ function supprimerValopy(idx){
   valopyListe.splice(idx,1);
   renderValopy();
 }
+// Retire une enveloppe d'un montant donné (la dernière ajoutée de ce montant)
+function retirerValopyMontant(montant){
+  const idx=valopyListe.lastIndexOf(montant);
+  if(idx>=0) supprimerValopy(idx);
+}
+// Bâtons de comptage, comme sur la feuille manuscrite : par paquets de 5,
+// 4 côtés d'un petit carré puis la barre diagonale. animerDernier = trace le dernier trait ajouté.
+function batonsValopySVG(n,animerDernier){
+  const T=16,G=6,paquets=Math.ceil(n/5);
+  const traits=[[1,1,1,T-1],[1,1,T-1,1],[T-1,1,T-1,T-1],[1,T-1,T-1,T-1],[1,T-1,T-1,1]];
+  let s='';
+  for(let p=0;p<paquets;p++){
+    const nb=Math.min(5,n-p*5), x0=p*(T+G);
+    for(let k=0;k<nb;k++){
+      const l=traits[k], dernier=animerDernier && p*5+k===n-1;
+      const cls=((k===4?'diag ':'')+(dernier?'nouveau':'')).trim();
+      s+='<line x1="'+(x0+l[0])+'" y1="'+l[1]+'" x2="'+(x0+l[2])+'" y2="'+l[3]+'"'
+        +(cls?' class="'+cls+'"':'')+'/>';
+    }
+  }
+  const w=Math.max(1,paquets*(T+G)-G);
+  return '<svg class="batons" width="'+w+'" height="'+T+'" viewBox="0 0 '+w+' '+T+'" aria-hidden="true">'+s+'</svg>';
+}
+let _valopyDernier=null;
 function renderValopy(){
   const el=document.getElementById('valopy-liste');
   if(el){
-    el.innerHTML=valopyListe.map(function(m,i){
-      return '<span style="background:#f5eef8;color:var(--violet);border-radius:14px;padding:5px 10px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">'
-        +fmt(m)+' F<button onclick="supprimerValopy('+i+')" style="background:none;border:none;color:var(--violet);cursor:pointer;font-size:14px;padding:0;line-height:1">×</button></span>';
-    }).join('');
+    // Regroupement par montant, du plus grand au plus petit (comme un billetage)
+    const parMontant={};
+    valopyListe.forEach(function(m){ parMontant[m]=(parMontant[m]||0)+1; });
+    const montants=Object.keys(parMontant).map(Number).sort(function(a,b){return b-a;});
+    el.innerHTML=!montants.length?'':
+      '<table class="valopy-tbl"><thead><tr><th>Montant</th><th>Comptage</th><th>Nb</th><th>Sous-total</th><th></th></tr></thead><tbody>'
+      +montants.map(function(m){
+        const n=parMontant[m];
+        return '<tr'+(m===_valopyDernier?' class="flash"':'')+'>'
+          +'<td class="vm">'+fmt(m)+'</td>'
+          +'<td class="vb" onclick="ajouterValopy('+m+')" title="Ajouter une enveloppe de '+fmt(m)+' F">'+batonsValopySVG(n,m===_valopyDernier)+'</td>'
+          +'<td class="vn">'+n+'</td>'
+          +'<td class="vs">'+fmt(m*n)+'</td>'
+          +'<td><button type="button" class="valopy-moins" onclick="retirerValopyMontant('+m+')" title="Retirer une enveloppe de '+fmt(m)+' F">−</button></td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody></table>';
+    _valopyDernier=null;
   }
   const total=valopyListe.reduce(function(a,m){return a+m;},0);
   const nbEl=document.getElementById('valopy-nb'); if(nbEl) nbEl.textContent=valopyListe.length;
@@ -3698,7 +3813,7 @@ function buildAnjBillets(){
   BILLETS.forEach(function(item){
     const eid = 'anj_b_'+item.v;
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td><div class="badge-coupure"><div class="dot" style="background:'+item.color+'"></div>'+item.v.toLocaleString('fr-FR')+' FCFA</div></td>'
+    tr.innerHTML = '<td><div class="badge-coupure"><div class="dot" style="background:'+item.color+'"></div>'+item.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')+' FCFA</div></td>'
       +'<td><input class="qty-input" type="number" id="'+eid+'" min="0" inputmode="numeric" oninput="calculerAnjTotal()"></td>'
       +'<td id="st_'+eid+'">—</td>';
     tbody.appendChild(tr);
@@ -3890,10 +4005,10 @@ function partagerWACulte(){
 function partagerWARakitra(){
   const d=snapRakitra();
   let m=`🙏 *FKMA — RAKITRA DU ${d.date}*\n━━━━━━━━━━━━━━━━━\n`;
-  d.lb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR')} F × ${l.q} = ${fmt(l.s)} F\n`;});
+  d.lb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} F × ${l.q} = ${fmt(l.s)} F\n`;});
   d.lp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});
   m+=`➜ *Rakitra : ${fmt(d.totalRakitra)} FCFA*\n`;
-  if(d.rpOn){m+=`\n🍷 *Raki-pandraisana*\n`;d.lrpb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR')} F × ${l.q} = ${fmt(l.s)} F\n`;});d.lrpp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});m+=`➜ *Raki-pandraisana : ${fmt(d.totalRP)} FCFA*\n`;}
+  if(d.rpOn){m+=`\n🍷 *Raki-pandraisana*\n`;d.lrpb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} F × ${l.q} = ${fmt(l.s)} F\n`;});d.lrpp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});m+=`➜ *Raki-pandraisana : ${fmt(d.totalRP)} FCFA*\n`;}
   m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*\n`;
   if(d.rakis.length){
     m+=`━━━━━━━━━━━━━━━━━\n🎁 *Raki-pisaorana (hors total ci-dessus)*\n`;
@@ -4806,6 +4921,7 @@ function showGLTab(tab,btn){
   });
   if(tab==='synth')renderSynth();
   if(tab==='fiang'||tab==='anj'||tab==='k45') chargerTout();
+  if(tab==='ops') chargerTout();
 }
 
 // ── CHARGEMENT FIREBASE ───────────────────────────────────────
@@ -4823,6 +4939,7 @@ async function chargerTout(){
     }catch(e){console.log('GL '+livre+':',e.message);}
   }
   renderSynth();
+  renderOpsListe();
 }
 
 // ── RENDU LISTE ───────────────────────────────────────────────
@@ -4934,6 +5051,15 @@ function setObES(es){
   document.getElementById('ob-es-s').classList.toggle('actif',es==='S');
 }
 
+// Correction d'une opération déjà enregistrée (même principe que la correction d'un dimanche Anjarako) :
+// { type:'tr'|'ob', livre, opId, ids:[identifiants Firestore des écritures concernées] } ou null
+let correctionOp=null;
+const NOMS_LIVRES={fiang:'📗 Fiangonana',anj:'📘 Anjarako',k45:'📙 K45'};
+
+function emailConnecte(){
+  return window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+}
+
 async function faireTransfert(){
   const db=window._db,fs=window._fs;
   if(!db){alert('Firebase non connecté.');return;}
@@ -4944,15 +5070,28 @@ async function faireTransfert(){
   const comment=document.getElementById('tr-comment').value;
   const piece=document.getElementById('tr-piece').value;
   if(!date||!montant){alert('Date et montant requis.');return;}
-  const opId=Date.now();
-  const base={date,page,montant,comment,piece,transfert:true,opId,savedAt:new Date().toISOString()};
+  const enCorrection=correctionOp&&correctionOp.type==='tr';
   try{
-    // Sortie caisse
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
-    // Entrée banque
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
-    alert('✅ Transfert enregistré !');
-    ['tr-date','tr-montant','tr-page','tr-comment','tr-piece'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    let opId;
+    if(enCorrection){
+      // Mise à jour des deux écritures existantes (sortie caisse + entrée banque) : même numéro d'opération
+      opId=correctionOp.opId;
+      const maj={date,page,montant,comment,piece,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
+      for(const id of correctionOp.ids){
+        await fs.updateDoc(fs.doc(db,'grandlivre_'+correctionOp.livre,id),maj);
+      }
+      alert('✅ Transfert corrigé !');
+    } else {
+      opId=Date.now();
+      const base={date,page,montant,comment,piece,transfert:true,opId,savedAt:new Date().toISOString()};
+      // Sortie caisse
+      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
+      // Entrée banque
+      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
+      alert('✅ Transfert enregistré !');
+    }
+    viderFormOp('tr');
+    if(enCorrection) terminerCorrectionOp();
     await sauverPiecesPourOp(opId);
     await chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
@@ -4967,18 +5106,159 @@ async function enregistrerOpBancaire(){
   const nature=document.getElementById('ob-nature').value;
   const comment=document.getElementById('ob-comment').value;
   if(!date||!montant||!nature){alert('Date, montant et nature requis.');return;}
-  const opId=Date.now();
+  const selNature=document.getElementById('ob-nature');
+  const libelle=selNature.options[selNature.selectedIndex].text;
+  const enCorrection=correctionOp&&correctionOp.type==='ob';
   try{
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
-      date,montant,es:obES,source:'banque',rubrique:nature,
-      libelle:document.getElementById('ob-nature').options[document.getElementById('ob-nature').selectedIndex].text,
-      comment,opbancaire:true,opId,numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()
-    });
-    alert('✅ Opération bancaire enregistrée !');
-    ['ob-date','ob-montant','ob-comment'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    let opId;
+    if(enCorrection){
+      opId=correctionOp.opId;
+      const maj={date,montant,es:obES,rubrique:nature,libelle,comment,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
+      for(const id of correctionOp.ids){
+        await fs.updateDoc(fs.doc(db,'grandlivre_'+correctionOp.livre,id),maj);
+      }
+      alert('✅ Opération bancaire corrigée !');
+    } else {
+      opId=Date.now();
+      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
+        date,montant,es:obES,source:'banque',rubrique:nature,libelle,
+        comment,opbancaire:true,opId,numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()
+      });
+      alert('✅ Opération bancaire enregistrée !');
+    }
+    viderFormOp('ob');
+    if(enCorrection) terminerCorrectionOp();
     await sauverPiecesPourOp(opId);
     await chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
+}
+
+function viderFormOp(type){
+  const ids=type==='tr'?['tr-date','tr-montant','tr-page','tr-comment','tr-piece']:['ob-date','ob-montant','ob-comment','ob-nature'];
+  ids.forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
+}
+
+// ── Liste des opérations enregistrées (transferts + opérations bancaires directes) ──
+function listerOperations(){
+  const fl=(document.getElementById('ops-filtre-livre')||{}).value||'';
+  const ft=(document.getElementById('ops-filtre-type')||{}).value||'';
+  const groupes={};
+  ['fiang','anj','k45'].forEach(function(livre){
+    if(fl&&fl!==livre) return;
+    (GL[livre]||[]).forEach(function(e){
+      const type=e.transfert?'tr':(e.opbancaire?'ob':'');
+      if(!type||(ft&&ft!==type)) return;
+      const cle=livre+'|'+type+'|'+(e.opId||e._id);
+      if(!groupes[cle]) groupes[cle]={type:type,livre:livre,opId:e.opId||null,ids:[],e:e};
+      groupes[cle].ids.push(e._id);
+      // Pour un transfert, on garde l'écriture « entrée banque » comme référence d'affichage
+      if(type==='tr'&&e.es==='E') groupes[cle].e=e;
+    });
+  });
+  return Object.values(groupes).sort(function(a,b){
+    return (b.e.date||'').localeCompare(a.e.date||'')||String(b.e.savedAt||'').localeCompare(String(a.e.savedAt||''));
+  });
+}
+
+let opsListeMax=30;
+function renderOpsListe(){
+  const el=document.getElementById('ops-liste'); if(!el) return;
+  const ops=listerOperations();
+  if(!ops.length){el.innerHTML='<div class="vide">Aucune opération enregistrée.</div>';return;}
+  const esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  el.innerHTML=ops.slice(0,opsListeMax).map(function(o,i){
+    const e=o.e;
+    const enCours=correctionOp&&correctionOp.livre===o.livre&&correctionOp.ids.join()===o.ids.join();
+    const titre=o.type==='tr'?'🔄 Transfert caisse → banque':('🏦 '+esc(e.libelle||e.rubrique||'Opération'));
+    const sens=o.type==='tr'?'':(e.es==='E'?' <span class="op-sens e">Crédit</span>':' <span class="op-sens s">Débit</span>');
+    return '<div class="op-item'+(enCours?' en-cours':'')+'">'
+      +'<div class="op-haut"><span class="op-date">'+fmtDateFr(e.date)+'</span>'
+      +'<span class="op-mnt">'+fmt(e.montant)+' F</span></div>'
+      +'<div class="op-titre">'+titre+sens+'</div>'
+      +'<div class="op-meta">'+NOMS_LIVRES[o.livre]
+        +(e.comment?' · '+esc(e.comment):'')+(e.piece?' · '+esc(e.piece):'')
+        +(e.numOp?' · Op n° '+esc(e.numOp):'')+'</div>'
+      +'<button type="button" class="btn btn-gris op-charger" onclick="chargerOpPourCorrection('+i+')">'
+        +(enCours?'✏️ En cours de correction':'✏️ Charger pour modifier')+'</button>'
+      +'</div>';
+  }).join('')
+  +(ops.length>opsListeMax?'<button type="button" class="btn btn-gris" onclick="opsListeMax+=30;renderOpsListe()">Afficher plus ('+(ops.length-opsListeMax)+' restantes)</button>':'');
+  window._opsAffichees=ops;
+}
+
+// Remet l'opération choisie dans son formulaire, en mode correction
+function chargerOpPourCorrection(i){
+  const o=(window._opsAffichees||[])[i]; if(!o) return;
+  if(correctionOp&&!confirm('Une autre opération est déjà en cours de correction. L\'abandonner et charger celle-ci ?')) return;
+  if(correctionOp) terminerCorrectionOp();
+  const e=o.e;
+  correctionOp={type:o.type,livre:o.livre,opId:o.opId||Date.now(),ids:o.ids.slice()};
+  if(o.type==='tr'){
+    document.getElementById('tr-livre').value=o.livre;
+    document.getElementById('tr-date').value=e.date||'';
+    document.getElementById('tr-montant').value=e.montant||'';
+    document.getElementById('tr-page').value=e.page||'';
+    document.getElementById('tr-comment').value=e.comment||'';
+    document.getElementById('tr-piece').value=e.piece||'';
+  } else {
+    document.getElementById('ob-livre').value=o.livre;
+    document.getElementById('ob-date').value=e.date||'';
+    document.getElementById('ob-montant').value=e.montant||'';
+    document.getElementById('ob-nature').value=e.rubrique||'';
+    document.getElementById('ob-comment').value=e.comment||'';
+    setObES(e.es==='E'?'E':'S');
+  }
+  majModeCorrectionOp();
+  renderOpsListe();
+  const carte=document.getElementById(o.type==='tr'?'tr-card':'ob-card');
+  if(carte) carte.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// Depuis le Grand Livre (bouton modifier d'une ligne de transfert ou d'opération bancaire)
+function corrigerOpDepuisGL(livre,ec){
+  const btnOps=document.getElementById('gltab-btn-ops');
+  if(btnOps&&btnOps.style.display!=='none') showGLTab('ops',btnOps);
+  const fl=document.getElementById('ops-filtre-livre'); if(fl) fl.value='';
+  const ft=document.getElementById('ops-filtre-type'); if(ft) ft.value='';
+  opsListeMax=100000;
+  renderOpsListe();
+  const ops=window._opsAffichees||[];
+  const i=ops.findIndex(function(o){return o.livre===livre&&o.ids.indexOf(ec._id)>=0;});
+  opsListeMax=30;
+  if(i>=0) chargerOpPourCorrection(i);
+  else alert('Opération introuvable dans la liste.');
+}
+
+function majModeCorrectionOp(){
+  const b=document.getElementById('ops-correction-banner');
+  const trCard=document.getElementById('tr-card'), obCard=document.getElementById('ob-card');
+  const trBtn=document.getElementById('tr-btn-save'), obBtn=document.getElementById('ob-btn-save');
+  const trLivre=document.getElementById('tr-livre'), obLivre=document.getElementById('ob-livre');
+  const c=correctionOp;
+  if(trCard) trCard.classList.toggle('en-correction',!!c&&c.type==='tr');
+  if(obCard) obCard.classList.toggle('en-correction',!!c&&c.type==='ob');
+  // Le livre ne change pas pendant une correction (les écritures restent dans leur livre d'origine)
+  if(trLivre) trLivre.disabled=!!c&&c.type==='tr';
+  if(obLivre) obLivre.disabled=!!c&&c.type==='ob';
+  if(trBtn) trBtn.innerHTML=c&&c.type==='tr'?'💾 Enregistrer la correction du transfert':'🔄 Enregistrer le transfert';
+  if(obBtn) obBtn.innerHTML=c&&c.type==='ob'?'💾 Enregistrer la correction':'🏦 Enregistrer';
+  if(!b) return;
+  if(!c){b.style.display='none';b.innerHTML='';return;}
+  b.style.display='block';
+  b.innerHTML='<b>✏️ Correction en cours</b> — '+(c.type==='tr'?'transfert caisse → banque':'opération bancaire directe')
+    +' du livre '+NOMS_LIVRES[c.livre]+'. Rien n\'est modifié tant que tu n\'as pas cliqué sur « Enregistrer la correction ».'
+    +'<div class="acb-actions"><button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px" onclick="annulerCorrectionOp()">✖ Annuler la correction</button></div>';
+}
+function terminerCorrectionOp(){
+  correctionOp=null;
+  majModeCorrectionOp();
+  renderOpsListe();
+}
+function annulerCorrectionOp(){
+  if(!correctionOp) return;
+  if(!confirm('Annuler la correction ? Les modifications non enregistrées seront perdues. L\'opération enregistrée reste inchangée.')) return;
+  viderFormOp(correctionOp.type);
+  terminerCorrectionOp();
 }
 
 function faireRapprochement(){
@@ -5057,15 +5337,17 @@ function modifierEcritureGL(btn){
   // Ligne automatique « Anjarako voaray » : on rouvre la saisie complète du dimanche
   // (cartes, enveloppes, montants, total) plutôt que de ne changer que cette ligne.
   if(livre==='anj' && ec.auto===true && ec.rubrique==='ANJ-E1' && ec.date){ corrigerAnjDepuisGL(ec.date); return; }
+  // Transfert ou opération bancaire : on la recharge dans le formulaire Opérations, comme l'Anjarako
+  if(ec.transfert||ec.opbancaire){ corrigerOpDepuisGL(livre,ec); return; }
 
   var date=prompt('Date (AAAA-MM-JJ):',ec.date||'');
   if(!date)return;
-  var montant=prompt('Montant (FCFA):',ec.montant||0);
+  var montant=prompt('Montant (FCFA):',fmt(ec.montant||0));
   if(!montant)return;
   var libelle=prompt('Libellé:',ec.libelle||'');
   var page=prompt('N° Page:',ec.page||'');
 
-  var updates={date:date,montant:parseInt(montant)||0,libelle:libelle||'',page:page||'',updatedAt:new Date().toISOString()};
+  var updates={date:date,montant:parseInt(String(montant).replace(/[^\d]/g,''))||0,libelle:libelle||'',page:page||'',updatedAt:new Date().toISOString()};
 
   (async function(){
     try{
@@ -5703,13 +5985,19 @@ const APPS_SCRIPT_PHOTOS_URL='https://script.google.com/macros/s/AKfycbyYT_la_lr
 // Envoie une photo (déjà compressée, en data URL) vers Drive via le relais.
 // Renvoie {viewUrl, imgUrl, fileId} en cas de succès, ou null si ça échoue (hors-ligne, relais indisponible…) :
 // dans ce cas on la garde quand même dans Firestore (solution de secours), rien n'est perdu.
+// Jeton de connexion Firebase de la personne connectée : le relais le vérifie (rôle dans la
+// collection "roles") avant d'accepter un dépôt ou une suppression.
+async function jetonConnexion(){
+  try{ return window._auth&&window._auth.currentUser?await window._auth.currentUser.getIdToken():''; }
+  catch(e){ return ''; }
+}
 async function supprimerFichierDrive(fileId){
   if(!fileId) return;
   try{
     await fetch(APPS_SCRIPT_PHOTOS_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify({action:'delete',fileId:fileId})
+      body:JSON.stringify({action:'delete',fileId:fileId,idToken:await jetonConnexion()})
     });
   }catch(e){ console.log('Erreur suppression Drive (le fichier restera dans le dossier) :',e.message); }
 }
@@ -5719,7 +6007,7 @@ async function envoyerVersDrive(dataUrl,filename){
     const resp=await fetch(APPS_SCRIPT_PHOTOS_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'}, // évite une requête OPTIONS que le relais ne gère pas
-      body:JSON.stringify({base64:dataUrl,mimeType:'image/jpeg',filename:filename||('fkma_'+Date.now())})
+      body:JSON.stringify({base64:dataUrl,mimeType:'image/jpeg',filename:filename||('fkma_'+Date.now()),idToken:await jetonConnexion()})
     });
     const json=await resp.json();
     return json&&json.ok?json:null;
@@ -6202,6 +6490,58 @@ function initCorrectionAnjDate(){
     majBannerCorrectionAnj();
   });
 }
+
+
+// ── SÉPARATEUR DE MILLIERS DANS LES CHAMPS DE MONTANT ─────────
+// Les champs marqués data-montant affichent « 1 250 000 » pendant la saisie.
+// Le reste du code lit toujours .value : on lui renvoie le nombre sans espaces
+// (« 1250000 »), donc aucun calcul n'est changé.
+(function(){
+  const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  const SEP='\u00a0';
+  function brut(s,neg){
+    s=String(s==null?'':s);
+    const moins=neg&&/^\s*-/.test(s);
+    const d=s.replace(/\D/g,'').replace(/^0+(?=\d)/,'');
+    return (moins?'-':'')+d;
+  }
+  function joli(r){
+    const moins=r.charAt(0)==='-', d=moins?r.slice(1):r;
+    return (moins?'-':'')+d.replace(/\B(?=(\d{3})+(?!\d))/g,SEP);
+  }
+  function equiper(el){
+    if(el._fkMontant) return; el._fkMontant=true;
+    // Négatif autorisé seulement s'il n'y a pas de minimum à 0 (ex. solde du relevé)
+    const neg=!(el.hasAttribute('min')&&parseFloat(el.getAttribute('min'))>=0);
+    const v0=desc.get.call(el);
+    el.type='text'; el.setAttribute('inputmode','numeric'); el.setAttribute('autocomplete','off');
+    el.classList.add('champ-montant');
+    Object.defineProperty(el,'value',{configurable:true,
+      get:function(){ return brut(desc.get.call(this),neg); },
+      set:function(v){ desc.set.call(this,joli(brut(v,neg))); }
+    });
+    desc.set.call(el,joli(brut(v0,neg)));
+    // Reformate pendant la frappe en gardant le curseur au même chiffre
+    el.addEventListener('input',function(){
+      const s=desc.get.call(el), pos=el.selectionStart==null?s.length:el.selectionStart;
+      const avant=s.slice(0,pos).replace(/[^\d-]/g,'').length;
+      const f=joli(brut(s,neg));
+      if(f===s) return;
+      desc.set.call(el,f);
+      let i=0,c=0; while(i<f.length&&c<avant){ if(/[\d-]/.test(f[i])) c++; i++; }
+      try{ el.setSelectionRange(i,i); }catch(e){}
+    },true);
+  }
+  function equiperTout(racine){
+    if(racine.matches&&racine.matches('input[data-montant]')) equiper(racine);
+    if(racine.querySelectorAll) racine.querySelectorAll('input[data-montant]').forEach(equiper);
+  }
+  equiperTout(document);
+  // Champs créés plus tard (offrandes Raki-pisaorana, lignes de répartition…)
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1) equiperTout(n); }); });
+  }).observe(document.body,{childList:true,subtree:true});
+})();
 
 peuplerChoix();
 initCorrectionAnjDate();
