@@ -2441,10 +2441,25 @@ function initAuth(){
     if(user){
       currentUser = user;
       const email=(user.email||'').toLowerCase();
-      // 1) Tout de suite, avec la copie de l'appareil (marche hors-ligne)
-      appliquerProfil(cfgUtilisateur(email, lireCache('fkma_role_'+email, null)));
+      // 1) Tout de suite, avec le rôle gardé sur l'appareil (marche hors-ligne).
+      //    S'il n'y en a pas encore (première connexion sur cet appareil), on attend Firebase :
+      //    sans rôle connu, appliquerRole() déconnecterait la personne à tort.
+      const roleEnCache=lireCache('fkma_role_'+email, null);
+      currentRole=null;
+      if(roleEnCache) appliquerProfil(cfgUtilisateur(email, roleEnCache));
+      else{
+        const le=document.getElementById('login-err');
+        if(le){ le.style.color='var(--or)'; le.textContent='Vérification du compte…'; }
+      }
       // 2) Puis confirmation depuis Firebase : rôle officiel (collection roles), équipe, membres
       chargerProfilEtDonneesPrivees(email).then(function(role){
+        const le=document.getElementById('login-err'); if(le) le.textContent='';
+        // Firebase injoignable et aucun rôle en mémoire : on ne conclut pas « pas de rôle »
+        if(!role && window._roleErreur){
+          alert('Impossible de vérifier ton compte auprès de Firebase (connexion internet ?).'+'\n\n'+'Détail : '+window._roleErreur+'\n\n'+'Réessaie dans un instant.');
+          if(window._signOut && window._auth) window._signOut(window._auth);
+          return;
+        }
         const cfg=cfgUtilisateur(email, role);
         if(cfg.role!==currentRole) appliquerProfil(cfg); else majIdentite(cfg);
         if(typeof peuplerChoix==='function') peuplerChoix();
@@ -2869,8 +2884,9 @@ async function chargerProfilEtDonneesPrivees(email){
   let role=null;
   const db=window._db, fs=window._fs;
   if(db&&fs){
+    window._roleErreur=null;
     try{ const s=await fs.getDoc(fs.doc(db,'roles',email)); if(s.exists()) role=s.data().role||null; }
-    catch(e){ console.log('Rôle :',e.message); }
+    catch(e){ console.log('Rôle :',e.message); window._roleErreur=e.message||'erreur'; }
     try{
       const s=await fs.getDoc(fs.doc(db,'parametres','equipe'));
       if(s.exists()&&s.data().comptes){ ROLES_CONFIG=s.data().comptes; ecrireCache('fkma_equipe',ROLES_CONFIG); }
