@@ -2837,6 +2837,18 @@ function jsVal(v){return (typeof v==='number'&&isFinite(v))?String(v):jsArg(v);}
 // urlSure() : n'accepte que les liens http(s) et les images intégrées (data:image) — jamais javascript:
 function lienSur(u){u=String(u||'');return /^(https?:|data:image\/)/i.test(u)?u:'';}
 function urlSure(u){return esc(lienSur(u));}
+// Libellé complet d'une ligne budgétaire ou d'une nature d'opération : « C4.1 » → « C4.1 — Moissons "Les Béatitudes" ».
+// Pris dans les listes du formulaire (dépenses Fiangonana, opérations bancaires) ; sinon le code tel quel.
+function libelleRubrique(code){
+  if(!code) return '';
+  const sels=['vf-cat','ob-nature'];
+  for(let i=0;i<sels.length;i++){
+    const sel=document.getElementById(sels[i]); if(!sel) continue;
+    const o=Array.prototype.find.call(sel.options,function(x){return x.value===code;});
+    if(o&&o.value) return sels[i]==='ob-nature'?code+' — '+o.text:o.text;
+  }
+  return code;
+}
 function fmt(n){return Number(n||0).toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0');}
 function moisLabel(ym){if(!ym)return'—';const p=ym.split('-');return MOIS_FR[parseInt(p[1])-1]+' '+p[0];}
 
@@ -4226,7 +4238,7 @@ function afficherDepenses(livre){
   lEl.innerHTML=all.map(d=>`<div class="depense-item${correctionDep&&correctionDep.id===d.id?' en-cours':''}">
     <div class="depense-top">
       <span style="font-size:11px;color:var(--texte2)">${esc(d.date)}</span>
-      <span class="depense-cat">${esc(d.cat||'—')}</span>
+      <span class="depense-cat">${esc(libelleRubrique(d.cat)||'—')}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
       ${badgePieces(d.id,d.nbPieces)}
       <button onclick="chargerDepensePourCorrection(${jsVal(d.id)})" title="Modifier cette dépense" style="background:none;border:none;color:var(--bleu);cursor:pointer;font-size:15px">✏️</button>
@@ -4293,7 +4305,7 @@ function partagerWADepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);
   const total=all.reduce((a,d)=>a+d.montant,0);
   let m=`💸 *VOLA MIVAOKA — ${livre==='fiang'?'FIANGONANA':'ANJARAKO'}*\n━━━━━━━━━━━━━━━━━\n`;
-  all.slice(0,10).forEach(d=>{m+=`  ${d.date} | ${fmt(d.montant)} F | ${d.cat||'—'}${d.desc?' — '+d.desc:''}\n`;});
+  all.slice(0,10).forEach(d=>{m+=`  ${d.date} | ${fmt(d.montant)} F | ${libelleRubrique(d.cat)||'—'}${d.desc?' — '+d.desc:''}\n`;});
   m+=`━━━━━━━━━━━━━━━━━\n💰 *Total : ${fmt(total)} FCFA*\n_FKMA Abidjan_`;
   window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
@@ -4361,7 +4373,7 @@ function exporterExcelDepenses(livre){
   const all=load(SK_DEP).filter(d=>d.livre===livre);const wb=XLSX.utils.book_new();
   const rows=[['VOLA MIVAOKA — '+(livre==='fiang'?'FIANGONANA':'ANJARAKO')],[],
     ['Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
-  all.forEach(d=>rows.push([d.date,d.montant,d.page||'',d.piece||'',d.cat||'',d.desc||'',d.auteur||'']));
+  all.forEach(d=>rows.push([d.date,d.montant,d.page||'',d.piece||'',libelleRubrique(d.cat),d.desc||'',d.auteur||'']));
   rows.push([],[,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
@@ -5216,7 +5228,7 @@ function renderLivre(livre){
       +'<span class="edate">'+esc(e.date)+(e.page?' · P.'+esc(e.page):'')+(e.lettrage?' · '+esc(e.lettrage):'')+(e.numOp?' · <span style="color:var(--bleu);font-weight:600">'+esc(e.numOp)+'</span>':'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
-      +(e.rubrique?'<div class="erub">'+esc(e.rubrique)+'</div>':'')
+      +(e.rubrique?'<div class="erub">'+esc(libelleRubrique(e.rubrique))+'</div>':'')
       +(e.libelle?'<div style="font-size:12px;margin-bottom:2px">'+esc(e.libelle)+'</div>':'')
       +'<div class="emeta">'
       +'<span>'+(src==='banque'?'🏦 Banque':'💵 Caisse')+'</span>'
@@ -5654,7 +5666,7 @@ function buildSheetRakitra(piecesIndex){
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',e.rubrique||'',isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',libelleRubrique(e.rubrique),isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
@@ -5667,7 +5679,7 @@ function buildSheetBanqueRakitra(piecesIndex){
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',libelleRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
@@ -5694,7 +5706,7 @@ function buildSheetBanqueAnjarako(piecesIndex){
   (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.libelle||'',e.rubrique||'',isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
+    rows.push([e.numOp||'',e.date,e.libelle||'',libelleRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
