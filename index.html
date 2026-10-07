@@ -1171,6 +1171,12 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
   border-left:4px solid var(--or);background:#fff3d6;color:#6b4e00;font-size:12.5px;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.08);}
 .dep-correction-banner .acb-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
 .depense-item.en-cours{border-color:var(--or);background:#fff8e7;box-shadow:0 0 0 2px rgba(196,154,42,.25);}
+
+/* ── Soldes initiaux enregistrés ── */
+.soldes-init-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 8px;}
+.soldes-init-btn{width:auto;padding:7px 12px;margin:0;font-size:12px;}
+.soldes-init-info{font-size:11px;color:var(--vert);}
+input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1770,7 +1776,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  <div class="kpi kb"><div class="kpi-icon">📨</div><div class="kpi-val" id="kpi-anjarako">0 F</div><div class="kpi-lab">Total Anjarako</div></div>
  <div class="kpi ko"><div class="kpi-icon">🎁</div><div class="kpi-val" id="kpi-raki-pis">0 F</div><div class="kpi-lab">Raki-pisaorana</div></div>
  <div class="kpi kr"><div class="kpi-icon">💸</div><div class="kpi-val" id="kpi-depenses">0 F</div><div class="kpi-lab">Total Dépenses</div></div>
- <div class="kpi kc"><div class="kpi-icon">💰</div><div class="kpi-val" id="kpi-solde">0 F</div><div class="kpi-lab">Solde net</div></div>
+ <div class="kpi kc"><div class="kpi-icon">💰</div><div class="kpi-val" id="kpi-solde">0 F</div><div class="kpi-lab">Solde net</div><div class="kpi-lab" style="font-size:8.5px;text-transform:none;letter-spacing:0">hors Raki-pisaorana</div></div>
  <div class="kpi kp"><div class="kpi-icon">👥</div><div class="kpi-val" id="kpi-presences">0</div><div class="kpi-lab">Total présences</div></div>
  </div>
 
@@ -2015,6 +2021,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  <input type="number" data-montant id="fiang-init-banque" value="0" inputmode="numeric" oninput="renderFiang()">
  </div>
  </div>
+ <div class="soldes-init-actions"><button type="button" class="btn btn-gris soldes-init-btn" id="fiang-init-btn" onclick="enregistrerSoldesInit('fiang')">💾 Enregistrer les soldes initiaux</button><span class="soldes-init-info" id="fiang-init-info"></span></div>
  <div class="note" style="margin-bottom:0">💡 Ces montants correspondent au solde au 1er janvier 2026. À renseigner lors de la passation.</div>
  </div>
 
@@ -2049,6 +2056,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  <input type="number" data-montant id="anj-init-banque" value="0" inputmode="numeric" oninput="renderAnj()">
  </div>
  </div>
+ <div class="soldes-init-actions"><button type="button" class="btn btn-gris soldes-init-btn" id="anj-init-btn" onclick="enregistrerSoldesInit('anj')">💾 Enregistrer les soldes initiaux</button><span class="soldes-init-info" id="anj-init-info"></span></div>
  <div class="note" style="margin-bottom:0">💡 Solde au 1er janvier 2026 — à renseigner lors de la passation.</div>
  </div>
 
@@ -2082,6 +2090,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  <input type="number" data-montant id="k45-init-banque" value="0" inputmode="numeric" oninput="renderLivre('k45');renderSoldes('k45')">
  </div>
  </div>
+ <div class="soldes-init-actions"><button type="button" class="btn btn-gris soldes-init-btn" id="k45-init-btn" onclick="enregistrerSoldesInit('k45')">💾 Enregistrer les soldes initiaux</button><span class="soldes-init-info" id="k45-init-info"></span></div>
  <div class="note" style="margin-bottom:0">💡 Normalement 0 pour un événement qui démarre à zéro.</div>
  </div>
 
@@ -2592,7 +2601,7 @@ function showGestTab(tab, btn){
     const el=document.getElementById('tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
-  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');}
+  if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');chargerSoldesInit().then(function(){renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');});}
   if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();majBannerCorrectionAnj();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
   if(tab==='suivi') afficherSuiviAnj();
@@ -2803,6 +2812,17 @@ function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]');}catch{ret
 function save(k,d){localStorage.setItem(k,JSON.stringify(d));}
 // Séparateur de milliers : espace insécable de largeur normale (l'espace fine du format
 // français est presque invisible dans la police de l'appli : « 1250 000 »)
+// ── Sécurité de l'affichage (audit S4) ──
+// esc() : tout texte saisi (nom, libellé, commentaire…) passe par ici avant d'être inséré dans la page,
+// pour qu'un texte contenant du code (<script>, <img onerror=…>) s'affiche tel quel au lieu de s'exécuter.
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+// jsArg() : texte passé en argument d'un onclick="…" (chaîne JavaScript sûre, puis échappée pour l'attribut)
+function jsArg(s){return esc(JSON.stringify(String(s==null?'':s)));}
+// jsVal() : comme jsArg, mais un nombre reste un nombre (ex. n° de carte)
+function jsVal(v){return (typeof v==='number'&&isFinite(v))?String(v):jsArg(v);}
+// urlSure() : n'accepte que les liens http(s) et les images intégrées (data:image) — jamais javascript:
+function lienSur(u){u=String(u||'');return /^(https?:|data:image\/)/i.test(u)?u:'';}
+function urlSure(u){return esc(lienSur(u));}
 function fmt(n){return Number(n||0).toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0');}
 function moisLabel(ym){if(!ym)return'—';const p=ym.split('-');return MOIS_FR[parseInt(p[1])-1]+' '+p[0];}
 
@@ -3210,7 +3230,7 @@ function ajouterDiacre(val=''){
   nd++;const id=`diac_${nd}`;
   const div=document.createElement('div');div.style.position='relative';
   div.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--texte2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Diacre ${nd}</div>
-    <input type="text" id="${id}" value="${val}" placeholder="Nom…"
+    <input type="text" id="${id}" value="${esc(val)}" placeholder="Nom…"
       style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:8px 10px;font-size:14px;font-family:'Inter',sans-serif"
       oninput="showSug('${id}',this.value)" onblur="hideSug('${id}')">
     <div id="sug_${id}" style="position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--vert);border-radius:8px;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none"></div>`;
@@ -3221,7 +3241,7 @@ function showSug(id,val){
   if(!val){box.style.display='none';return;}
   const f=DIACRES_CONNUS.filter(n=>n.toLowerCase().includes(val.toLowerCase()));
   if(!f.length){box.style.display='none';return;}
-  box.innerHTML=f.map(n=>`<div style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gris1)" onmousedown="pickSug('${id}','${n}')">${n}</div>`).join('');
+  box.innerHTML=f.map(n=>`<div style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gris1)" onmousedown="pickSug('${id}',${jsArg(n)})">${esc(n)}</div>`).join('');
   box.style.display='block';
 }
 function hideSug(id){setTimeout(()=>{const b=document.getElementById('sug_'+id);if(b)b.style.display='none';},180);}
@@ -3240,10 +3260,10 @@ function rechercherCarte(val){
   const valLower=val.toLowerCase();
   const f=membres.filter(m=>String(m.num).startsWith(val)||(m.nom||'').toLowerCase().includes(valLower));
   if(!f.length){sug.style.display='none';prev.style.display='none';return;}
-  sug.innerHTML=f.slice(0,8).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarte(${m.num})"><strong>${m.num}</strong>${m.nom?' — '+m.nom:''}</div>`).join('');
+  sug.innerHTML=f.slice(0,8).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarte(${jsVal(m.num)})"><strong>${esc(m.num)}</strong>${m.nom?' — '+esc(m.nom):''}</div>`).join('');
   sug.style.display='block';
   const exact=membres.find(m=>String(m.num)===val||(m.nom||'').toLowerCase()===valLower);
-  if(exact){prev.style.display='block';prev.innerHTML=`✅ <strong>Carte n°${exact.num}</strong>${exact.nom?' — '+exact.nom:''}`;carteSelectionnee=exact.num;}
+  if(exact){prev.style.display='block';prev.innerHTML=`✅ <strong>Carte n°${esc(exact.num)}</strong>${exact.nom?' — '+esc(exact.nom):''}`;carteSelectionnee=exact.num;}
   else prev.style.display='none';
 }
 function choisirCarte(num){
@@ -3252,7 +3272,7 @@ function choisirCarte(num){
   document.getElementById('env-carte').value=m&&m.nom?num+' — '+m.nom:num;
   document.getElementById('carte-sug').style.display='none';
   const p=document.getElementById('carte-preview');
-  if(m){p.style.display='block';p.innerHTML=`✅ <strong>Carte n°${m.num}</strong>${m.nom?' — '+m.nom:''}`;}
+  if(m){p.style.display='block';p.innerHTML=`✅ <strong>Carte n°${esc(m.num)}</strong>${m.nom?' — '+esc(m.nom):''}`;}
 }
 function fermerSugCarte(){setTimeout(()=>{document.getElementById('carte-sug').style.display='none';},180);}
 
@@ -3282,9 +3302,9 @@ function afficherEnveloppesJour(){
   mettreAJourBannerAnj();
   if(!nb){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div>';return;}
   el.innerHTML=enveloppesJour.map((e,i)=>`<div class="env-item">
-    <div class="env-badge">${e.carte}</div>
-    <div style="flex:1"><div style="font-size:13px;font-weight:600">${e.nom||'Carte n°'+e.carte}</div>
-      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${moisLabel(e.mois)}</strong></div></div>
+    <div class="env-badge">${esc(e.carte)}</div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(e.nom||'Carte n°'+e.carte)}</div>
+      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${esc(moisLabel(e.mois))}</strong></div></div>
     <button class="env-del" onclick="supprimerEnveloppe(${i})">✕</button>
   </div>`).join('');
 }
@@ -3583,9 +3603,9 @@ function renderListeMembres(){
   document.getElementById('suivi-cnt-total').textContent=membres.length;
   if(!membres.length){el.innerHTML='<div class="vide">Aucun membre enregistré — ajoutez-les un par un ci-dessus, ou demandez à Claude un import groupé.</div>';return;}
   el.innerHTML=membres.map(function(m){
-    return '<div class="env-item"><div class="env-badge">'+m.num+'</div>'
-      +'<div style="flex:1;font-size:13px">'+(m.nom||'—')+'</div>'
-      +'<button class="env-del" onclick="supprimerMembreAnj('+m.num+')">✕</button></div>';
+    return '<div class="env-item"><div class="env-badge">'+esc(m.num)+'</div>'
+      +'<div style="flex:1;font-size:13px">'+esc(m.nom||'—')+'</div>'
+      +'<button class="env-del" onclick="supprimerMembreAnj('+jsVal(m.num)+')">✕</button></div>';
   }).join('');
 }
 
@@ -3751,10 +3771,10 @@ function renderSuiviPaiements(){
     return;
   }
   elP.innerHTML=payes.length?payes.map(function(m){
-    return '<div class="env-item"><div class="env-badge" style="background:var(--vert)">'+m.num+'</div><div style="flex:1;font-size:13px">'+m.nom+'</div></div>';
+    return '<div class="env-item"><div class="env-badge" style="background:var(--vert)">'+esc(m.num)+'</div><div style="flex:1;font-size:13px">'+esc(m.nom)+'</div></div>';
   }).join(''):'<div class="vide">Personne n\'a encore payé ce mois-ci.</div>';
   elN.innerHTML=nonPayes.length?nonPayes.map(function(m){
-    return '<div class="env-item"><div class="env-badge" style="background:var(--rouge)">'+m.num+'</div><div style="flex:1;font-size:13px">'+m.nom+'</div></div>';
+    return '<div class="env-item"><div class="env-badge" style="background:var(--rouge)">'+esc(m.num)+'</div><div style="flex:1;font-size:13px">'+esc(m.nom)+'</div></div>';
   }).join(''):'<div class="vide">Tout le monde a payé ! 🎉</div>';
 }
 
@@ -4097,16 +4117,16 @@ function afficherDepenses(livre){
   if(!all.length){lEl.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div>';return;}
   lEl.innerHTML=all.map(d=>`<div class="depense-item${correctionDep&&correctionDep.id===d.id?' en-cours':''}">
     <div class="depense-top">
-      <span style="font-size:11px;color:var(--texte2)">${d.date}</span>
-      <span class="depense-cat">${d.cat||'—'}</span>
+      <span style="font-size:11px;color:var(--texte2)">${esc(d.date)}</span>
+      <span class="depense-cat">${esc(d.cat||'—')}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
       ${badgePieces(d.id,d.nbPieces)}
-      <button onclick="chargerDepensePourCorrection(${d.id})" title="Modifier cette dépense" style="background:none;border:none;color:var(--bleu);cursor:pointer;font-size:15px">✏️</button>
-      <button onclick="supprimerDepense(${d.id})" title="Supprimer" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
+      <button onclick="chargerDepensePourCorrection(${jsVal(d.id)})" title="Modifier cette dépense" style="background:none;border:none;color:var(--bleu);cursor:pointer;font-size:15px">✏️</button>
+      <button onclick="supprimerDepense(${jsVal(d.id)})" title="Supprimer" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
     </div>
-        <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${d.page}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${d.piece}</span>`:''}</div>
-    ${d.desc?`<div style="font-size:12px;color:var(--texte2);margin-top:2px">${d.desc}</div>`:''}
-    ${d.auteur?`<div style="font-size:11px;color:var(--texte2)">Autorisé par : ${d.auteur}</div>`:''}
+        <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${esc(d.page)}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${esc(d.piece)}</span>`:''}</div>
+    ${d.desc?`<div style="font-size:12px;color:var(--texte2);margin-top:2px">${esc(d.desc)}</div>`:''}
+    ${d.auteur?`<div style="font-size:11px;color:var(--texte2)">Autorisé par : ${esc(d.auteur)}</div>`:''}
   </div>`).join('');
 }
 
@@ -4354,7 +4374,7 @@ async function peuplerHistSelect(){
     const hasR=rakDates.includes(d);
     const hasA=anjDates.includes(d);
     const label=d+(hasR?' 🙏':'')+(hasA?' 📨':'');
-    sel.innerHTML+='<option value="'+d+'">'+label+'</option>';
+    sel.innerHTML+='<option value="'+esc(d)+'">'+esc(label)+'</option>';
   });
 }
 
@@ -4462,13 +4482,9 @@ function renderDashboard(){
   const anj=load(SK_ANJ_H).filter(h=>h.date&&h.date.startsWith(yr));
   const dep=load(SK_DEP).filter(d=>d.date&&d.date.startsWith(yr));
   const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
-  const tR=rak.reduce((a,h)=>a+h.totalRakitra+(h.totalRP||0),0);
-  const tRP=rak.reduce((a,h)=>a+(h.totalRP||0),0);
-  const tRakiPis=rak.reduce((a,h)=>a+(h.totalRaki||0),0);
-  const tA=anj.reduce((a,h)=>a+(h.total||0),0);
-  const tD=dep.reduce((a,d)=>a+d.montant,0);
+  const T=totauxPeriode(rak,anj,dep);
+  const tR=T.rakitra+T.rp, tRakiPis=T.rakiPis, tA=T.anjarako, tD=T.depenses, solde=T.solde;
   const tP=cul.reduce((a,h)=>a+(h.presences||0),0);
-  const solde=tR+tA+tRakiPis-tD;
   document.getElementById('kpi-rakitra').textContent=fmt(tR)+' F';
   document.getElementById('kpi-anjarako').textContent=fmt(tA)+' F';
   document.getElementById('kpi-raki-pis').textContent=fmt(tRakiPis)+' F';
@@ -4489,11 +4505,8 @@ function renderDashFinances(){
   let tR=0,tRP=0,tA=0,tD=0;
   for(let m=0;m<12;m++){
     const ym=yr+'-'+String(m+1).padStart(2,'0');
-    const r=rak.filter(h=>h.date.startsWith(ym)).reduce((a,h)=>a+h.totalRakitra,0);
-    const rp=rak.filter(h=>h.date.startsWith(ym)).reduce((a,h)=>a+(h.totalRP||0),0);
-    const a=anj.filter(h=>h.date.startsWith(ym)).reduce((a,h)=>a+(h.total||0),0);
-    const d=dep.filter(x=>x.date.startsWith(ym)).reduce((a,x)=>a+x.montant,0);
-    const solde=(r+rp+a)-d;tR+=r;tRP+=rp;tA+=a;tD+=d;
+    const Tm=totauxPeriode(rak.filter(h=>h.date.startsWith(ym)),anj.filter(h=>h.date.startsWith(ym)),dep.filter(x=>x.date.startsWith(ym)));
+    const r=Tm.rakitra,rp=Tm.rp,a=Tm.anjarako,d=Tm.depenses,solde=Tm.solde;tR+=r;tRP+=rp;tA+=a;tD+=d;
     const tr=document.createElement('tr');
     if(!r&&!a&&!d)tr.style.opacity='.35';
     tr.innerHTML=`<td><strong>${MOIS_FR[m].substring(0,3)}</strong></td>
@@ -4506,7 +4519,7 @@ function renderDashFinances(){
   document.getElementById('dash-tfoot-fin').innerHTML=
     `<td>TOTAL</td><td>${fmt(tR)} F</td><td>${fmt(tRP)} F</td><td>${fmt(tA)} F</td>
      <td style="color:var(--rouge)">-${fmt(tD)} F</td>
-     <td style="color:${(tR+tA-tD)>=0?'var(--vert)':'var(--rouge)'}">${fmt(tR+tA-tD)} F</td>`;
+     <td style="color:${(tR+tRP+tA-tD)>=0?'var(--vert)':'var(--rouge)'}">${fmt(tR+tRP+tA-tD)} F</td>`;
 }
 
 function renderDashPresences(){
@@ -4540,10 +4553,10 @@ function renderDashCultes(){
   cul.forEach(h=>{
     const r=rak.find(x=>x.date===h.date);
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="white-space:nowrap">${h.date}</td>
-      <td style="font-size:11px">${(h.type||'—').substring(0,20)}</td>
-      <td style="font-size:11px">${h.mitory||'—'}</td>
-      <td>${h.presences>0?h.presences+(h.isFandraisana?' 🍷':''):'—'}</td>
+    tr.innerHTML=`<td style="white-space:nowrap">${esc(h.date)}</td>
+      <td style="font-size:11px">${esc((h.type||'—').substring(0,20))}</td>
+      <td style="font-size:11px">${esc(h.mitory||'—')}</td>
+      <td>${h.presences>0?esc(h.presences)+(h.isFandraisana?' 🍷':''):'—'}</td>
       <td>${r?fmt(r.total)+' F':'—'}</td>`;
     tbody.appendChild(tr);
   });
@@ -4578,14 +4591,13 @@ function exporterDashWA(){
   const anj=load(SK_ANJ_H).filter(h=>h.date&&h.date.startsWith(yr));
   const dep=load(SK_DEP).filter(d=>d.date&&d.date.startsWith(yr));
   const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
-  const tR=rak.reduce((a,h)=>a+h.totalRakitra+(h.totalRP||0),0);
-  const tA=anj.reduce((a,h)=>a+(h.total||0),0);
-  const tD=dep.reduce((a,d)=>a+d.montant,0);
+  const T=totauxPeriode(rak,anj,dep);
+  const tR=T.rakitra+T.rp, tA=T.anjarako, tD=T.depenses;
   const tP=cul.reduce((a,h)=>a+(h.presences||0),0);
   let m=`✝️ *BILAN FKMA ABIDJAN — ${dashAnnee}*\n━━━━━━━━━━━━━━━━━\n`;
   m+=`📅 ${cul.length} cultes | 👥 ${fmt(tP)} présences\n`;
   m+=`🙏 Rakitra : *${fmt(tR)} FCFA*\n📨 Anjarako : *${fmt(tA)} FCFA*\n💸 Dépenses : *${fmt(tD)} FCFA*\n`;
-  m+=`━━━━━━━━━━━━━━━━━\n💰 *Solde net : ${fmt(tR+tA-tD)} FCFA*\n\n_FKMA Abidjan — Côte d'Ivoire_`;
+  m+=`━━━━━━━━━━━━━━━━━\n💰 *Solde net : ${fmt(T.solde)} FCFA*\n\n_FKMA Abidjan — Côte d'Ivoire_`;
   window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
 }
 
@@ -4608,13 +4620,13 @@ function showACList(lst, q, onPick){
   let html = '';
   matches.forEach(m=>{
     const idx = m.nom.toLowerCase().indexOf(ql);
-    const hl  = m.nom.slice(0,idx)+'<strong>'+m.nom.slice(idx,idx+ql.length)+'</strong>'+m.nom.slice(idx+ql.length);
+    const hl  = esc(m.nom.slice(0,idx))+'<strong>'+esc(m.nom.slice(idx,idx+ql.length))+'</strong>'+esc(m.nom.slice(idx+ql.length));
     const bm  = m.mpandray ? '<span class="acibm">Mpandray</span>' : '';
-    html += `<div class="aci" data-nom="${m.nom}"><span class="aciname">${hl}</span><span class="acisub">${m.genre}</span>${bm}</div>`;
+    html += `<div class="aci" data-nom="${esc(m.nom)}"><span class="aciname">${hl}</span><span class="acisub">${esc(m.genre)}</span>${bm}</div>`;
   });
   const exact = MEMBRES.find(m=>m.nom.toLowerCase()===ql);
   if(!exact && q.length>=2)
-    html += `<div class="aci" data-nom="${q}"><span class="aciname">${q}</span><span class="acibn">+ Nouveau</span></div>`;
+    html += `<div class="aci" data-nom="${esc(q)}"><span class="aciname">${esc(q)}</span><span class="acibn">+ Nouveau</span></div>`;
   if(!html){ lst.style.display='none'; return; }
   lst.innerHTML = html;
   lst.style.display = 'block';
@@ -4674,7 +4686,7 @@ function renderTags(){
   const acDiv=wrap.querySelector('.acw');
   tagsListe.forEach(nom=>{
     const tag=document.createElement('span'); tag.className='tg';
-    tag.innerHTML=`${nom}<button onclick="supprimerTag('${nom.replace(/'/g,"\'")}')">×</button>`;
+    tag.innerHTML=`${esc(nom)}<button onclick="supprimerTag(${jsArg(nom)})">×</button>`;
     wrap.insertBefore(tag,acDiv);
   });
 }
@@ -4754,19 +4766,19 @@ function majApercu(){
   elT.textContent=(type||'—')+(lieu?' · '+lieu:'');
 
   let html='';
-  if(pres) html+=`<div class="apr"><span class="apl">Présences</span><span class="apv">${pres}${isFandr&&mpand?' · '+mpand+' Mpandray':''}</span></div>`;
-  if(mpit)   html+=`<div class="apr"><span class="apl">Mpitarika</span><span class="apv">${mpit}</span></div>`;
-  if(mitory) html+=`<div class="apr"><span class="apl">Mitory teny</span><span class="apv">${mitory}</span></div>`;
-  if(tagsListe.length) html+=`<div class="apr"><span class="apl">Mpamaky</span><span class="apv">${tagsListe.join(' · ')}</span></div>`;
-  if(sermon) html+=`<div class="apr"><span class="apl">Sermon</span><span class="apv">${sermon}${ref?' — '+ref:''}</span></div>`;
-  if(theme)  html+=`<div class="apr"><span class="apl">Thème</span><span class="apv">${theme}</span></div>`;
-  if(photoNum) html+=`<div class="apr"><span class="apl">📷 Photo</span><span class="apv">${photoNum}</span></div>`;
+  if(pres) html+=`<div class="apr"><span class="apl">Présences</span><span class="apv">${esc(pres)}${isFandr&&mpand?' · '+esc(mpand)+' Mpandray':''}</span></div>`;
+  if(mpit)   html+=`<div class="apr"><span class="apl">Mpitarika</span><span class="apv">${esc(mpit)}</span></div>`;
+  if(mitory) html+=`<div class="apr"><span class="apl">Mitory teny</span><span class="apv">${esc(mitory)}</span></div>`;
+  if(tagsListe.length) html+=`<div class="apr"><span class="apl">Mpamaky</span><span class="apv">${esc(tagsListe.join(' · '))}</span></div>`;
+  if(sermon) html+=`<div class="apr"><span class="apl">Sermon</span><span class="apv">${esc(sermon)}${ref?' — '+esc(ref):''}</span></div>`;
+  if(theme)  html+=`<div class="apr"><span class="apl">Thème</span><span class="apv">${esc(theme)}</span></div>`;
+  if(photoNum) html+=`<div class="apr"><span class="apl">📷 Photo</span><span class="apv">${esc(photoNum)}</span></div>`;
 
   document.querySelectorAll('[id$="-type"].fs').forEach(sel=>{
     const base=sel.id.replace('-type','');
     const noms=document.getElementById(base+'-noms')?.value||'';
     const lbl =sel.options[sel.selectedIndex]?.text||'';
-    if(lbl) html+=`<div class="apf">⭐ ${lbl}${noms?' — '+noms:''}</div>`;
+    if(lbl) html+=`<div class="apf">⭐ ${esc(lbl)}${noms?' — '+esc(noms):''}</div>`;
   });
   elB.innerHTML=html||'<div class="apvide">Continue à remplir ✍️</div>';
 }
@@ -4882,17 +4894,17 @@ async function chargerHistorique(){
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div style="flex:1;min-width:0">
             <div class="hist-date">Page ${n--} · ${dateStr}</div>
-            <div class="hist-type">${d.type||'—'} · ${d.lieu||'—'}</div>
+            <div class="hist-type">${esc(d.type||'—')} · ${esc(d.lieu||'—')}</div>
             <div class="hist-meta">
-              ${d.presences?`<span>👥 ${d.presences}</span>`:''}
-              ${d.isFandraisana&&d.mpandray?`<span>🍷 ${d.mpandray} Mpandray</span>`:''}
-              ${d.mitory?`<span>📖 ${d.mitory}</span>`:''}
-              ${d.photoNum?`<span>📷 ${d.photoNum}</span>`:''}
+              ${d.presences?`<span>👥 ${esc(d.presences)}</span>`:''}
+              ${d.isFandraisana&&d.mpandray?`<span>🍷 ${esc(d.mpandray)} Mpandray</span>`:''}
+              ${d.mitory?`<span>📖 ${esc(d.mitory)}</span>`:''}
+              ${d.photoNum?`<span>📷 ${esc(d.photoNum)}</span>`:''}
               ${d.faits?.length?`<span>⭐ ${d.faits.length} fait(s)</span>`:''}
               ${badgePieces(docId,d.nbPieces)}
             </div>
           </div>
-          <button onclick="modifierFiche('${docId}')"
+          <button onclick="modifierFiche(${jsArg(docId)})"
             style="background:var(--bleu);color:white;border:none;border-radius:8px;
               padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">
             ✏️ Modifier
@@ -4902,7 +4914,7 @@ async function chargerHistorique(){
     });
     liste.innerHTML=html;
   } catch(err){
-    liste.innerHTML='<div class="apvide" style="color:var(--rouge)">Erreur : '+err.message+'</div>';
+    liste.innerHTML='<div class="apvide" style="color:var(--rouge)">Erreur : '+esc(err.message)+'</div>';
   }
 }
 
@@ -5050,6 +5062,7 @@ function showGLTab(tab,btn){
 async function chargerTout(){
   const db=window._db,fs=window._fs;
   if(!db)return;
+  await chargerSoldesInit();
   for(const livre of ['fiang','anj','k45']){
     try{
       const snap=await fs.getDocs(fs.collection(db,'grandlivre_'+livre));
@@ -5090,22 +5103,22 @@ function renderLivre(livre){
     const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
-      +'<span class="edate">'+e.date+(e.page?' · P.'+e.page:'')+(e.lettrage?' · '+e.lettrage:'')+(e.numOp?' · <span style="color:var(--bleu);font-weight:600">'+e.numOp+'</span>':'')+'</span>'
+      +'<span class="edate">'+esc(e.date)+(e.page?' · P.'+esc(e.page):'')+(e.lettrage?' · '+esc(e.lettrage):'')+(e.numOp?' · <span style="color:var(--bleu);font-weight:600">'+esc(e.numOp)+'</span>':'')+'</span>'
       +'<span class="emnt '+(isE?'e':'s')+'">'+(isE?'+':'-')+fmt(mnt)+' F</span>'
       +'</div>'
-      +(e.rubrique?'<div class="erub">'+e.rubrique+'</div>':'')
-      +(e.libelle?'<div style="font-size:12px;margin-bottom:2px">'+e.libelle+'</div>':'')
+      +(e.rubrique?'<div class="erub">'+esc(e.rubrique)+'</div>':'')
+      +(e.libelle?'<div style="font-size:12px;margin-bottom:2px">'+esc(e.libelle)+'</div>':'')
       +'<div class="emeta">'
       +'<span>'+(src==='banque'?'🏦 Banque':'💵 Caisse')+'</span>'
-      +(e.piece?'<span>🔢 '+e.piece+'</span>':'')
-      +(e.comment?'<span>💬 '+e.comment+'</span>':'')
+      +(e.piece?'<span>🔢 '+esc(e.piece)+'</span>':'')
+      +(e.comment?'<span>💬 '+esc(e.comment)+'</span>':'')
       +(e.horsbudget?'<span style="color:var(--orange)">ℹ️ Hors budget</span>':'')
-      +(e.createdByNom?'<span style="color:#aaa;font-size:10px">✍️ '+e.createdByNom+'</span>':'')
-      +(e.modifiedByNom?'<span style="color:#aaa;font-size:10px"> · ✏️ '+e.modifiedByNom+' ('+((e.modifiedAt||'').slice(0,10))+')</span>':'')
+      +(e.createdByNom?'<span style="color:#aaa;font-size:10px">✍️ '+esc(e.createdByNom)+'</span>':'')
+      +(e.modifiedByNom?'<span style="color:#aaa;font-size:10px"> · ✏️ '+esc(e.modifiedByNom)+' ('+esc((e.modifiedAt||'').slice(0,10))+')</span>':'')
       +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
       +'</div>'
       +((e.depenseId||e.transfert||e.opbancaire)?'<div style="margin-top:6px">'+badgePieces(e.depenseId||e.opId,e.nbPieces)+'</div>':'')
-      +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
+      +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).reverse().join('');
 }
@@ -5287,7 +5300,6 @@ function renderOpsListe(){
   const el=document.getElementById('ops-liste'); if(!el) return;
   const ops=listerOperations();
   if(!ops.length){el.innerHTML='<div class="vide">Aucune opération enregistrée.</div>';return;}
-  const esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
   el.innerHTML=ops.slice(0,opsListeMax).map(function(o,i){
     const e=o.e;
     const enCours=correctionOp&&correctionOp.livre===o.livre&&correctionOp.ids.join()===o.ids.join();
@@ -6242,7 +6254,7 @@ function renderPiecesEnAttente(){
   document.querySelectorAll('#dep-photos-attente').forEach(function(el){
     el.innerHTML=piecesEnAttente.map(function(src,i){
       return '<div style="position:relative;display:inline-block;margin-right:6px">'
-        +'<img src="'+src+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--gris2)">'
+        +'<img src="'+urlSure(src)+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--gris2)">'
         +'<button type="button" onclick="retirerPieceAttente('+i+')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1">×</button>'
         +'</div>';
     }).join('');
@@ -6326,7 +6338,7 @@ async function misAJourCompteurPieces(opId){
 function badgePieces(opId,nbPieces){
   if(!peutVoirPieces()) return '';
   const n=nbPieces||0;
-  return '<button type="button" onclick="ouvrirPieces(\''+opId+'\')" style="background:none;border:1px solid var(--gris2);border-radius:5px;color:var(--texte2);font-size:11px;cursor:pointer;padding:2px 8px">📎'+(n>0?(' '+n):'')+'</button>';
+  return '<button type="button" onclick="ouvrirPieces('+jsArg(opId)+')" style="background:none;border:1px solid var(--gris2);border-radius:5px;color:var(--texte2);font-size:11px;cursor:pointer;padding:2px 8px">📎'+(n>0?(' '+n):'')+'</button>';
 }
 
 async function ouvrirPieces(opId){
@@ -6356,20 +6368,20 @@ async function rafraichirModalPieces(){
         // Le bouton "Drive" pointe vers la page de visionnage (confirmée fiable), pas vers la
         // miniature directe : si la miniature échoue à charger, on garde toujours un moyen sûr de voir la photo.
         const lienOuverture=d.driveUrl||d.driveImgUrl;
-        const lien=lienOuverture?'<a href="'+lienOuverture+'" target="_blank" style="position:absolute;bottom:-6px;left:-6px;background:#1a73e8;color:#fff;border-radius:4px;font-size:9px;padding:2px 4px;text-decoration:none">Drive</a>':'';
+        const lien=urlSure(lienOuverture)?'<a href="'+urlSure(lienOuverture)+'" target="_blank" rel="noopener" style="position:absolute;bottom:-6px;left:-6px;background:#1a73e8;color:#fff;border-radius:4px;font-size:9px;padding:2px 4px;text-decoration:none">Drive</a>':'';
         // Repli propre si la miniature ne charge pas (au lieu d'une icône d'image cassée)
         const onerr=d.driveUrl?" onerror=\"this.style.display='none';this.nextElementSibling.style.display='flex'\"":'';
-        const secours=d.driveUrl?'<div style="display:none;width:90px;height:90px;border-radius:8px;border:1px solid var(--gris2);align-items:center;justify-content:center;font-size:26px;background:var(--gris1)" onclick="window.open(\''+d.driveUrl+'\')">📄</div>':'';
+        const secours=d.driveUrl?'<div style="display:none;width:90px;height:90px;border-radius:8px;border:1px solid var(--gris2);align-items:center;justify-content:center;font-size:26px;background:var(--gris1)" onclick="window.open('+jsArg(lienSur(d.driveUrl))+')">📄</div>':'';
         return '<div style="position:relative;display:inline-block;margin:4px">'
-          +'<img src="'+src+'"'+onerr+' style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
+          +'<img src="'+urlSure(src)+'"'+onerr+' style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
           +secours
           +lien
-          +(peutModifierPieces()?'<button type="button" onclick="supprimerPiece(\''+d.id+'\',\''+(d.driveFileId||'')+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>':'')
+          +(peutModifierPieces()?'<button type="button" onclick="supprimerPiece('+jsArg(d.id)+','+jsArg(d.driveFileId||'')+')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>':'')
           +'</div>';
       }).join('');
     }
     const cnt=document.getElementById('pieces-count'); if(cnt) cnt.textContent=docs.length;
-  }catch(e){ document.getElementById('pieces-liste').innerHTML='<div class="vide">Erreur : '+e.message+'</div>'; }
+  }catch(e){ document.getElementById('pieces-liste').innerHTML='<div class="vide">Erreur : '+esc(e.message)+'</div>'; }
 }
 
 async function ajouterPieceModal(input){
@@ -6613,6 +6625,81 @@ function initCorrectionAnjDate(){
   });
 }
 
+
+// ── SOLDES INITIAUX (audit L4) ────────────────────────────────
+// Enregistrés dans Firestore (parametres/soldes_initiaux) pour ne plus revenir à 0 à chaque
+// chargement. Une copie locale sert de secours hors-ligne. Modifiables par le secrétaire et
+// le président des diacres uniquement (contrôlé aussi par les règles Firestore).
+const SK_SOLDES_INIT='fkma_soldes_initiaux';
+const LIVRES_SOLDES=['fiang','anj','k45'];
+function peutModifierSoldesInit(){ const r=roleConnecte(); return r==='secretaire'||r==='diacre'; }
+function appliquerSoldesInit(s){
+  if(!s) return;
+  LIVRES_SOLDES.forEach(function(l){
+    ['caisse','banque'].forEach(function(k){
+      const el=document.getElementById(l+'-init-'+k);
+      if(el&&s[l]&&s[l][k]!=null) el.value=s[l][k];
+    });
+    const info=document.getElementById(l+'-init-info');
+    if(info&&s[l]&&s[l].modifiedAt) info.textContent='✅ Enregistré le '+fmtDateFr(String(s[l].modifiedAt).slice(0,10))+(s[l].modifiedByNom?' par '+s[l].modifiedByNom:'');
+  });
+}
+function verrouillerSoldesInit(){
+  const ok=peutModifierSoldesInit();
+  LIVRES_SOLDES.forEach(function(l){
+    ['caisse','banque'].forEach(function(k){ const el=document.getElementById(l+'-init-'+k); if(el) el.readOnly=!ok; });
+    const b=document.getElementById(l+'-init-btn'); if(b) b.style.display=ok?'':'none';
+  });
+}
+let _soldesInitCharges=false;
+async function chargerSoldesInit(forcer){
+  verrouillerSoldesInit();
+  let s=null; try{ s=JSON.parse(localStorage.getItem(SK_SOLDES_INIT)||'null'); }catch(e){}
+  appliquerSoldesInit(s);
+  if(_soldesInitCharges&&!forcer) return;
+  if(!window._db||!window._fs) return;
+  try{
+    const snap=await window._fs.getDoc(window._fs.doc(window._db,'parametres','soldes_initiaux'));
+    if(snap.exists()){
+      s=snap.data();
+      try{ localStorage.setItem(SK_SOLDES_INIT,JSON.stringify(s)); }catch(e){}
+      appliquerSoldesInit(s);
+    }
+    _soldesInitCharges=true;
+  }catch(e){ console.log('Soldes initiaux :',e.message); }
+}
+async function enregistrerSoldesInit(livre){
+  if(!peutModifierSoldesInit()){ alert('Seuls le secrétaire et le président des diacres peuvent modifier les soldes initiaux.'); return; }
+  if(!window._db||!window._fs){ alert('Firebase non connecté : les soldes initiaux n\'ont pas été enregistrés.'); return; }
+  const caisse=parseInt(document.getElementById(livre+'-init-caisse').value)||0;
+  const banque=parseInt(document.getElementById(livre+'-init-banque').value)||0;
+  const nomLivre={fiang:'Fiangonana',anj:'Anjarako',k45:'K45'}[livre];
+  if(!confirm('Enregistrer les soldes initiaux '+nomLivre+' ?\n\nCaisse : '+fmt(caisse)+' F\nBanque : '+fmt(banque)+' F\n\nTous les soldes, le rapprochement et les exports en dépendent.')) return;
+  const email=emailConnecte();
+  const val={caisse:caisse,banque:banque,modifiedBy:email,modifiedByNom:(ROLES_CONFIG[email]||{}).nom||email,modifiedAt:new Date().toISOString()};
+  try{
+    await window._fs.setDoc(window._fs.doc(window._db,'parametres','soldes_initiaux'),{[livre]:val},{merge:true});
+    let s={}; try{ s=JSON.parse(localStorage.getItem(SK_SOLDES_INIT)||'{}')||{}; }catch(e){}
+    s[livre]=val; try{ localStorage.setItem(SK_SOLDES_INIT,JSON.stringify(s)); }catch(e){}
+    appliquerSoldesInit(s);
+    renderLivre(livre); renderSoldes(livre); renderSynth();
+    alert('✅ Soldes initiaux '+nomLivre+' enregistrés.');
+  }catch(e){ alert('Erreur : '+e.message); }
+}
+
+// ── SOLDE NET (audit L5) ──────────────────────────────────────
+// UNE seule définition, utilisée par la carte du tableau de bord, le tableau mensuel et le
+// message WhatsApp : Rakitra + Raki-pandraisana + Anjarako − Dépenses (Vola mivoaka).
+// Le Raki-pisaorana est affiché à part : il est en grande partie reversé (répartition C7.1).
+function totauxPeriode(rak,anj,dep){
+  const rakitra=rak.reduce(function(a,h){return a+(h.totalRakitra||0);},0);
+  const rp=rak.reduce(function(a,h){return a+(h.totalRP||0);},0);
+  const rakiPis=rak.reduce(function(a,h){return a+(h.totalRaki||0);},0);
+  const anjarako=anj.reduce(function(a,h){return a+(h.total||0);},0);
+  const depenses=dep.reduce(function(a,d){return a+(d.montant||0);},0);
+  return {rakitra:rakitra,rp:rp,rakiPis:rakiPis,anjarako:anjarako,depenses:depenses,
+          solde:rakitra+rp+anjarako-depenses};
+}
 
 // ── SÉPARATEUR DE MILLIERS DANS LES CHAMPS DE MONTANT ─────────
 // Les champs marqués data-montant affichent « 1 250 000 » pendant la saisie.
