@@ -1046,7 +1046,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   .main-tab{background:transparent;font-size:11.5px;padding:9px 2px;}
   .main-tab.actif{background:rgba(234,242,248,.9);border-radius:0;}
   .main-tab.actif .mt-ico{display:inline-block;animation:fkPop .45s var(--ressort);}
-  #anj-correction-banner,#ops-correction-banner{top:64px;}
+  #anj-correction-banner,#ops-correction-banner,.dep-correction-banner{top:64px;}
   .card{border-radius:12px;}
   .btn{min-height:46px;}
   .total-montant{font-size:28px;}
@@ -1165,6 +1165,12 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
 .op-meta{font-size:11px;color:var(--texte2);margin-top:3px;}
 .op-charger{width:auto;padding:6px 12px;margin:8px 0 0;font-size:12px;}
 @media (min-width:900px){ #gl-tab-ops > #ops-correction-banner, #gl-tab-ops > #ops-liste-card{grid-column:1/-1;} }
+
+/* ── Vola mivoaka : correction d'une dépense ── */
+.dep-correction-banner{display:none;position:sticky;top:0;z-index:20;margin-bottom:12px;padding:10px 12px;border-radius:9px;
+  border-left:4px solid var(--or);background:#fff3d6;color:#6b4e00;font-size:12.5px;line-height:1.45;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.dep-correction-banner .acb-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+.depense-item.en-cours{border-color:var(--or);background:#fff8e7;box-shadow:0 0 0 2px rgba(196,154,42,.25);}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1516,8 +1522,9 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
 
  <!-- LIVRE FIANGONANA -->
  <div id="vola-fiang">
- <div class="card">
- <div class="card-titre" style="color:var(--vert)">➕ Nouvelle dépense — Fiangonana</div>
+ <div class="card" id="vf-card">
+ <div class="card-titre" style="color:var(--vert)" id="vf-titre">➕ Nouvelle dépense — Fiangonana</div>
+ <aside class="dep-correction-banner" id="vf-correction-banner"></aside>
  <div class="grid2" style="margin-bottom:9px">
  <div class="champ"><label>📅 Date</label><input type="date" id="vf-date"></div>
  <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="vf-montant" min="0" placeholder="0" inputmode="numeric"></div>
@@ -1590,7 +1597,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  </div>
  <div id="dep-photos-attente" style="margin-top:6px"></div>
  </div>
- <button class="btn btn-vert" onclick="ajouterDepense('fiang')"><span>➕</span> Enregistrer</button>
+ <button class="btn btn-vert" id="vf-btn-save" onclick="ajouterDepense('fiang')"><span>➕</span> Enregistrer</button>
  </div>
  <div class="total-banner rouge">
  <div class="total-label">Total dépenses Fiangonana</div>
@@ -1608,8 +1615,9 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
 
  <!-- LIVRE ANJARAKO -->
  <div id="vola-anj" style="display:none">
- <div class="card">
- <div class="card-titre" style="color:var(--orange)">➕ Nouvelle sortie — Anjarako</div>
+ <div class="card" id="va-card">
+ <div class="card-titre" style="color:var(--orange)" id="va-titre">➕ Nouvelle sortie — Anjarako</div>
+ <aside class="dep-correction-banner" id="va-correction-banner"></aside>
  <div class="grid2" style="margin-bottom:9px">
  <div class="champ"><label>📅 Date</label><input type="date" id="va-date"></div>
  <div class="champ"><label>💰 Montant (FCFA)</label><input type="number" data-montant id="va-montant" min="0" placeholder="0" inputmode="numeric"></div>
@@ -1646,7 +1654,7 @@ input.champ-montant{font-variant-numeric:tabular-nums;}
  </div>
  <div id="dep-photos-attente" style="margin-top:6px"></div>
  </div>
- <button class="btn btn-or" onclick="ajouterDepense('anj')"><span>➕</span> Enregistrer</button>
+ <button class="btn btn-or" id="va-btn-save" onclick="ajouterDepense('anj')"><span>➕</span> Enregistrer</button>
  </div>
  <div class="total-banner orange">
  <div class="total-label">Total sorties Anjarako</div>
@@ -3864,6 +3872,12 @@ async function ajouterDepense(livre){
   if(!montant){alert('Veuillez saisir un montant.');return;}
   if(!date){alert('Veuillez saisir une date.');return;}
 
+  // Dépense rechargée avec ✏️ : on met à jour l'existante au lieu d'en créer une nouvelle
+  if(correctionDep&&correctionDep.livre===livre){
+    await enregistrerCorrectionDepense(livre,{date,montant,cat,piece,page,desc,auteur,source});
+    return;
+  }
+
   // Piste d'audit
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
@@ -3907,8 +3921,115 @@ async function ajouterDepense(livre){
   afficherDepenses(livre);
   alert('✅ Dépense enregistrée !');
 }
+// ── CORRECTION D'UNE DÉPENSE ─────────────────────────────────
+// { livre:'fiang'|'anj', id:identifiant de la dépense } ou null
+var correctionDep=null;
+
+function chargerDepensePourCorrection(id){
+  const d=load(SK_DEP).find(function(x){return x.id===id;});
+  if(!d){alert('Dépense introuvable.');return;}
+  if(correctionDep&&correctionDep.id!==id&&!confirm('Une autre dépense est déjà en cours de correction. L\'abandonner et charger celle-ci ?')) return;
+  const livre=d.livre, p=livre==='fiang'?'vf':'va';
+  correctionDep={livre:livre,id:id};
+  const val=function(suffixe,v){const el=document.getElementById(p+'-'+suffixe);if(el)el.value=v==null?'':v;};
+  val('date',d.date); val('montant',d.montant); val('piece',d.piece); val('page',d.page); val('desc',d.desc);
+  // Ligne budgétaire (liste fixe) ou catégorie (liste partagée) ; même chose pour « Autorisé par »
+  const selCat=document.getElementById(p+'-cat');
+  if(selCat&&selCat.classList.contains('choix-liste')) setChoix(p+'-cat',d.cat||''); else val('cat',d.cat);
+  const selAut=document.getElementById(p+'-auteur');
+  if(selAut&&selAut.classList.contains('choix-liste')) setChoix(p+'-auteur',d.auteur||''); else val('auteur',d.auteur);
+  setSrcDep(livre,d.source||'caisse');
+  majModeCorrectionDep();
+  afficherDepenses(livre);
+  const carte=document.getElementById(p+'-card');
+  if(carte) carte.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function majModeCorrectionDep(){
+  ['fiang','anj'].forEach(function(livre){
+    const p=livre==='fiang'?'vf':'va';
+    const actif=!!correctionDep&&correctionDep.livre===livre;
+    const carte=document.getElementById(p+'-card');
+    const titre=document.getElementById(p+'-titre');
+    const btn=document.getElementById(p+'-btn-save');
+    const b=document.getElementById(p+'-correction-banner');
+    if(carte) carte.classList.toggle('en-correction',actif);
+    if(titre) titre.textContent=actif?'✏️ Correction d\'une dépense — '+(livre==='fiang'?'Fiangonana':'Anjarako')
+      :(livre==='fiang'?'➕ Nouvelle dépense — Fiangonana':'➕ Nouvelle sortie — Anjarako');
+    if(btn) btn.innerHTML=actif?'<span>💾</span> Enregistrer la correction':'<span>➕</span> Enregistrer';
+    if(!b) return;
+    if(!actif){b.style.display='none';b.innerHTML='';return;}
+    b.style.display='block';
+    b.innerHTML='<b>✏️ Correction en cours.</b> Rien n\'est modifié tant que tu n\'as pas cliqué sur « Enregistrer la correction ».'
+      +(livre==='fiang'?' La ligne du Grand Livre liée sera corrigée en même temps.':'')
+      +'<div class="acb-actions"><button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px" onclick="annulerCorrectionDep()">✖ Annuler la correction</button></div>';
+  });
+}
+
+function viderFormDepense(livre){
+  const p=livre==='fiang'?'vf':'va';
+  ['montant','piece','page','desc'].forEach(function(s){const el=document.getElementById(p+'-'+s);if(el)el.value='';});
+}
+
+function terminerCorrectionDep(){
+  const livre=correctionDep&&correctionDep.livre;
+  correctionDep=null;
+  majModeCorrectionDep();
+  if(livre) afficherDepenses(livre);
+}
+
+function annulerCorrectionDep(){
+  if(!correctionDep) return;
+  if(!confirm('Annuler la correction ? Les modifications non enregistrées seront perdues. La dépense enregistrée reste inchangée.')) return;
+  viderFormDepense(correctionDep.livre);
+  terminerCorrectionDep();
+}
+
+async function enregistrerCorrectionDepense(livre,v){
+  const id=correctionDep.id;
+  const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
+  const now=new Date().toISOString();
+  const maj={date:v.date,montant:v.montant,cat:v.cat,piece:v.piece,page:v.page,desc:v.desc,auteur:v.auteur,source:v.source,
+    modifiedBy:userEmail,modifiedByNom:userNom,modifiedAt:now};
+
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté : la correction n\'a pas été enregistrée.');return;}
+  try{
+    // 1. La dépense elle-même
+    const snap=await _fs.getDocs(_fs.collection(_db,'depenses'));
+    let trouvee=false;
+    for(const ds of snap.docs){ if(ds.data().id===id){ await _fs.updateDoc(ds.ref,maj); trouvee=true; break; } }
+    if(!trouvee){alert('Cette dépense n\'a pas été trouvée dans Firebase : correction annulée.');return;}
+    // 2. Sa copie au Grand Livre Fiangonana (même numéro d'opération)
+    let glCorrige=false;
+    if(livre==='fiang'){
+      const snapGL=await _fs.getDocs(_fs.collection(_db,'grandlivre_fiang'));
+      for(const ds of snapGL.docs){
+        if(ds.data().depenseId===id){
+          await _fs.updateDoc(ds.ref,{date:v.date,montant:v.montant,source:v.source,rubrique:v.cat||'DEP',
+            libelle:v.desc||v.cat||'Dépense',piece:v.piece,page:v.page,modifiedBy:userEmail,modifiedByNom:userNom,modifiedAt:now});
+          glCorrige=true; break;
+        }
+      }
+    }
+    // 3. Copie locale
+    const dep=load(SK_DEP);
+    const rec=dep.find(function(d){return d.id===id;});
+    if(rec){ Object.assign(rec,maj); dep.sort((a,b)=>b.date.localeCompare(a.date)); save(SK_DEP,dep); }
+
+    viderFormDepense(livre);
+    terminerCorrectionDep();
+    await sauverPiecesPourOp(id); // photos ajoutées pendant la correction
+    afficherDepenses(livre);
+    if(typeof chargerTout==='function') chargerTout();
+    alert('✅ Dépense corrigée !'+(livre==='fiang'&&!glCorrige?'\n\n⚠️ Aucune ligne liée au Grand Livre n\'a été trouvée : utilise « Rattraper les dépenses » si besoin.':''));
+  }catch(e){alert('Erreur, la correction n\'est peut-être pas complète : '+e.message);}
+}
+
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
+  if(correctionDep&&correctionDep.id===id){ viderFormDepense(correctionDep.livre); terminerCorrectionDep(); }
   const dep=load(SK_DEP);
   const rec=dep.find(d=>d.id===id);
   save(SK_DEP,dep.filter(d=>d.id!==id));
@@ -3974,13 +4095,14 @@ function afficherDepenses(livre){
   if(tEl)tEl.innerHTML=`${fmt(total)} <span>FCFA</span>`;
   if(!lEl)return;
   if(!all.length){lEl.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div>';return;}
-  lEl.innerHTML=all.map(d=>`<div class="depense-item">
+  lEl.innerHTML=all.map(d=>`<div class="depense-item${correctionDep&&correctionDep.id===d.id?' en-cours':''}">
     <div class="depense-top">
       <span style="font-size:11px;color:var(--texte2)">${d.date}</span>
       <span class="depense-cat">${d.cat||'—'}</span>
       <span class="depense-montant">-${fmt(d.montant)} F</span>
       ${badgePieces(d.id,d.nbPieces)}
-      <button onclick="supprimerDepense(${d.id})" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
+      <button onclick="chargerDepensePourCorrection(${d.id})" title="Modifier cette dépense" style="background:none;border:none;color:var(--bleu);cursor:pointer;font-size:15px">✏️</button>
+      <button onclick="supprimerDepense(${d.id})" title="Supprimer" style="background:none;border:none;color:var(--rouge);cursor:pointer;font-size:16px">✕</button>
     </div>
         <div style="font-size:11px;color:var(--texte2);margin-top:3px;display:flex;gap:10px">${d.page?`<span>📄 Page ${d.page}</span>`:''} ${d.piece?`<span style="color:var(--bleu);font-weight:600">🔢 ${d.piece}</span>`:''}</div>
     ${d.desc?`<div style="font-size:12px;color:var(--texte2);margin-top:2px">${d.desc}</div>`:''}
@@ -5053,7 +5175,7 @@ function setObES(es){
 
 // Correction d'une opération déjà enregistrée (même principe que la correction d'un dimanche Anjarako) :
 // { type:'tr'|'ob', livre, opId, ids:[identifiants Firestore des écritures concernées] } ou null
-let correctionOp=null;
+var correctionOp=null;
 const NOMS_LIVRES={fiang:'📗 Fiangonana',anj:'📘 Anjarako',k45:'📙 K45'};
 
 function emailConnecte(){
