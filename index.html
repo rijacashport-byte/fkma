@@ -525,12 +525,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── RÔLES ─────────────────────────────────────────────────── */
 /* Contrôleur : masquer Rakitra, Vola, Dashboard dans Gestion */
-body.role-controleur .nav-btn:nth-child(1),
-body.role-controleur .nav-btn:nth-child(3),
-body.role-controleur .nav-btn:nth-child(4),
-body.role-vomieran .nav-btn:nth-child(1),
-body.role-vomieran .nav-btn:nth-child(3),
-body.role-vomieran .nav-btn:nth-child(4) { display: none !important; }
+body.role-controleur #gnav-rakitra,
+body.role-controleur #gnav-vola,
+body.role-controleur #gnav-dashboard,
+body.role-controleur #gnav-suivi,
+body.role-vomieran #gnav-rakitra,
+body.role-vomieran #gnav-vola,
+body.role-vomieran #gnav-dashboard,
+body.role-vomieran #gnav-suivi { display: none !important; }
 /* Vomieran : lecture seule dans Grand Livre */
 body.role-vomieran #section-gl .btn,
 body.role-vomieran #section-gl input,
@@ -836,7 +838,7 @@ select.choix-liste{
   to{opacity:1;transform:translateY(0);}
 }
 #tab-rakitra, #tab-anjarako, #tab-vola, #tab-dashboard,
-#section-k45, #section-gl, #section-ops, #section-services,
+#section-k45, #section-gl, #gl-tab-ops, #tab-suivi, #section-services,
 .card{
   animation:fkmaFadeIn .25s ease;
 }
@@ -851,7 +853,7 @@ select.choix-liste{
 }
 @media (prefers-reduced-motion:reduce){
   #tab-rakitra, #tab-anjarako, #tab-vola, #tab-dashboard,
-  #section-k45, #section-gl, #section-ops, #section-services,
+  #section-k45, #section-gl, #gl-tab-ops, #tab-suivi, #section-services,
   .card{animation:none;}
   .btn, .main-tab, .nav-btn, .dtab, .sub-btn, .btn-add, .btn-deco{transition:none;}
 }
@@ -1156,7 +1158,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <button class="main-tab actif" id="mnav-gest" onclick="showMain('gest',this)"><span class="mt-ico">🙏</span><br>Gestion</button>
  <button class="main-tab" id="mnav-k45" onclick="showMain('k45',this)"><span class="mt-ico">📖</span><br>Journal</button>
  <button class="main-tab" id="mnav-gl" onclick="showMain('gl',this)"><span class="mt-ico">📒</span><br>Grand Livre</button>
- <button class="main-tab" id="mnav-ops" onclick="showMain('ops',this)" style="display:none"><span class="mt-ico">🏦</span><br>Opérations</button>
  <button class="main-tab" id="mnav-services" onclick="showMain('services',this)"><span class="mt-ico">🤝</span><br>Diacres</button>
 </div>
 
@@ -1177,6 +1178,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
  <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
  <button class="nav-btn" id="gnav-vola" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
+ <button class="nav-btn" id="gnav-suivi" onclick="showGestTab('suivi',this)" style="display:none">📋<br>Suivi</button>
  <button class="nav-btn" id="gnav-dashboard" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
 </div>
 <div id="tab-rakitra">
@@ -1292,10 +1294,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 <!-- ═══ ONGLET 3 : ANJARAKO ═══ -->
 <div id="tab-anjarako" style="display:none">
 
- <div class="sub-nav" style="margin-bottom:10px">
- <button class="sub-btn actif" id="anj-view-btn-saisie" onclick="showAnjView('saisie')">📇 Saisie du jour</button>
- <button class="sub-btn" id="anj-view-btn-suivi" onclick="showAnjView('suivi')">📊 Suivi paiements</button>
- </div>
 
  <div id="anj-view-saisie">
   <aside id="anj-correction-banner"></aside>
@@ -1456,68 +1454,6 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
  </div><!-- /anj-view-saisie -->
 
- <div id="anj-view-suivi" style="display:none">
-
- <div class="card">
- <div class="card-titre">📊 Suivi des paiements — Anjarako</div>
- <div class="champ"><label>📆 Mois</label><input type="month" id="suivi-mois" onchange="renderSuiviPaiements()"></div>
- <button class="btn btn-excel btn-full" onclick="exporterExcelSuiviAnjarako()" style="margin-top:8px"><span>📊</span> Exporter Excel (membres + mois + année)</button>
- </div>
-
- <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr">
- <div class="kpi kv"><div class="kpi-icon">✅</div><div class="kpi-val" id="suivi-pct">0%</div><div class="kpi-lab">Ont payé</div></div>
- <div class="kpi kb"><div class="kpi-icon">💰</div><div class="kpi-val" id="suivi-montant">0 F</div><div class="kpi-lab">Total du mois</div></div>
- <div class="kpi kr"><div class="kpi-icon">❌</div><div class="kpi-val" id="suivi-nonpayes">0</div><div class="kpi-lab">Non payés</div></div>
- </div>
-
- <div class="card">
- <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
- <span>✅ Ont payé (<span id="suivi-cnt-payes">0</span>)</span>
- <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▾ Réduire</button>
- </div>
- <div id="suivi-liste-payes"></div>
- </div>
-
- <div class="card">
- <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center;color:var(--rouge)">
- <span>❌ N'ont pas payé (<span id="suivi-cnt-nonpayes">0</span>)</span>
- <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▾ Réduire</button>
- </div>
- <div id="suivi-liste-nonpayes"></div>
- </div>
-
- <div class="btns">
- <button class="btn btn-wa btn-full" onclick="partagerWANonPayants()"><span>💬</span> Partager la liste des non-payants</button>
- </div>
-
- <div class="card">
- <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
- <span>🧮 Répartition des enveloppes par montant</span>
- <button id="suivi-toggle-valopy" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('valopy')">▾ Réduire</button>
- </div>
- <div id="suivi-liste-valopy"></div>
- </div>
-
- <div class="card">
- <div class="card-titre">📈 Évolution annuelle — % de membres à jour</div>
- <div id="suivi-chart-annuel"></div>
- </div>
-
- <div class="card">
- <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
- <span>👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</span>
- <button id="suivi-toggle-membres" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('membres')">▾ Réduire</button>
- </div>
- <div class="grid2" style="margin-bottom:9px">
- <div class="champ"><label>🔢 N° carte</label><input type="number" id="mb-num" placeholder="Ex: 172" inputmode="numeric"></div>
- <div class="champ"><label>👤 Nom</label><input type="text" id="mb-nom" placeholder="Nom complet"></div>
- </div>
- <button class="btn btn-vert" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter un membre</button>
- <div class="note" style="margin-top:9px;margin-bottom:0">💡 Pour importer une liste complète depuis un fichier Excel, demandez à Claude — il préparera un fichier JSON prêt à coller ici.</div>
- <div style="margin-top:10px" id="suivi-liste-membres"></div>
- </div>
-
- </div><!-- /anj-view-suivi -->
 
 </div><!-- /anjarako -->
 
@@ -1679,6 +1615,74 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 
 </div><!-- /vola -->
 
+<!-- ═══ SOUS-ONGLET : SUIVI PAIEMENTS ANJARAKO ═══
+     Réservé au secrétaire et aux diacres (voir aAccesSuiviAnj). Séparé de la saisie
+     Anjarako pour que les rôles qui saisissent ne voient pas qui a payé. -->
+<div id="tab-suivi" style="display:none">
+ <div id="anj-view-suivi">
+
+ <div class="card">
+ <div class="card-titre">📊 Suivi des paiements — Anjarako</div>
+ <div class="champ"><label>📆 Mois</label><input type="month" id="suivi-mois" onchange="renderSuiviPaiements()"></div>
+ <button class="btn btn-excel btn-full" onclick="exporterExcelSuiviAnjarako()" style="margin-top:8px"><span>📊</span> Exporter Excel (membres + mois + année)</button>
+ </div>
+
+ <div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr">
+ <div class="kpi kv"><div class="kpi-icon">✅</div><div class="kpi-val" id="suivi-pct">0%</div><div class="kpi-lab">Ont payé</div></div>
+ <div class="kpi kb"><div class="kpi-icon">💰</div><div class="kpi-val" id="suivi-montant">0 F</div><div class="kpi-lab">Total du mois</div></div>
+ <div class="kpi kr"><div class="kpi-icon">❌</div><div class="kpi-val" id="suivi-nonpayes">0</div><div class="kpi-lab">Non payés</div></div>
+ </div>
+
+ <div class="card">
+ <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
+ <span>✅ Ont payé (<span id="suivi-cnt-payes">0</span>)</span>
+ <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▾ Réduire</button>
+ </div>
+ <div id="suivi-liste-payes"></div>
+ </div>
+
+ <div class="card">
+ <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center;color:var(--rouge)">
+ <span>❌ N'ont pas payé (<span id="suivi-cnt-nonpayes">0</span>)</span>
+ <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▾ Réduire</button>
+ </div>
+ <div id="suivi-liste-nonpayes"></div>
+ </div>
+
+ <div class="btns">
+ <button class="btn btn-wa btn-full" onclick="partagerWANonPayants()"><span>💬</span> Partager la liste des non-payants</button>
+ </div>
+
+ <div class="card">
+ <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
+ <span>🧮 Répartition des enveloppes par montant</span>
+ <button id="suivi-toggle-valopy" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('valopy')">▾ Réduire</button>
+ </div>
+ <div id="suivi-liste-valopy"></div>
+ </div>
+
+ <div class="card">
+ <div class="card-titre">📈 Évolution annuelle — % de membres à jour</div>
+ <div id="suivi-chart-annuel"></div>
+ </div>
+
+ <div class="card">
+ <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
+ <span>👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</span>
+ <button id="suivi-toggle-membres" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('membres')">▾ Réduire</button>
+ </div>
+ <div class="grid2" style="margin-bottom:9px">
+ <div class="champ"><label>🔢 N° carte</label><input type="number" id="mb-num" placeholder="Ex: 172" inputmode="numeric"></div>
+ <div class="champ"><label>👤 Nom</label><input type="text" id="mb-nom" placeholder="Nom complet"></div>
+ </div>
+ <button class="btn btn-vert" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter un membre</button>
+ <div class="note" style="margin-top:9px;margin-bottom:0">💡 Pour importer une liste complète depuis un fichier Excel, demandez à Claude — il préparera un fichier JSON prêt à coller ici.</div>
+ <div style="margin-top:10px" id="suivi-liste-membres"></div>
+ </div>
+
+ </div><!-- /anj-view-suivi -->
+</div><!-- /tab-suivi -->
+
 <!-- ═══ ONGLET 5 : DASHBOARD ═══ -->
 <div id="tab-dashboard" style="display:none">
 
@@ -1788,6 +1792,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 <div class="footer"><strong>FKMA Abidjan</strong> · Système de gestion · Côte d'Ivoire · FCFA</div>
 
 </div>
+
 
 <div id="section-k45" style="display:none">
 <div class="tabs">
@@ -1936,7 +1941,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  <button class="tab-btn actif" onclick="showGLTab('fiang',this)">📗<br>Fiangonana</button>
  <button class="tab-btn" onclick="showGLTab('anj',this)">📘<br>Anjarako</button>
  <button class="tab-btn" onclick="showGLTab('k45',this)">📙<br>K45</button>
- 
+ <button class="tab-btn" id="gltab-btn-ops" onclick="showGLTab('ops',this)" style="display:none">🏦<br>Opérations</button>
  <button class="tab-btn" onclick="showGLTab('synth',this)">📊<br>Synthèse</button>
 </div>
 
@@ -2087,113 +2092,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 </div>
 
 <!-- ══ OPÉRATIONS BANCAIRES (Ando) ══ -->
-<div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
-<div id="gl-tab-synth" style="display:none">
- <div class="card">
- <div class="ctit">📊 Vue globale</div>
- <div class="solrow"><span class="sollab">📗 Fiangonana total</span><span class="solval" id="syn-fiang">0 F</span></div>
- <div class="solrow"><span class="sollab">📘 Anjarako total</span><span class="solval" id="syn-anj">0 F</span></div>
- <div class="solrow"><span class="sollab">📙 K45</span><span class="solval" id="syn-k45">0 F</span></div>
- <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL GÉNÉRAL</span><span class="solval" id="syn-tot">0 F</span></div>
- </div>
- <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (4 feuilles)</button>
-</div>
-
-
- <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
-
-</div>
-
-<div id="section-services" style="display:none">
- <div id="section-services-inner">
- <div class="topbar">
- <div class="topbar-title" id="sd-periode">FKMA Abidjan · Planning des services</div>
- <div class="topbar-sub">Services <span>Diacres</span></div>
- <div class="tabs">
- <div class="tab active" onclick="sdSetTab('mois')" id="sd-tab-mois">📅 Par mois</div>
- <div class="tab" onclick="sdSetTab('diacre')" id="sd-tab-diacre">👤 Par diacre</div>
- <div class="tab" onclick="sdSetTab('rappel')" id="sd-tab-rappel">📱 Rappels</div>
- <div class="tab" onclick="sdSetTab('fitaovana')" id="sd-tab-fitaovana">🧺 Fitaovana</div>
- <div class="tab" onclick="sdSetTab('fivoriana')" id="sd-tab-fivoriana">🏠 Fivoriana</div>
- </div>
- </div>
-
- <div id="sd-status" style="display:none;margin:10px 14px;padding:10px 12px;background:#fdf3da;border:1px solid var(--or);border-radius:8px;font-size:12px;color:#7a5c10;">
-    ℹ️ Aucune donnée de planning n'a encore été enregistrée dans la base. Les données par défaut sont affichées. Un secrétaire peut les enregistrer dans Firestore ci-dessous (⚙️ en bas de cette page).
- </div>
-
- <div class="month-nav" id="sd-monthNav">
- <button class="mnav-btn" onclick="sdPrevMois()">&#8249;</button>
- <select class="month-select" id="sd-selMois" onchange="sdGoMois(this.value)"></select>
- <span class="mcount" id="sd-mcount"></span>
- <button class="mnav-btn" onclick="sdNextMois()">&#8250;</button>
- </div>
-
- <div class="content">
- <div id="sd-view-mois">
- <div class="groupe-card">
- <div class="section-label" id="sd-sectLabel">Groupe du mois</div>
- <div class="membres" id="sd-membresBar"></div>
- </div>
- <div id="sd-joursContainer"></div>
- </div>
-
- <div id="sd-view-diacre" style="display:none;">
- <div class="diacre-scroll" id="sd-diacre-scroll"></div>
- <div class="stats-grid" id="sd-diacre-stats"></div>
- <div class="postes-mini" id="sd-postes-mini"></div>
- <div class="mois-list" id="sd-moisList"></div>
- </div>
-
- <div id="sd-view-rappel" style="display:none;">
- <div class="sec-header">
- <div class="sec-icon">📱</div>
- <div class="sec-title">Rappels WhatsApp</div>
- <div class="sec-desc">Message personnalisé pour chaque diacre. 1 clic pour ouvrir WhatsApp avec le message prêt.</div>
- <span class="sec-badge" style="background:#e6f9ef;color:#0f7a4d;">📱 WhatsApp · 1 clic par diacre</span>
- </div>
- <div class="rappel-mois-nav">
- <span style="font-size:11px;color:var(--t3);font-family:monospace;">Mois :</span>
- <select id="sd-selRappelMois" onchange="sdCurRappelMois=parseInt(this.value);sdRenderRappel()"></select>
- </div>
- <div id="sd-rappelContainer"></div>
- </div>
-
- <div id="sd-view-fitaovana" style="display:none;">
- <div class="sec-header">
- <div class="sec-icon">🧺</div>
- <div class="sec-title">Fitaovam-pandraisana</div>
- <div class="sec-desc">Laver les verres et nappes après chaque Fandraisana. Rotation des diaconesses.</div>
- <span class="sec-badge badge-pink">👩 Diakona vavy uniquement</span>
- </div>
- <div class="search-bar"><span style="color:var(--t3);">🔍</span>
- <input type="text" id="sd-search-fita" placeholder="Rechercher..." oninput="sdRenderFitaovana()"/></div>
- <div class="filter-row" id="sd-filter-row"></div>
- <div id="sd-list-fitaovana"></div>
- </div>
-
- <div id="sd-view-fivoriana" style="display:none;">
- <div class="sec-header">
- <div class="sec-icon">🏠</div>
- <div class="sec-title">Fivoriana Diakona / Fianakaviana</div>
- <div class="sec-desc">Réunion mensuelle des diacres. Rotation de l'accueil.</div>
- <span class="sec-badge badge-teal">🔄 Rotation mensuelle</span>
- </div>
- <div id="sd-list-fivoriana"></div>
- </div>
- </div>
-
- <div id="sd-admin-panel" style="display:none;margin:14px;padding:12px 14px;background:#fff;border:1px dashed var(--gris2);border-radius:10px;">
- <div style="font-size:12px;font-weight:700;color:var(--bleu);margin-bottom:6px;">⚙️ Mettre à jour le planning des services (secrétaire uniquement)</div>
- <div style="font-size:11px;color:var(--texte2);margin-bottom:8px;line-height:1.5;">
-      Chaque année, Claude vous donnera un bloc de texte à jour. Collez-le ici tel quel et cliquez sur "Enregistrer" — cela remplace le planning dans la base de données, sans toucher au reste de l'application.
- </div>
- <textarea id="sd-import-zone" placeholder="Collez ici le bloc de données fourni par Claude…" style="width:100%;min-height:90px;border:1.5px solid var(--gris2);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;"></textarea>
- <button class="btn" style="margin-top:8px;background:var(--bleu);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;" onclick="sdImporterDonnees()">💾 Enregistrer dans la base</button>
- </div>
- </div>
-</div>
-<div id="section-ops" style="display:none">
+<div id="gl-tab-ops" style="display:none">
  <div class="note" style="margin-bottom:10px">
     🏦 Opérations bancaires — SIB Rakitra, SIB Anjarako & SIB K45
  </div>
@@ -2309,13 +2208,116 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
  </div>
  </div>
 
+</div><!-- /gl-tab-ops -->
+<div id="gl-tab-synth" style="display:none">
+ <div class="card">
+ <div class="ctit">📊 Vue globale</div>
+ <div class="solrow"><span class="sollab">📗 Fiangonana total</span><span class="solval" id="syn-fiang">0 F</span></div>
+ <div class="solrow"><span class="sollab">📘 Anjarako total</span><span class="solval" id="syn-anj">0 F</span></div>
+ <div class="solrow"><span class="sollab">📙 K45</span><span class="solval" id="syn-k45">0 F</span></div>
+ <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL GÉNÉRAL</span><span class="solval" id="syn-tot">0 F</span></div>
+ </div>
+ <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (4 feuilles)</button>
+</div>
+
+
+
+</div>
+
+<div id="section-services" style="display:none">
+ <div id="section-services-inner">
+ <div class="topbar">
+ <div class="topbar-title" id="sd-periode">FKMA Abidjan · Planning des services</div>
+ <div class="topbar-sub">Services <span>Diacres</span></div>
+ <div class="tabs">
+ <div class="tab active" onclick="sdSetTab('mois')" id="sd-tab-mois">📅 Par mois</div>
+ <div class="tab" onclick="sdSetTab('diacre')" id="sd-tab-diacre">👤 Par diacre</div>
+ <div class="tab" onclick="sdSetTab('rappel')" id="sd-tab-rappel">📱 Rappels</div>
+ <div class="tab" onclick="sdSetTab('fitaovana')" id="sd-tab-fitaovana">🧺 Fitaovana</div>
+ <div class="tab" onclick="sdSetTab('fivoriana')" id="sd-tab-fivoriana">🏠 Fivoriana</div>
+ </div>
+ </div>
+
+ <div id="sd-status" style="display:none;margin:10px 14px;padding:10px 12px;background:#fdf3da;border:1px solid var(--or);border-radius:8px;font-size:12px;color:#7a5c10;">
+    ℹ️ Aucune donnée de planning n'a encore été enregistrée dans la base. Les données par défaut sont affichées. Un secrétaire peut les enregistrer dans Firestore ci-dessous (⚙️ en bas de cette page).
+ </div>
+
+ <div class="month-nav" id="sd-monthNav">
+ <button class="mnav-btn" onclick="sdPrevMois()">&#8249;</button>
+ <select class="month-select" id="sd-selMois" onchange="sdGoMois(this.value)"></select>
+ <span class="mcount" id="sd-mcount"></span>
+ <button class="mnav-btn" onclick="sdNextMois()">&#8250;</button>
+ </div>
+
+ <div class="content">
+ <div id="sd-view-mois">
+ <div class="groupe-card">
+ <div class="section-label" id="sd-sectLabel">Groupe du mois</div>
+ <div class="membres" id="sd-membresBar"></div>
+ </div>
+ <div id="sd-joursContainer"></div>
+ </div>
+
+ <div id="sd-view-diacre" style="display:none;">
+ <div class="diacre-scroll" id="sd-diacre-scroll"></div>
+ <div class="stats-grid" id="sd-diacre-stats"></div>
+ <div class="postes-mini" id="sd-postes-mini"></div>
+ <div class="mois-list" id="sd-moisList"></div>
+ </div>
+
+ <div id="sd-view-rappel" style="display:none;">
+ <div class="sec-header">
+ <div class="sec-icon">📱</div>
+ <div class="sec-title">Rappels WhatsApp</div>
+ <div class="sec-desc">Message personnalisé pour chaque diacre. 1 clic pour ouvrir WhatsApp avec le message prêt.</div>
+ <span class="sec-badge" style="background:#e6f9ef;color:#0f7a4d;">📱 WhatsApp · 1 clic par diacre</span>
+ </div>
+ <div class="rappel-mois-nav">
+ <span style="font-size:11px;color:var(--t3);font-family:monospace;">Mois :</span>
+ <select id="sd-selRappelMois" onchange="sdCurRappelMois=parseInt(this.value);sdRenderRappel()"></select>
+ </div>
+ <div id="sd-rappelContainer"></div>
+ </div>
+
+ <div id="sd-view-fitaovana" style="display:none;">
+ <div class="sec-header">
+ <div class="sec-icon">🧺</div>
+ <div class="sec-title">Fitaovam-pandraisana</div>
+ <div class="sec-desc">Laver les verres et nappes après chaque Fandraisana. Rotation des diaconesses.</div>
+ <span class="sec-badge badge-pink">👩 Diakona vavy uniquement</span>
+ </div>
+ <div class="search-bar"><span style="color:var(--t3);">🔍</span>
+ <input type="text" id="sd-search-fita" placeholder="Rechercher..." oninput="sdRenderFitaovana()"/></div>
+ <div class="filter-row" id="sd-filter-row"></div>
+ <div id="sd-list-fitaovana"></div>
+ </div>
+
+ <div id="sd-view-fivoriana" style="display:none;">
+ <div class="sec-header">
+ <div class="sec-icon">🏠</div>
+ <div class="sec-title">Fivoriana Diakona / Fianakaviana</div>
+ <div class="sec-desc">Réunion mensuelle des diacres. Rotation de l'accueil.</div>
+ <span class="sec-badge badge-teal">🔄 Rotation mensuelle</span>
+ </div>
+ <div id="sd-list-fivoriana"></div>
+ </div>
+ </div>
+
+ <div id="sd-admin-panel" style="display:none;margin:14px;padding:12px 14px;background:#fff;border:1px dashed var(--gris2);border-radius:10px;">
+ <div style="font-size:12px;font-weight:700;color:var(--bleu);margin-bottom:6px;">⚙️ Mettre à jour le planning des services (secrétaire uniquement)</div>
+ <div style="font-size:11px;color:var(--texte2);margin-bottom:8px;line-height:1.5;">
+      Chaque année, Claude vous donnera un bloc de texte à jour. Collez-le ici tel quel et cliquez sur "Enregistrer" — cela remplace le planning dans la base de données, sans toucher au reste de l'application.
+ </div>
+ <textarea id="sd-import-zone" placeholder="Collez ici le bloc de données fourni par Claude…" style="width:100%;min-height:90px;border:1.5px solid var(--gris2);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;"></textarea>
+ <button class="btn" style="margin-top:8px;background:var(--bleu);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;" onclick="sdImporterDonnees()">💾 Enregistrer dans la base</button>
+ </div>
+ </div>
 </div>
 </div><!-- /app -->
 
 </div>
 
 
- <div id="gl-tab-ops" style="display:none"><div class="note">Les opérations bancaires sont dans l'onglet 🏦 Opérations.</div></div>
 
 </div>
 </div><!-- /app-content -->
@@ -2347,7 +2349,8 @@ function initAuth(){
       document.getElementById('user-nom').textContent=cfg.nom;
       document.getElementById('user-role').textContent=cfg.label;
       // Ajouter classe rôle au body pour CSS ciblé
-      document.querySelector('body')?.classList.add('role-'+cfg.role);
+      Array.from(document.body.classList).forEach(function(c){ if(c.indexOf('role-')===0) document.body.classList.remove(c); });
+      document.body.classList.add('role-'+cfg.role);
       appliquerRole(cfg.role);
     } else {
       currentUser=null; currentRole=null;
@@ -2362,11 +2365,14 @@ function appliquerRole(role){
   const tabGest = document.getElementById('mnav-gest');
   const tabK45  = document.getElementById('mnav-k45');
   const tabGL   = document.getElementById('mnav-gl');
-  const tabOps  = document.getElementById('mnav-ops');
+  const tabOps  = document.getElementById('gltab-btn-ops'); // Opérations : sous-onglet du Grand Livre
   const tabServices = document.getElementById('mnav-services');
 
   // Cacher tout par défaut
   if(tabOps) tabOps.style.display='none';
+  // Si le compte précédent était resté sur Opérations, revenir sur le premier livre
+  const glOps=document.getElementById('gl-tab-ops');
+  if(glOps && glOps.style.display!=='none') showGLTab('fiang',document.querySelector('#section-gl .tab-btn'));
   // Toujours réafficher les sous-onglets de Gestion par défaut (remis à zéro à chaque connexion,
   // pour ne pas rester caché si un compte plus restreint (ex: Nataly) s'est connecté juste avant)
   const gnavAnjDefault=document.getElementById('gnav-anjarako');
@@ -2385,15 +2391,14 @@ function appliquerRole(role){
   // Listes déroulantes à valeurs partagées (types de culte, lieux, catégories, noms)
   if(window._db){ chargerChoix(); }
 
-  // "Suivi paiements" (Anjarako) : réservé à la secrétaire et au président des diacres
-  const suiviBtn=document.getElementById('anj-view-btn-suivi');
-  if(suiviBtn){
-    const peutVoirSuivi=(role==='secretaire'||role==='diacre');
-    suiviBtn.style.display=peutVoirSuivi?'':'none';
-    // Si on n'a pas le droit et que la vue Suivi était affichée, revenir sur la Saisie du jour
-    if(!peutVoirSuivi && document.getElementById('anj-view-suivi')?.style.display!=='none'){
-      showAnjView('saisie');
-    }
+  // "Suivi paiements" (Anjarako) : réservé au secrétaire et aux deux diacres
+  // — sous-onglet de Gestion, masqué (et son contenu caché) pour tous les autres rôles
+  const peutVoirSuivi=(role==='secretaire'||role==='diacre');
+  const tabSuivi=document.getElementById('gnav-suivi');
+  if(tabSuivi) tabSuivi.style.display=peutVoirSuivi?'':'none';
+  if(!peutVoirSuivi){
+    const secSuivi=document.getElementById('tab-suivi');
+    if(secSuivi && secSuivi.style.display!=='none') showGestTab('rakitra',document.getElementById('gnav-rakitra'));
   }
   // "Valopy" (comptage des montants d'enveloppes) : secrétaire, diacre et vomieran (Hary)
   const valopyCard=document.getElementById('valopy-card');
@@ -2488,7 +2493,7 @@ document.addEventListener('DOMContentLoaded', function(){
 function showMain(section, btn){
   document.querySelectorAll('.main-tab').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['gest','k45','gl','ops','services'].forEach(s=>{
+  ['gest','k45','gl','services'].forEach(s=>{
     const el=document.getElementById('section-'+s);
     if(el) el.style.display=s===section?'':'none';
   });
@@ -2498,15 +2503,17 @@ function showMain(section, btn){
 
 // ── NAVIGATION SOUS-ONGLETS GESTION ──────────────────────────
 function showGestTab(tab, btn){
+  if(tab==='suivi' && !aAccesSuiviAnj()) return;
   document.querySelectorAll('#section-gest .nav-btn').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['rakitra','anjarako','vola','dashboard'].forEach(function(t){
+  ['rakitra','anjarako','vola','suivi','dashboard'].forEach(function(t){
     const el=document.getElementById('tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
   if(tab==='dashboard'){dashAnnee=new Date().getFullYear();renderDashboard();renderSoldes('fiang');renderSoldes('anj');renderSoldes('k45');}
   if(tab==='anjarako'){calculerAnjMoisCourant();afficherEnveloppesJour();majBannerCorrectionAnj();}
   if(tab==='vola'){afficherDepenses('fiang');afficherDepenses('anj');}
+  if(tab==='suivi') afficherSuiviAnj();
 }
 
 // ── NAVIGATION SOUS-ONGLETS JOURNAL K45 ──────────────────────
@@ -2684,7 +2691,7 @@ async function motDePasseOublie(){
   }catch(e){
     err.style.color='red';
     err.textContent=e.code==='auth/user-not-found'
-      ? 'Aucun compte Firebase pour cet email — contactez la secrétaire.'
+      ? 'Aucun compte Firebase pour cet email — contactez le secrétaire.'
       : 'Erreur : '+e.message;
   }
 }
@@ -3372,18 +3379,30 @@ function resetAnjarako(){
 // ══════════════════════════════════════════════════════════════
 // ── SUIVI DES PAIEMENTS ANJARAKO ─────────────────────────────
 // ══════════════════════════════════════════════════════════════
+// "Suivi paiements" (qui a payé / qui n'a pas payé) : information sensible,
+// réservée au secrétaire et aux deux diacres (rôle 'diacre').
+function aAccesSuiviAnj(){
+  const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
+  const role=(ROLES_CONFIG[userEmail]||{}).role||'';
+  return role==='secretaire'||role==='diacre';
+}
+// Le suivi est un sous-onglet de Gestion (#tab-suivi) ; l'onglet Anjarako ne contient
+// plus que la saisie. showAnjView est gardée pour les appels existants.
 function showAnjView(view){
-  document.getElementById('anj-view-saisie').style.display = view==='saisie'?'':'none';
-  document.getElementById('anj-view-suivi').style.display  = view==='suivi'?'':'none';
-  document.getElementById('anj-view-btn-saisie').classList.toggle('actif', view==='saisie');
-  document.getElementById('anj-view-btn-suivi').classList.toggle('actif', view==='suivi');
   if(view==='suivi'){
-    const inp=document.getElementById('suivi-mois');
-    if(inp && !inp.value) inp.value=moisActuel();
-    renderSuiviPaiements();
-    renderListeMembres();
-    renderChartAnnuel();
+    showMain('gest',document.getElementById('mnav-gest'));
+    showGestTab('suivi',document.getElementById('gnav-suivi'));
+    return;
   }
+  document.getElementById('anj-view-saisie').style.display='';
+}
+function afficherSuiviAnj(){
+  if(!aAccesSuiviAnj()) return;
+  const inp=document.getElementById('suivi-mois');
+  if(inp && !inp.value) inp.value=moisActuel();
+  renderSuiviPaiements();
+  renderListeMembres();
+  renderChartAnnuel();
 }
 
 // Chargement des membres depuis Firestore (collection anj_membres) → localStorage SK_ANJ_M
@@ -3476,6 +3495,7 @@ function toggleSuiviListe(which){
 }
 
 function exporterExcelSuiviAnjarako(){
+  if(!aAccesSuiviAnj()){ alert("Le suivi des paiements est réservé au secrétaire et aux diacres."); return; }
   const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;}).sort(function(a,b){return a.num-b.num;});
   const ym=document.getElementById('suivi-mois')?.value||moisActuel();
   const annee=new Date().getFullYear();
@@ -3585,6 +3605,7 @@ function renderSuiviValopy(ym){
 }
 
 function renderSuiviPaiements(){
+  if(!aAccesSuiviAnj()) return;
   const ym=document.getElementById('suivi-mois')?.value||moisActuel();
   const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
   const cartesPayees=cartesPayeesPourMois(ym);
@@ -3615,6 +3636,7 @@ function renderSuiviPaiements(){
 }
 
 function partagerWANonPayants(){
+  if(!aAccesSuiviAnj()){ alert("Le suivi des paiements est réservé au secrétaire et aux diacres."); return; }
   const ym=document.getElementById('suivi-mois')?.value||moisActuel();
   const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
   const cartesPayees=cartesPayeesPourMois(ym);
@@ -3815,7 +3837,10 @@ async function rattraperDepensesGL(){
         date:d.date,montant:d.montant,es:'S',source:d.source||'caisse',
         rubrique:d.cat||'DEP',libelle:d.desc||d.cat||'Dépense',
         piece:d.piece||'',page:d.page||'',numOp,
-        createdBy:d.createdBy||userEmail,createdByNom:d.createdByNom||userNom,createdAt:d.createdAt||now,
+        // createdBy = la personne qui fait le rattrapage (exigé par les règles Firestore) ;
+        // l'auteur d'origine de la dépense est conservé à part.
+        createdBy:userEmail,createdByNom:userNom,createdAt:now,
+        auteurOrigine:d.createdBy||'',auteurOrigineNom:d.createdByNom||'',
         savedAt:now,depenseId:d.id
       };
       await _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec);
@@ -3983,7 +4008,8 @@ function exporterExcelDepenses(livre){
 async function ecrireGrandLivreFiang(d){
   if(!_db) return;
   const col=_fs.collection(_db,'grandlivre_fiang');
-  const base={date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',savedAt:new Date().toISOString()};
+  // origine:'rakitra' marque les lignes générées ici, pour ne supprimer qu'elles lors d'une correction
+  const base={date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',origine:'rakitra',auto:true,savedAt:new Date().toISOString()};
   const ecritures=[];
   // Rakitra tsotra (B1.1)
   if(d.totalRakitra>0) ecritures.push({...base,es:'E',rubrique:'B1.1',libelle:'Rakitra',montant:d.totalRakitra});
@@ -4003,16 +4029,29 @@ async function ecrireGrandLivreFiang(d){
       }
     });
   }
-  // Supprimer les anciennes écritures GL de cette date avant d'écrire
+  // Supprimer UNIQUEMENT les anciennes écritures générées par le Rakitra de cette date.
+  // Avant, toutes les écritures « caisse » du jour étaient effacées, y compris les dépenses
+  // et les saisies manuelles du même dimanche.
   const existing=await _fs.getDocs(col);
   const toDelete=[];
-  existing.forEach(function(ds){if(ds.data().date===d.date&&ds.data().source==='caisse'&&!ds.data().transfert)toDelete.push(ds.ref);});
+  existing.forEach(function(ds){if(ds.data().date===d.date&&estEcritureRakitra(ds.data()))toDelete.push(ds.ref);});
   for(const ref of toDelete) await _fs.deleteDoc(ref);
   // Écrire les nouvelles, chacune avec son propre numéro
   for(const ec of ecritures){
     ec.numOp=await prochainNumeroOp();
     await _fs.addDoc(col,ec);
   }
+}
+
+// Écriture du Grand Livre Fiangonana créée automatiquement par un Rakitra.
+// Les nouvelles portent origine:'rakitra' ; les anciennes (sans marqueur) se reconnaissent
+// à leur rubrique et à l'absence de lien vers une dépense, un transfert ou une opération bancaire.
+// (Même critère que la fonction ecritureRakitra() de firestore.rules.)
+function estEcritureRakitra(e){
+  if(e.origine==='rakitra') return true;
+  if(e.origine) return false;
+  if(e.depenseId||e.transfert||e.opbancaire) return false;
+  return ['B1.1','K45-INFO','B2','C7.1'].indexOf(e.rubrique)>=0;
 }
 
 async function ecrireGrandLivreAnj(rec){
@@ -4319,7 +4358,7 @@ function exporterDashWA(){
 
 
 // ── AUTHENTIFICATION ────────────────────────────────────────────
-const ROLES_CONFIG = {"rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "vomieran", "label": "Vomieran'ny Vola"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "ramekantono@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}, "maheryratoarijaona@yahoo.fr": {"nom": "Mahery RATOARIJAONA", "role": "diacre", "label": "Diacre"}, "fetrarivograceland@yahoo.fr": {"nom": "Rivo RAJAONARIFETRA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "patriciarajao@yahoo.fr": {"nom": "Patricia RAJAONARIFETRA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "yvons1977@gmail.com": {"nom": "Yvon Staël RABOSAONA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "nivoandrianary15@gmail.com": {"nom": "Nivo ANDRIANARY", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "toavinkaja@gmail.com": {"nom": "Manovosoa RAKOTONIRAINY", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hariletitia@gmail.com": {"nom": "Laeticia RANDRIANAIVO", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "nyaina7r@gmail.com": {"nom": "Ny Aina", "role": "vomieran", "label": "Vomieran'ny Vola"}, "nrabetsimialona@yahoo.fr": {"nom": "Ndriana RABETSIMIALONA", "role": "vomieran", "label": "Vomieran'ny Vola"}, "2704thierry@gmail.com": {"nom": "Michou RAKOTONDRATOVO", "role": "vomieran", "label": "Vomieran'ny Vola"}};
+const ROLES_CONFIG = {"mahefa_rabetaliana@yahoo.fr": {"nom": "Mahefa RABETALIANA", "role": "controleur", "label": "Contrôleur"}, "rijasvm45@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "rijacashport@gmail.com": {"nom": "Rija RAKOTOSON", "role": "secretaire", "label": "Secrétaire Comptable"}, "herizo.ramaromanana@gmail.com": {"nom": "Herizo RAMAROMANANA", "role": "vomieran", "label": "Vomieran'ny Vola"}, "nyandorakotoarivony@yahoo.fr": {"nom": "Ando RAKOTOARIVONY", "role": "tresoriere", "label": "Trésorière"}, "koakio@hotmail.com": {"nom": "PL (Président Diacres)", "role": "diacre", "label": "Président des Diacres"}, "natalyrakout@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "ramekantono@gmail.com": {"nom": "Nataly RAKOTOSON", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "rhinosboss@gmail.com": {"nom": "Diacre Test", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hary_andriantavy@yahoo.fr": {"nom": "Hary ANDRIANTAVY", "role": "vomieran", "label": "Vomieran'ny Vola"}, "maheryratoarijaona@yahoo.fr": {"nom": "Mahery RATOARIJAONA", "role": "diacre", "label": "Diacre"}, "fetrarivograceland@yahoo.fr": {"nom": "Rivo RAJAONARIFETRA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "patriciarajao@yahoo.fr": {"nom": "Patricia RAJAONARIFETRA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "yvons1977@gmail.com": {"nom": "Yvon Staël RABOSAONA", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "nivoandrianary15@gmail.com": {"nom": "Nivo ANDRIANARY", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "toavinkaja@gmail.com": {"nom": "Manovosoa RAKOTONIRAINY", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "hariletitia@gmail.com": {"nom": "Laeticia RANDRIANAIVO", "role": "diacre_journal", "label": "Diacre — Journal K45"}, "nyaina7r@gmail.com": {"nom": "Ny Aina", "role": "vomieran", "label": "Vomieran'ny Vola"}, "nrabetsimialona@yahoo.fr": {"nom": "Ndriana RABETSIMIALONA", "role": "vomieran", "label": "Vomieran'ny Vola"}, "2704thierry@gmail.com": {"nom": "Michou RAKOTONDRATOVO", "role": "vomieran", "label": "Vomieran'ny Vola"}};
 
 // ── FIREBASE READY ────────────────────────────────────────────
 let db = null, fs = null;
@@ -5687,10 +5726,18 @@ async function envoyerVersDrive(dataUrl,filename){
   }catch(e){ console.log('Erreur envoi vers Drive (on garde la photo dans Firestore) :',e.message); return null; }
 }
 
-function peutVoirPieces(){
+// Photos des pièces comptables : les contrôleurs doivent pouvoir les consulter (lecture seule) ;
+// l'ajout et la suppression restent réservés à ceux qui saisissent.
+function roleConnecte(){
   const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
-  const role=(ROLES_CONFIG[userEmail]||{}).role||window._currentRole||'';
+  return (ROLES_CONFIG[userEmail]||{}).role||window._currentRole||'';
+}
+function peutModifierPieces(){
+  const role=roleConnecte();
   return role==='secretaire'||role==='diacre'||role==='tresoriere'||role==='diacre_journal';
+}
+function peutVoirPieces(){
+  return peutModifierPieces()||roleConnecte()==='controleur';
 }
 
 function chargerImageDepuisFichier(file){
@@ -5875,6 +5922,9 @@ function badgePieces(opId,nbPieces){
 async function ouvrirPieces(opId){
   if(!peutVoirPieces()){ alert("Vous n'avez pas accès aux pièces jointes."); return; }
   pieceOpIdCourant=String(opId);
+  // Lecture seule (contrôleur) : masquer les boutons d'ajout de photo
+  const btnAjout=document.querySelector('#pieces-modal .btn-gris');
+  if(btnAjout&&btnAjout.parentElement) btnAjout.parentElement.style.display=peutModifierPieces()?'flex':'none';
   document.getElementById('pieces-modal').style.display='flex';
   document.getElementById('pieces-liste').innerHTML='<div class="vide">Chargement…</div>';
   await rafraichirModalPieces();
@@ -5904,7 +5954,7 @@ async function rafraichirModalPieces(){
           +'<img src="'+src+'"'+onerr+' style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--gris2);cursor:pointer" onclick="voirPiecePleinEcran(this.src)">'
           +secours
           +lien
-          +'<button type="button" onclick="supprimerPiece(\''+d.id+'\',\''+(d.driveFileId||'')+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>'
+          +(peutModifierPieces()?'<button type="button" onclick="supprimerPiece(\''+d.id+'\',\''+(d.driveFileId||'')+'\')" style="position:absolute;top:-6px;right:-6px;background:var(--rouge);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer">×</button>':'')
           +'</div>';
       }).join('');
     }
