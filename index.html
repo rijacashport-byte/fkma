@@ -2035,7 +2035,8 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 
  <!-- Export -->
  <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel — Fiangonana</button>
- <button class="btn btn-gris" id="btn-rattraper-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="fusionnerDoublonsDepensesGL()" style="margin-top:8px">🧹 Supprimer les doublons dépenses / Grand Livre</button>
+ <button class="btn btn-gris btn-admin-gl" id="btn-rattraper-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
 
  <!-- Historique -->
  <div class="card">
@@ -2068,7 +2069,8 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  </div>
 
  <button class="btn bb" onclick="exporterExcel('anj')">📊 Exporter Excel — Anjarako</button>
- <button class="btn btn-gris" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="fusionnerDoublonsDepensesGL()" style="margin-top:8px">🧹 Supprimer les doublons dépenses / Grand Livre</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
 
  <div class="card">
  <div class="ctit">📋 Livre Anjarako</div>
@@ -2498,8 +2500,7 @@ function appliquerRole(role){
   if(tabServices) tabServices.style.display='';
   const sdAdmin=document.getElementById('sd-admin-panel');
   if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
-  const btnRattraper=document.getElementById('btn-rattraper-gl');
-  if(btnRattraper) btnRattraper.style.display=(role==='secretaire'||role==='diacre')?'':'none';
+  document.querySelectorAll('.btn-admin-gl').forEach(function(b){ b.style.display=(role==='secretaire'||role==='diacre')?'':'none'; });
 
   // Listes déroulantes à valeurs partagées (types de culte, lieux, catégories, noms)
   if(window._db){ chargerChoix(); }
@@ -4202,6 +4203,63 @@ async function supprimerDepense(id){
 
 // Rattrapage : recopie vers le Grand Livre Fiangonana toute dépense qui n'y a pas encore de copie liée
 // (utile pour les anciennes dépenses saisies avant que cette synchronisation automatique existe)
+// ── DOUBLONS DÉPENSES / GRAND LIVRE ───────────────────────────
+// Une dépense peut avoir été saisie deux fois : dans Vola mivoaka (ligne automatique au Grand Livre,
+// avec depenseId) ET directement au Grand Livre, à la main (sans lien). On reconnaît la ligne manuelle
+// « jumelle » : même livre, même date, même montant, sortie, et aucune autre origine.
+function estLigneManuelleSortie(e){
+  return e.es==='S' && !e.depenseId && !e.transfert && !e.opbancaire && !e.auto
+    && e.origine!=='rakitra' && !['B1.1','K45-INFO','B2','C7.1'].includes(e.rubrique);
+}
+function chercherJumelle(manuelles,date,montant,dejaPris){
+  return manuelles.find(function(m){
+    return !dejaPris.has(m._id) && m.date===date && Number(m.montant)===Number(montant);
+  });
+}
+// Relit un Grand Livre complet depuis Firebase (avec les identifiants des documents)
+async function lireLivreFirebase(livre){
+  const snap=await _fs.getDocs(_fs.collection(_db,'grandlivre_'+livre));
+  const l=[]; snap.forEach(function(ds){ l.push(Object.assign({},ds.data(),{_id:ds.id})); });
+  return l;
+}
+
+// Fusion : pour chaque ligne automatique (depenseId) qui a une jumelle saisie à la main, on GARDE la
+// ligne manuelle (on lui ajoute le lien vers la dépense, et le n° d'opération si elle n'en avait pas),
+// et on SUPPRIME la ligne automatique en double. Rien n'est fait sans confirmation.
+async function fusionnerDoublonsDepensesGL(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté.');return;}
+  try{
+    const paires=[];
+    for(const livre of ['fiang','anj']){
+      const lignes=await lireLivreFirebase(livre);
+      const manuelles=lignes.filter(estLigneManuelleSortie);
+      const pris=new Set();
+      lignes.filter(function(e){return e.depenseId;}).forEach(function(auto){
+        const m=chercherJumelle(manuelles,auto.date,auto.montant,pris);
+        if(m){ pris.add(m._id); paires.push({livre:livre,auto:auto,manuelle:m}); }
+      });
+    }
+    if(!paires.length){ alert('✅ Aucun doublon trouvé entre les dépenses et le Grand Livre.'); return; }
+    const detail=paires.slice(0,15).map(function(p){
+      return '• '+(p.livre==='fiang'?'Fiangonana':'Anjarako')+' — '+fmtDateFr(p.auto.date)+' — '+fmt(p.auto.montant)+' F — '+(p.manuelle.libelle||p.auto.libelle||'');
+    }).join('\n')+(paires.length>15?'\n… et '+(paires.length-15)+' autre(s)':'');
+    if(!confirm(paires.length+' doublon(s) trouvé(s) :\n\n'+detail+'\n\nPour chacun : la ligne saisie à la main est GARDÉE (et reliée à la dépense), la ligne recopiée automatiquement est SUPPRIMÉE.\n\nContinuer ?')) return;
+    const email=emailConnecte(), maintenant=new Date().toISOString();
+    let n=0;
+    for(const p of paires){
+      const maj={depenseId:p.auto.depenseId, modifiedBy:email, modifiedAt:maintenant};
+      if(!p.manuelle.numOp && p.auto.numOp) maj.numOp=p.auto.numOp;
+      if(p.auto.nbPieces && !p.manuelle.nbPieces) maj.nbPieces=p.auto.nbPieces;
+      await _fs.updateDoc(_fs.doc(_db,'grandlivre_'+p.livre,p.manuelle._id),maj);
+      await _fs.deleteDoc(_fs.doc(_db,'grandlivre_'+p.livre,p.auto._id));
+      n++;
+    }
+    alert('✅ '+n+' doublon(s) supprimé(s). Les lignes d\'origine sont gardées et reliées à leur dépense.');
+    if(typeof chargerTout==='function') chargerTout();
+  }catch(e){ alert('Erreur pendant la fusion (le Grand Livre n\'a peut-être été corrigé qu\'en partie — relance le bouton) : '+e.message); }
+}
+
 async function rattraperDepensesGL(){
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté.');return;}
@@ -4209,11 +4267,13 @@ async function rattraperDepensesGL(){
   try{
     const depSnap=await _fs.getDocs(_fs.collection(_db,'depenses'));
     const glDepenseIds={fiang:new Set(),anj:new Set()};
+    const manuelles={fiang:[],anj:[]}, pris=new Set();
     for(const l of ['fiang','anj']){
-      const glSnap=await _fs.getDocs(_fs.collection(_db,'grandlivre_'+l));
-      glSnap.forEach(function(ds){const d=ds.data();if(d.depenseId)glDepenseIds[l].add(d.depenseId);});
+      const lignes=await lireLivreFirebase(l);
+      lignes.forEach(function(d){ if(d.depenseId) glDepenseIds[l].add(d.depenseId); });
+      manuelles[l]=lignes.filter(estLigneManuelleSortie);
     }
-    let ajoutees=0;
+    let ajoutees=0, reliees=0;
     const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
     const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
     const now=new Date().toISOString();
@@ -4221,6 +4281,14 @@ async function rattraperDepensesGL(){
       const d=ds.data();
       if(d.livre!=='fiang'&&d.livre!=='anj') continue;
       if(glDepenseIds[d.livre].has(d.id)) continue;
+      // Déjà saisie à la main au Grand Livre (même date, même montant) : on la relie, sans doublon
+      const jumelle=chercherJumelle(manuelles[d.livre],d.date,d.montant,pris);
+      if(jumelle){
+        pris.add(jumelle._id);
+        await _fs.updateDoc(_fs.doc(_db,'grandlivre_'+d.livre,jumelle._id),{depenseId:d.id,modifiedBy:userEmail,modifiedAt:now});
+        reliees++;
+        continue;
+      }
       const numOp=await prochainNumeroOp();
       const glRec={
         date:d.date,montant:d.montant,es:'S',source:d.source||'caisse',
@@ -4235,7 +4303,7 @@ async function rattraperDepensesGL(){
       await _fs.addDoc(_fs.collection(_db,'grandlivre_'+d.livre),glRec);
       ajoutees++;
     }
-    alert(ajoutees>0?('✅ '+ajoutees+' dépense(s) recopiée(s) dans le Grand Livre.'):'✅ Tout est déjà à jour, rien à recopier.');
+    alert((ajoutees||reliees)?('✅ '+ajoutees+' dépense(s) recopiée(s) dans le Grand Livre'+(reliees?', '+reliees+' ligne(s) déjà saisie(s) à la main reliée(s) à leur dépense (sans doublon)':'')+'.'):'✅ Tout est déjà à jour, rien à recopier.');
     if(typeof chargerTout==='function') chargerTout();
   }catch(e){alert('Erreur : '+e.message);}
 }
