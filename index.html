@@ -2068,6 +2068,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  </div>
 
  <button class="btn bb" onclick="exporterExcel('anj')">📊 Exporter Excel — Anjarako</button>
+ <button class="btn btn-gris" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
 
  <div class="card">
  <div class="ctit">📋 Livre Anjarako</div>
@@ -2308,7 +2309,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div class="solrow"><span class="sollab">📙 K45</span><span class="solval" id="syn-k45">0 F</span></div>
  <div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">TOTAL GÉNÉRAL</span><span class="solval" id="syn-tot">0 F</span></div>
  </div>
- <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (4 feuilles)</button>
+ <button class="btn bv" onclick="exporterExcelComplet()">📊 Export Excel complet (Fiangonana, Anjarako, K45 + synthèse)</button>
 </div>
 
 
@@ -2654,6 +2655,8 @@ function exporterJSON(){
     anjarako: load(SK_ANJ_H),
     membres:  load(SK_ANJ_M),
     depenses: load(SK_DEP),
+    grandLivre: {fiangonana:GL.fiang||[], anjarako:GL.anj||[], k45:GL.k45||[]},
+    soldesInitiaux: lireCache('fkma_soldes_initiaux', null),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
@@ -4036,8 +4039,8 @@ async function ajouterDepense(livre){
     try{
       // Sauvegarder dans collection depenses
       _fs.addDoc(_fs.collection(_db,'depenses'),rec).catch(e=>console.log('FB dep:',e.message));
-      // Écriture automatique dans le Grand Livre Fiangonana
-      if(livre==='fiang'){
+      // Écriture automatique dans le Grand Livre du même livre (Fiangonana ou Anjarako — audit L6)
+      {
         const numOp=await prochainNumeroOp();
         const glRec={
           date,montant,es:'S',source,
@@ -4047,7 +4050,7 @@ async function ajouterDepense(livre){
           createdBy:userEmail,createdByNom:userNom,createdAt:now,
           savedAt:now,depenseId:rec.id
         };
-        _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec).catch(e=>console.log('GL dep:',e.message));
+        _fs.addDoc(_fs.collection(_db,'grandlivre_'+livre),glRec).catch(e=>console.log('GL dep:',e.message));
       }
     }catch(e){console.log('FB dep:',e.message);}
   }
@@ -4085,6 +4088,14 @@ function chargerDepensePourCorrection(id){
   if(carte) carte.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function corrigerDepenseDepuisGL(depenseId){
+  const d=load(SK_DEP).find(function(x){return String(x.id)===String(depenseId);});
+  if(!d){ alert('La dépense liée à cette ligne est introuvable sur cet appareil. Ouvre Gestion → Vola mivaoka pour la recharger, puis réessaie.'); return; }
+  const gest=document.getElementById('mnav-gest'); if(gest) showMain('gest',gest);
+  const vola=document.getElementById('gnav-vola'); if(vola) showGestTab('vola',vola);
+  const sub=document.getElementById('vola-btn-'+d.livre); if(sub) sub.click();
+  chargerDepensePourCorrection(d.id);
+}
 function majModeCorrectionDep(){
   ['fiang','anj'].forEach(function(livre){
     const p=livre==='fiang'?'vf':'va';
@@ -4101,7 +4112,7 @@ function majModeCorrectionDep(){
     if(!actif){b.style.display='none';b.innerHTML='';return;}
     b.style.display='block';
     b.innerHTML='<b>✏️ Correction en cours.</b> Rien n\'est modifié tant que tu n\'as pas cliqué sur « Enregistrer la correction ».'
-      +(livre==='fiang'?' La ligne du Grand Livre liée sera corrigée en même temps.':'')
+      +' La ligne du Grand Livre liée sera corrigée en même temps.'
       +'<div class="acb-actions"><button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px" onclick="annulerCorrectionDep()">✖ Annuler la correction</button></div>';
   });
 }
@@ -4141,10 +4152,10 @@ async function enregistrerCorrectionDepense(livre,v){
     let trouvee=false;
     for(const ds of snap.docs){ if(ds.data().id===id){ await _fs.updateDoc(ds.ref,maj); trouvee=true; break; } }
     if(!trouvee){alert('Cette dépense n\'a pas été trouvée dans Firebase : correction annulée.');return;}
-    // 2. Sa copie au Grand Livre Fiangonana (même numéro d'opération)
+    // 2. Sa copie au Grand Livre du même livre (même numéro d'opération)
     let glCorrige=false;
-    if(livre==='fiang'){
-      const snapGL=await _fs.getDocs(_fs.collection(_db,'grandlivre_fiang'));
+    {
+      const snapGL=await _fs.getDocs(_fs.collection(_db,'grandlivre_'+livre));
       for(const ds of snapGL.docs){
         if(ds.data().depenseId===id){
           await _fs.updateDoc(ds.ref,{date:v.date,montant:v.montant,source:v.source,rubrique:v.cat||'DEP',
@@ -4163,7 +4174,7 @@ async function enregistrerCorrectionDepense(livre,v){
     await sauverPiecesPourOp(id); // photos ajoutées pendant la correction
     afficherDepenses(livre);
     if(typeof chargerTout==='function') chargerTout();
-    alert('✅ Dépense corrigée !'+(livre==='fiang'&&!glCorrige?'\n\n⚠️ Aucune ligne liée au Grand Livre n\'a été trouvée : utilise « Rattraper les dépenses » si besoin.':''));
+    alert('✅ Dépense corrigée !'+(!glCorrige?'\n\n⚠️ Aucune ligne liée au Grand Livre n\'a été trouvée : utilise « Rattraper les dépenses » si besoin.':''));
   }catch(e){alert('Erreur, la correction n\'est peut-être pas complète : '+e.message);}
 }
 
@@ -4178,9 +4189,9 @@ async function supprimerDepense(id){
     const col=_fs.collection(_db,'depenses');
     const snap=await _fs.getDocs(col);
     for(const ds of snap.docs){if(ds.data().id===id){await _fs.deleteDoc(ds.ref);break;}}
-    // Supprimer aussi la copie liée dans le Grand Livre Fiangonana, pour ne pas laisser d'écriture orpheline
-    if(rec&&rec.livre==='fiang'){
-      const colGL=_fs.collection(_db,'grandlivre_fiang');
+    // Supprimer aussi la copie liée dans le Grand Livre du même livre, pour ne pas laisser d'écriture orpheline
+    if(rec&&(rec.livre==='fiang'||rec.livre==='anj')){
+      const colGL=_fs.collection(_db,'grandlivre_'+rec.livre);
       const snapGL=await _fs.getDocs(colGL);
       for(const ds of snapGL.docs){if(ds.data().depenseId===id){await _fs.deleteDoc(ds.ref);break;}}
     }
@@ -4194,20 +4205,22 @@ async function supprimerDepense(id){
 async function rattraperDepensesGL(){
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté.');return;}
-  if(!confirm("Vérifier et recopier vers le Grand Livre toutes les dépenses Fiangonana qui n'y sont pas encore ? (Les dépenses déjà présentes ne seront pas dupliquées.)"))return;
+  if(!confirm("Vérifier et recopier vers le Grand Livre toutes les dépenses (Fiangonana ET Anjarako) qui n'y sont pas encore ? (Les dépenses déjà présentes ne seront pas dupliquées.)"))return;
   try{
     const depSnap=await _fs.getDocs(_fs.collection(_db,'depenses'));
-    const glSnap=await _fs.getDocs(_fs.collection(_db,'grandlivre_fiang'));
-    const glDepenseIds=new Set();
-    glSnap.forEach(function(ds){const d=ds.data();if(d.depenseId)glDepenseIds.add(d.depenseId);});
+    const glDepenseIds={fiang:new Set(),anj:new Set()};
+    for(const l of ['fiang','anj']){
+      const glSnap=await _fs.getDocs(_fs.collection(_db,'grandlivre_'+l));
+      glSnap.forEach(function(ds){const d=ds.data();if(d.depenseId)glDepenseIds[l].add(d.depenseId);});
+    }
     let ajoutees=0;
     const userEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
     const userNom=ROLES_CONFIG[userEmail]?.nom||userEmail;
     const now=new Date().toISOString();
     for(const ds of depSnap.docs){
       const d=ds.data();
-      if(d.livre!=='fiang') continue;
-      if(glDepenseIds.has(d.id)) continue;
+      if(d.livre!=='fiang'&&d.livre!=='anj') continue;
+      if(glDepenseIds[d.livre].has(d.id)) continue;
       const numOp=await prochainNumeroOp();
       const glRec={
         date:d.date,montant:d.montant,es:'S',source:d.source||'caisse',
@@ -4219,7 +4232,7 @@ async function rattraperDepensesGL(){
         auteurOrigine:d.createdBy||'',auteurOrigineNom:d.createdByNom||'',
         savedAt:now,depenseId:d.id
       };
-      await _fs.addDoc(_fs.collection(_db,'grandlivre_fiang'),glRec);
+      await _fs.addDoc(_fs.collection(_db,'grandlivre_'+d.livre),glRec);
       ajoutees++;
     }
     alert(ajoutees>0?('✅ '+ajoutees+' dépense(s) recopiée(s) dans le Grand Livre.'):'✅ Tout est déjà à jour, rien à recopier.');
@@ -4374,7 +4387,7 @@ function exporterExcelDepenses(livre){
   const rows=[['VOLA MIVAOKA — '+(livre==='fiang'?'FIANGONANA':'ANJARAKO')],[],
     ['Date','Montant','Page','N° Pièce','Ligne budgétaire','Description','Autorisé par']];
   all.forEach(d=>rows.push([d.date,d.montant,d.page||'',d.piece||'',libelleRubrique(d.cat),d.desc||'',d.auteur||'']));
-  rows.push([],[,,'TOTAL',all.reduce((a,d)=>a+d.montant,0)]);
+  rows.push([],['TOTAL',all.reduce((a,d)=>a+(d.montant||0),0)]);
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:14},{wch:8},{wch:12},{wch:22},{wch:28},{wch:18}];
   XLSX.utils.book_append_sheet(wb,ws,'Dépenses');XLSX.writeFile(wb,`depenses_${livre}_fkma.xlsx`);
 }
@@ -5595,6 +5608,9 @@ function modifierEcritureGL(btn){
   if(livre==='anj' && ec.auto===true && ec.rubrique==='ANJ-E1' && ec.date){ corrigerAnjDepuisGL(ec.date); return; }
   // Transfert ou opération bancaire : on la recharge dans le formulaire Opérations, comme l'Anjarako
   if(ec.transfert||ec.opbancaire){ corrigerOpDepuisGL(livre,ec); return; }
+  // Ligne copiée d'une dépense (Vola mivoaka) : on rouvre la dépense, pour que la dépense et sa
+  // ligne au Grand Livre restent identiques
+  if(ec.depenseId){ corrigerDepenseDepuisGL(ec.depenseId); return; }
 
   var date=prompt('Date (AAAA-MM-JJ):',ec.date||'');
   if(!date)return;
@@ -5661,9 +5677,9 @@ function liensPour(index,opId){
 function buildSheetRakitra(piecesIndex){
   const initC=parseFloat(document.getElementById('fiang-init-caisse')?.value)||0;
   const rows=[['N° Opération','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde','Photos']];
-  rows.push(['',new Date(2026,0,1),'','','Solde initial','','',initC,'',initC,'']);
+  rows.push(['',dateSoldeInitial(),'','','Solde initial','','',initC,'',initC,'']);
   let solde=initC;
-  (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='caisse').forEach(function(e){
+  (GL['fiang']||[]).filter(e=>(e.source||'caisse')!=='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
     rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',libelleRubrique(e.rubrique),isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
@@ -5674,7 +5690,7 @@ function buildSheetRakitra(piecesIndex){
 function buildSheetBanqueRakitra(piecesIndex){
   const initB=parseFloat(document.getElementById('fiang-init-banque')?.value)||0;
   const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Photos']];
-  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB,'']);
+  rows.push(['',dateSoldeInitial(),'Solde initial','','','',initB,'']);
   let solde=initB;
   (GL['fiang']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
@@ -5684,34 +5700,39 @@ function buildSheetBanqueRakitra(piecesIndex){
   return rows;
 }
 
-function buildSheetAnjarako(piecesIndex){
-  const initC=parseFloat(document.getElementById('anj-init-caisse')?.value)||0;
-  const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
-  const rows=[['N° Opération','Date','Page','Libellé','Entrée','Sortie','Solde','Photos']];
-  rows.push(['',new Date(2026,0,1),'','Solde initial caisse+banque',initC+initB,'',initC+initB,'']);
-  let solde=initC+initB;
-  (GL['anj']||[]).forEach(function(e){
+// Caisse d'un livre : même présentation pour Fiangonana, Anjarako et K45. Seules les écritures
+// « caisse » (les écritures banque sont dans la feuille Banque, sinon elles seraient comptées deux fois).
+function buildSheetCaisse(livre,piecesIndex){
+  const initC=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
+  const rows=[['N° Opération','Date','Page','E/S','Libellé','Commentaires','Rubriques Budget','Entrée','Sortie','Solde','Photos']];
+  rows.push(['',dateSoldeInitial(),'','','Solde initial','','',initC,'',initC,'']);
+  let solde=initC;
+  (GL[livre]||[]).filter(e=>(e.source||'caisse')!=='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
-    rows.push([e.numOp||'',e.date,e.page||'',e.libelle||'',isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
+    rows.push([e.numOp||'',e.date,e.page||'',e.es,e.libelle||'',e.comment||'',libelleRubrique(e.rubrique),isE?mnt:'',isE?'':mnt,solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
-
-function buildSheetBanqueAnjarako(piecesIndex){
-  const initB=parseFloat(document.getElementById('anj-init-banque')?.value)||0;
+function buildSheetBanque(livre,piecesIndex){
+  const initB=parseFloat(document.getElementById(livre+'-init-banque')?.value)||0;
   const rows=[['N° Opération','Date','Libellé','Rubrique budget','Débit','Crédit','Solde','Photos']];
-  rows.push(['',new Date(2026,0,1),'Solde initial','','','',initB,'']);
+  rows.push(['',dateSoldeInitial(),'Solde initial','','','',initB,'']);
   let solde=initB;
-  (GL['anj']||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
+  (GL[livre]||[]).filter(e=>(e.source||'caisse')==='banque').forEach(function(e){
     const mnt=e.montant||0;const isE=e.es==='E';
     solde+=isE?mnt:-mnt;
     rows.push([e.numOp||'',e.date,e.libelle||'',libelleRubrique(e.rubrique),isE?'':mnt,isE?mnt:'',solde,liensPour(piecesIndex,e.depenseId||e.opId)]);
   });
   return rows;
 }
+function dateSoldeInitial(){ return new Date().getFullYear()+'-01-01'; }
+function buildSheetAnjarako(piecesIndex){ return buildSheetCaisse('anj',piecesIndex); }
+
+function buildSheetBanqueAnjarako(piecesIndex){ return buildSheetBanque('anj',piecesIndex); }
 
 async function exporterExcel(livre){
+  if(!(await glAJourPourExport())) return;
   const piecesIndex=await construirePiecesIndex();
   const wb=XLSX.utils.book_new();
   if(livre==='fiang'){
@@ -5721,17 +5742,51 @@ async function exporterExcel(livre){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako(piecesIndex)),'Anjarako');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako(piecesIndex)),'Banque Anjarako');
   }
-  XLSX.writeFile(wb,'FKMA_GrandLivre_'+(livre==='fiang'?'Fiangonana':'Anjarako')+'_2026.xlsx');
+  XLSX.writeFile(wb,'FKMA_GrandLivre_'+(livre==='fiang'?'Fiangonana':'Anjarako')+'_'+new Date().getFullYear()+'.xlsx');
 }
 
 async function exporterExcelComplet(){
+  if(!(await glAJourPourExport())) return;
   const piecesIndex=await construirePiecesIndex();
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetRakitra(piecesIndex)),'Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueRakitra(piecesIndex)),'Banque Rakitra');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetAnjarako(piecesIndex)),'Anjarako');
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanqueAnjarako(piecesIndex)),'Banque Anjarako');
-  XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_2026.xlsx');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetCaisse('k45',piecesIndex)),'K45');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetBanque('k45',piecesIndex)),'Banque K45');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(buildSheetSynthese()),'Synthèse');
+  XLSX.writeFile(wb,'FKMA_GrandLivre_Complet_'+new Date().getFullYear()+'.xlsx');
+}
+// Avant un export : relit les livres dans Firebase pour exporter les chiffres à jour
+// (et les soldes initiaux enregistrés), y compris si l'onglet n'a pas été ouvert.
+async function glAJourPourExport(){
+  if(!window._db){ alert('Firebase non connecté : export impossible (les chiffres ne seraient pas à jour).'); return false; }
+  await chargerTout();
+  return true;
+}
+// Récapitulatif des soldes par livre (même calcul que les cartes de soldes)
+function buildSheetSynthese(){
+  const rows=[['Livre','Solde initial caisse','Solde initial banque','Entrées (hors virements)','Sorties (hors virements)','Solde caisse','Solde banque','Solde total']];
+  let tot=[0,0,0,0,0,0,0];
+  [['fiang','Fiangonana'],['anj','Anjarako'],['k45','K45']].forEach(function(x){
+    const l=x[0];
+    const iC=parseFloat(document.getElementById(l+'-init-caisse')?.value)||0;
+    const iB=parseFloat(document.getElementById(l+'-init-banque')?.value)||0;
+    let c=iC,b=iB,ent=0,sor=0;
+    (GL[l]||[]).forEach(function(e){
+      const m=e.montant||0, sg=e.es==='E'?1:-1;
+      if(!e.transfert){ if(sg>0) ent+=m; else sor+=m; } // virement caisse→banque : mouvement interne, pas une recette/dépense
+      if((e.source||'caisse')==='banque') b+=sg*m; else c+=sg*m;
+    });
+    const ligne=[iC,iB,ent,sor,c,b,c+b];
+    tot=tot.map(function(v,i){return v+ligne[i];});
+    rows.push([x[1]].concat(ligne));
+  });
+  rows.push(['TOTAL'].concat(tot));
+  rows.push([]);
+  rows.push(['Exporté le '+new Date().toLocaleString('fr-FR')]);
+  return rows;
 }
 
 // ── INIT ─────────────────────────────────────────────────────
