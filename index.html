@@ -2035,6 +2035,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 
  <!-- Export -->
  <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel — Fiangonana</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="corrigerRakiPisFiangonanaGL()" style="margin-top:8px">🎁 Corriger les Raki-pisaorana gardés par la Fiangonana</button>
  <button class="btn btn-gris btn-admin-gl" onclick="fusionnerDoublonsDepensesGL()" style="margin-top:8px">🧹 Supprimer les doublons dépenses / Grand Livre</button>
  <button class="btn btn-gris btn-admin-gl" id="btn-rattraper-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
 
@@ -4226,6 +4227,38 @@ async function lireLivreFirebase(livre){
 // Fusion : pour chaque ligne automatique (depenseId) qui a une jumelle saisie à la main, on GARDE la
 // ligne manuelle (on lui ajoute le lien vers la dépense, et le n° d'opération si elle n'en avait pas),
 // et on SUPPRIME la ligne automatique en double. Rien n'est fait sans confirmation.
+
+// ── RAKI-PISAORANA : part gardée par la Fiangonana ────────────
+// « Fiangonana » (ou aucune destination) = l'argent reste dans la caisse de l'église : ce n'est
+// pas une dépense. Les autres destinations (sampana SA, SV, SVM, AM, STS, Pasitera, Autre)
+// sont reversées : elles sortent de la caisse (rubrique C7.1).
+function destGardeeParFiangonana(dest){
+  const d=String(dest||'').trim().toLowerCase();
+  return d===''||d==='fiangonana'||d==='église'||d==='eglise';
+}
+// Nettoyage des anciennes lignes « Raki-pisaorana → Fiangonana » enregistrées à tort comme sorties
+async function corrigerRakiPisFiangonanaGL(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté.');return;}
+  try{
+    const lignes=await lireLivreFirebase('fiang');
+    const fausses=lignes.filter(function(e){
+      if(e.es!=='S'||e.rubrique!=='C7.1'||!estEcritureRakitra(e)) return false;
+      const m=String(e.libelle||'').match(/^Raki-pisaorana\s*→\s*(.*)$/);
+      return !!m && destGardeeParFiangonana(m[1]);
+    });
+    if(!fausses.length){ alert('✅ Aucune sortie « Raki-pisaorana → Fiangonana » à corriger.'); return; }
+    const total=fausses.reduce(function(a,e){return a+(e.montant||0);},0);
+    const detail=fausses.slice(0,15).map(function(e){return '• '+fmtDateFr(e.date)+' — '+fmt(e.montant)+' F';}).join('\n')
+      +(fausses.length>15?'\n… et '+(fausses.length-15)+' autre(s)':'');
+    if(!confirm(fausses.length+' sortie(s) « Raki-pisaorana → Fiangonana » trouvée(s), pour '+fmt(total)+' F :\n\n'+detail
+      +'\n\nCet argent est resté dans la caisse : ces sorties vont être SUPPRIMÉES (l\'entrée Raki-pisaorana reste).\n\nContinuer ?')) return;
+    for(const e of fausses) await _fs.deleteDoc(_fs.doc(_db,'grandlivre_fiang',e._id));
+    alert('✅ '+fausses.length+' sortie(s) supprimée(s). La caisse Fiangonana remonte de '+fmt(total)+' F.');
+    if(typeof chargerTout==='function') chargerTout();
+  }catch(e){ alert('Erreur : '+e.message); }
+}
+
 async function fusionnerDoublonsDepensesGL(){
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté.');return;}
@@ -4477,10 +4510,11 @@ async function ecrireGrandLivreFiang(d){
   if(d.rakis&&d.rakis.length){
     d.rakis.forEach(function(r){
       ecritures.push({...base,es:'E',rubrique:'B2',libelle:'Raki-pisaorana',montant:r.montant,verset:r.verset||''});
-      // Répartition par destination → sorties
+      // Répartition par destination → sorties, UNIQUEMENT pour l'argent reversé (sampana, pasteur, autre).
+      // La part attribuée à la Fiangonana (ou sans destination) reste dans la caisse : pas de sortie.
       if(r.repartition&&r.repartition.length){
         r.repartition.forEach(function(rep){
-          if(rep.montant>0){
+          if(rep.montant>0 && !destGardeeParFiangonana(rep.dest)){
             ecritures.push({...base,es:'S',rubrique:'C7.1',libelle:'Raki-pisaorana → '+rep.dest,montant:rep.montant});
           }
         });
