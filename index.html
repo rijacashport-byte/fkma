@@ -2151,6 +2151,11 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div class="ch"><label>✍️ Saisi par</label><select id="k45-saispar" class="choix-liste" data-liste="personnes" onchange="choixChange(this)"></select>
 <input type="text" id="k45-saispar-autre" placeholder="Préciser… (sera ajouté à la liste)" style="display:none;margin-top:6px" onchange="choixAutreValider('k45-saispar')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"></div>
  </div>
+ <div class="btn-admin-gl" style="margin:0 0 10px;padding:10px 12px;border:1px dashed var(--gris2);border-radius:8px;font-size:12px;color:var(--texte2)">
+ 📥 <b>Importer le cahier K45</b> (secrétaire / président des diacres) : remplace tout le livre K45 par le fichier <b>import_cahier_k45.json</b>.
+ <input type="file" id="k45-import-input" accept=".json,application/json" style="display:none" onchange="importerCahierK45(this)">
+ <button type="button" class="btn btn-gris" style="width:auto;padding:6px 12px;margin:8px 0 0;font-size:12px" onclick="document.getElementById('k45-import-input').click()">📂 Choisir le fichier et importer</button>
+ </div>
  <button class="btn bo" id="k45-save-btn" onclick="enregistrerK45()">
       💾 Enregistrer écriture K45
  </button>
@@ -4559,6 +4564,48 @@ async function ecrireRakiPandraisanaK45(d){
 // Transfert des anciens Raki-pandraisana écrits dans le Grand Livre Fiangonana (rubrique K45-INFO)
 // vers le livre K45. Un montant déjà saisi à la main dans K45 n'est pas recopié (pas de doublon) :
 // la ligne Fiangonana est seulement supprimée.
+
+// ── IMPORT DU CAHIER K45 ──────────────────────────────────────
+// Remplace TOUT le livre K45 par les mouvements du cahier (fichier import_cahier_k45.json préparé
+// par Claude), en repartant de soldes initiaux à 0. Retire aussi du livre Fiangonana les anciens
+// Raki-pandraisana (rubrique K45-INFO), qui sont dans le cahier K45.
+async function importerCahierK45(input){
+  const f=input.files&&input.files[0]; input.value='';
+  if(!f) return;
+  const role=window._currentRole;
+  if(role!=='secretaire'&&role!=='diacre'){ alert('Réservé au secrétaire et au président des diacres.'); return; }
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){ alert('Firebase non connecté.'); return; }
+  let d; try{ d=JSON.parse(await f.text()); }catch(e){ alert('Fichier illisible : '+e.message); return; }
+  if(d.format!=='fkma-import-k45'||!Array.isArray(d.lignes)){ alert('Ce fichier n\'est pas un import du cahier K45.'); return; }
+  try{
+    const k45=await lireLivreFirebase('k45');
+    const fiangRP=(await lireLivreFirebase('fiang')).filter(function(e){return e.rubrique==='K45-INFO'&&estEcritureRakitra(e);});
+    const c=d.controle||{};
+    if(!confirm('Import du cahier K45 :\n\n'
+      +'• '+k45.length+' ligne(s) actuelle(s) du livre K45 seront SUPPRIMÉES\n'
+      +'• '+fiangRP.length+' ancien(s) Raki-pandraisana retiré(s) du livre Fiangonana\n'
+      +'• '+d.lignes.length+' ligne(s) du cahier importée(s), soldes initiaux K45 remis à 0\n\n'
+      +'Soldes attendus après import : caisse '+fmt(c.solde_caisse||0)+' F · banque '+fmt(c.solde_banque||0)+' F\n\nContinuer ?')) return;
+    const email=emailConnecte(), nom=(ROLES_CONFIG[email]||{}).nom||email, now=new Date().toISOString();
+    for(const e of k45) await _fs.deleteDoc(_fs.doc(_db,'grandlivre_k45',e._id));
+    for(const e of fiangRP) await _fs.deleteDoc(_fs.doc(_db,'grandlivre_fiang',e._id));
+    for(const l of d.lignes){
+      await _fs.addDoc(_fs.collection(_db,'grandlivre_k45'),Object.assign({},l,{
+        page:l.page||'',importe:'cahier-k45',createdBy:email,createdByNom:nom,createdAt:now,savedAt:now}));
+    }
+    await _fs.setDoc(_fs.doc(_db,'parametres','soldes_initiaux'),{k45:{caisse:0,banque:0,modifiedBy:email,modifiedByNom:nom,modifiedAt:now}},{merge:true});
+    ['caisse','banque'].forEach(function(k){ const el=document.getElementById('k45-init-'+k); if(el) el.value=0; });
+    _soldesInitCharges=false;
+    await chargerTout();
+    let caisse=0,banque=0;
+    (GL.k45||[]).forEach(function(e){ const s=e.es==='E'?1:-1; if((e.source||'caisse')==='banque') banque+=s*(e.montant||0); else caisse+=s*(e.montant||0); });
+    const ok=caisse===(c.solde_caisse||0)&&banque===(c.solde_banque||0);
+    alert((ok?'✅ Import terminé, soldes conformes au cahier.':'⚠️ Import terminé mais les soldes diffèrent du cahier : vérifie le livre K45.')
+      +'\n\nCaisse K45 : '+fmt(caisse)+' F\nBanque K45 : '+fmt(banque)+' F');
+  }catch(e){ alert('Erreur pendant l\'import (le livre K45 peut être incomplet : relance l\'import, il repart de zéro) : '+e.message); }
+}
+
 async function transfererRakiPandraisanaK45(){
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté.');return;}
