@@ -2073,6 +2073,8 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <button class="btn bb" onclick="exporterExcel('anj')">📊 Exporter Excel — Anjarako</button>
  <button class="btn btn-gris btn-admin-gl" onclick="fusionnerDoublonsDepensesGL()" style="margin-top:8px">🧹 Supprimer les doublons dépenses / Grand Livre</button>
  <button class="btn btn-gris btn-admin-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="ouvrirVersementsAttente('anj')" style="margin-top:8px">🏦 Anjarako encaissés mais pas encore versés en banque</button>
+ <div class="card" id="versements-attente-anj" style="display:none;margin-top:10px"></div>
 
  <div class="card">
  <div class="ctit">📋 Livre Anjarako</div>
@@ -4604,6 +4606,74 @@ async function importerCahierK45(input){
     alert((ok?'✅ Import terminé, soldes conformes au cahier.':'⚠️ Import terminé mais les soldes diffèrent du cahier : vérifie le livre K45.')
       +'\n\nCaisse K45 : '+fmt(caisse)+' F\nBanque K45 : '+fmt(banque)+' F');
   }catch(e){ alert('Erreur pendant l\'import (le livre K45 peut être incomplet : relance l\'import, il repart de zéro) : '+e.message); }
+}
+
+
+// ── VERSEMENTS EN BANQUE MANQUANTS ────────────────────────────
+// Repère les recettes en caisse (Anjarako voaray) qui n'ont pas encore de versement en banque :
+// chaque versement existant (sortie caisse « VB ») est associé à une recette du même montant,
+// la plus ancienne non encore associée et antérieure au versement. Le reste est « en attente ».
+const RUBRIQUES_RECETTE_VERSABLE={anj:['ANJ-E1']};
+function recettesNonVersees(livre){
+  const l=(GL[livre]||[]).slice().sort(cmpChrono);
+  const recettes=l.filter(function(e){return e.es==='E'&&(e.source||'caisse')!=='banque'&&RUBRIQUES_RECETTE_VERSABLE[livre].indexOf(e.rubrique)>=0;});
+  const versements=l.filter(function(e){return e.es==='S'&&(e.source||'caisse')!=='banque'&&e.rubrique==='VB';});
+  const associees=new Set();
+  versements.forEach(function(v){
+    const r=recettes.find(function(x){return !associees.has(x._id)&&Number(x.montant)===Number(v.montant)&&(x.date||'')<=(v.date||'');});
+    if(r) associees.add(r._id);
+  });
+  return recettes.filter(function(r){return !associees.has(r._id);});
+}
+function ouvrirVersementsAttente(livre){
+  const zone=document.getElementById('versements-attente-'+livre); if(!zone) return;
+  if(zone.style.display!=='none'){ zone.style.display='none'; return; }
+  const att=recettesNonVersees(livre);
+  zone.style.display='';
+  if(!att.length){ zone.innerHTML='<div class="ctit">🏦 Versements en attente</div><div class="vide">✅ Tout est versé : aucune recette en attente de versement.</div>'; return; }
+  const total=att.reduce(function(a,e){return a+(e.montant||0);},0);
+  zone.innerHTML='<div class="ctit">🏦 Anjarako pas encore versés en banque</div>'
+    +'<div class="note">Coche ceux qui ont été déposés et mets la <b>date réelle du dépôt</b> (relevé ou bordereau SIB). Une double écriture sera créée pour chacun : sortie de caisse + entrée en banque.</div>'
+    +att.map(function(e,i){
+      return '<div class="op-item" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+        +'<input type="checkbox" id="va-chk-'+i+'" checked style="width:18px;height:18px">'
+        +'<div style="flex:1;min-width:140px"><div class="op-date">Anjarako du '+esc(fmtDateFr(e.date))+'</div><div class="op-mnt">'+fmt(e.montant)+' F</div></div>'
+        +'<label style="font-size:11px;color:var(--texte2)">Déposé le <input type="date" id="va-date-'+i+'" value="'+esc(e.date)+'" style="border:1.5px solid var(--gris2);border-radius:6px;padding:5px"></label>'
+        +'<input type="text" id="va-bord-'+i+'" placeholder="N° bordereau" style="width:110px;border:1.5px solid var(--gris2);border-radius:6px;padding:5px">'
+        +'</div>';
+    }).join('')
+    +'<div class="solrow" style="background:var(--gris1)"><span class="sollab" style="font-weight:700">Total en attente</span><span class="solval">'+fmt(total)+' F</span></div>'
+    +'<button type="button" class="btn bv" style="margin-top:8px" onclick="creerVersementsAttente(\''+livre+'\')">🏦 Créer les versements cochés</button>';
+  window._versementsAttente=att;
+}
+async function creerVersementsAttente(livre){
+  const att=window._versementsAttente||[];
+  const db=window._db,fs=window._fs;
+  if(!db){ alert('Firebase non connecté.'); return; }
+  const choix=[];
+  att.forEach(function(e,i){
+    const c=document.getElementById('va-chk-'+i);
+    if(c&&c.checked) choix.push({e:e,date:document.getElementById('va-date-'+i).value,bord:document.getElementById('va-bord-'+i).value.trim()});
+  });
+  if(!choix.length){ alert('Coche au moins un Anjarako.'); return; }
+  if(choix.some(function(c){return !c.date;})){ alert('Indique la date du dépôt pour chaque ligne cochée.'); return; }
+  const total=choix.reduce(function(a,c){return a+(c.e.montant||0);},0);
+  if(!confirm('Créer '+choix.length+' versement(s) en banque pour '+fmt(total)+' F ?')) return;
+  const email=emailConnecte(), nom=(ROLES_CONFIG[email]||{}).nom||email;
+  let n=0;
+  try{
+    for(const c of choix){
+      const opId=Date.now()+n;
+      const base={date:c.date,page:'',montant:c.e.montant,comment:'Anjarako du '+fmtDateFr(c.e.date),piece:c.bord,transfert:true,opId,
+        createdBy:email,createdByNom:nom,savedAt:new Date().toISOString()};
+      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
+      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
+      n++;
+    }
+    alert('✅ '+n+' versement(s) créé(s) pour '+fmt(total)+' F.');
+  }catch(e){ alert('Erreur après '+n+' versement(s) créé(s) : '+e.message+'\n\nRouvre la liste : seuls les versements manquants y apparaîtront.'); }
+  document.getElementById('versements-attente-'+livre).style.display='none';
+  await chargerTout();
 }
 
 async function transfererRakiPandraisanaK45(){
