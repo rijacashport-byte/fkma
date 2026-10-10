@@ -2035,6 +2035,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 
  <!-- Export -->
  <button class="btn bv" onclick="exporterExcel('fiang')">📊 Exporter Excel — Fiangonana</button>
+ <button class="btn btn-gris btn-admin-gl" onclick="transfererRakiPandraisanaK45()" style="margin-top:8px">🍷 Transférer les Raki-pandraisana vers le livre K45</button>
  <button class="btn btn-gris btn-admin-gl" onclick="corrigerRakiPisFiangonanaGL()" style="margin-top:8px">🎁 Corriger les Raki-pisaorana gardés par la Fiangonana</button>
  <button class="btn btn-gris btn-admin-gl" onclick="fusionnerDoublonsDepensesGL()" style="margin-top:8px">🧹 Supprimer les doublons dépenses / Grand Livre</button>
  <button class="btn btn-gris btn-admin-gl" id="btn-rattraper-gl" onclick="rattraperDepensesGL()" style="margin-top:8px">🔄 Rattraper les dépenses manquantes dans le Grand Livre</button>
@@ -4504,8 +4505,7 @@ async function ecrireGrandLivreFiang(d){
   const ecritures=[];
   // Rakitra tsotra (B1.1)
   if(d.totalRakitra>0) ecritures.push({...base,es:'E',rubrique:'B1.1',libelle:'Rakitra',montant:d.totalRakitra});
-  // Raki-pandraisana (hors budget — info seulement)
-  if(d.rpOn&&d.totalRP>0) ecritures.push({...base,es:'E',rubrique:'K45-INFO',libelle:'Raki-pandraisana (hors budget)',montant:d.totalRP,horsbudget:true});
+  // Raki-pandraisana : appartient au livre K45 (rubrique K45-E1), écrit plus bas par ecrireRakiPandraisanaK45()
   // Raki-pisaorana (B2) — chaque offrande
   if(d.rakis&&d.rakis.length){
     d.rakis.forEach(function(r){
@@ -4533,6 +4533,66 @@ async function ecrireGrandLivreFiang(d){
     ec.numOp=await prochainNumeroOp();
     await _fs.addDoc(col,ec);
   }
+  await ecrireRakiPandraisanaK45(d);
+}
+
+// ── RAKI-PANDRAISANA → LIVRE K45 ──────────────────────────────
+// Le Raki-pandraisana est une recette du livre K45 (rubrique K45-E1), pas de la Fiangonana.
+// À chaque enregistrement (ou correction) d'un Rakitra : on remplace la ligne automatique K45 de la
+// date. Si une ligne a déjà été saisie À LA MAIN dans K45 (même date, même montant), on n'en crée pas
+// une deuxième.
+function estJumelleRP(e,date,montant){
+  return e.es==='E' && e.rubrique==='K45-E1' && e.origine!=='rakitra' && e.date===date && Number(e.montant)===Number(montant);
+}
+async function ecrireRakiPandraisanaK45(d){
+  const colK=_fs.collection(_db,'grandlivre_k45');
+  const snap=await _fs.getDocs(colK);
+  const lignes=[]; snap.forEach(function(ds){ lignes.push({ref:ds.ref,data:ds.data()}); });
+  for(const l of lignes){ if(l.data.date===d.date && l.data.origine==='rakitra') await _fs.deleteDoc(l.ref); }
+  if(!(d.rpOn&&d.totalRP>0)) return;
+  if(lignes.some(function(l){return estJumelleRP(l.data,d.date,d.totalRP);})) return;
+  await _fs.addDoc(colK,{date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',origine:'rakitra',auto:true,
+    es:'E',rubrique:'K45-E1',libelle:'Raki-pandraisana',montant:d.totalRP,
+    numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()});
+}
+
+// Transfert des anciens Raki-pandraisana écrits dans le Grand Livre Fiangonana (rubrique K45-INFO)
+// vers le livre K45. Un montant déjà saisi à la main dans K45 n'est pas recopié (pas de doublon) :
+// la ligne Fiangonana est seulement supprimée.
+async function transfererRakiPandraisanaK45(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté.');return;}
+  try{
+    const fiang=await lireLivreFirebase('fiang');
+    const k45=await lireLivreFirebase('k45');
+    const aDeplacer=fiang.filter(function(e){return e.rubrique==='K45-INFO' && estEcritureRakitra(e);});
+    if(!aDeplacer.length){ alert('✅ Aucun Raki-pandraisana à transférer : le livre Fiangonana n\'en contient plus.'); return; }
+    const pris=new Set();
+    const plan=aDeplacer.map(function(e){
+      const jumelle=k45.find(function(k){ return !pris.has(k._id) && (estJumelleRP(k,e.date,e.montant) || (k.origine==='rakitra'&&k.date===e.date&&Number(k.montant)===Number(e.montant))); });
+      if(jumelle) pris.add(jumelle._id);
+      return {e:e, dejaDansK45:!!jumelle};
+    });
+    const total=aDeplacer.reduce(function(a,e){return a+(e.montant||0);},0);
+    const detail=plan.slice(0,15).map(function(x){
+      return '• '+fmtDateFr(x.e.date)+' — '+fmt(x.e.montant)+' F'+(x.dejaDansK45?'  (déjà saisi dans K45 : pas recopié)':'');
+    }).join('\n')+(plan.length>15?'\n… et '+(plan.length-15)+' autre(s)':'');
+    if(!confirm(plan.length+' Raki-pandraisana trouvé(s) dans le livre Fiangonana, pour '+fmt(total)+' F :\n\n'+detail
+      +'\n\nIls vont être déplacés vers le livre K45 (et retirés du Fiangonana).\n\nContinuer ?')) return;
+    let copies=0;
+    for(const x of plan){
+      const e=x.e;
+      if(!x.dejaDansK45){
+        await _fs.addDoc(_fs.collection(_db,'grandlivre_k45'),{date:e.date,page:e.page||'',lettrage:e.lettrage||'',source:'caisse',
+          origine:'rakitra',auto:true,es:'E',rubrique:'K45-E1',libelle:'Raki-pandraisana',montant:e.montant,
+          numOp:e.numOp||await prochainNumeroOp(),savedAt:new Date().toISOString()});
+        copies++;
+      }
+      await _fs.deleteDoc(_fs.doc(_db,'grandlivre_fiang',e._id));
+    }
+    alert('✅ Transfert terminé : '+copies+' ligne(s) ajoutée(s) au livre K45, '+(plan.length-copies)+' déjà présente(s), '+plan.length+' retirée(s) du Fiangonana.');
+    if(typeof chargerTout==='function') chargerTout();
+  }catch(e){ alert('Erreur pendant le transfert (relance le bouton : il reprend là où il s\'est arrêté) : '+e.message); }
 }
 
 // Écriture du Grand Livre Fiangonana créée automatiquement par un Rakitra.
