@@ -2571,7 +2571,7 @@ function appliquerRole(role){
     if(tabGL)   tabGL.style.display='';
     if(tabOps)  tabOps.style.display=''; // Opérations visibles
     showMain('gest', tabGest);
-    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerTout(); chargerMembresAnj(); }
+    if(window._db){ chargerDepenses(); chargerAnjarako(); chargerRakitra(); chargerCultes(); chargerTout(); chargerMembresAnj(); }
     return;
   }
 
@@ -2818,10 +2818,11 @@ function onLoginSuccess(role){
   // diacre_journal : accès Journal K45 + Gestion/Rakitra uniquement
   if(role==='diacre_journal'){
     showMain('k45',document.getElementById('mnav-k45'));
+    if(window._db){chargerRakitra();chargerCultes();}
     return;
   }
   console.log('Connecté avec rôle:', role);
-  if(window._db){chargerDepenses();chargerAnjarako();}
+  if(window._db){chargerDepenses();chargerAnjarako();chargerRakitra();chargerCultes();}
 }
 
 // ── DONNÉES ──────────────────────────────────────────────────
@@ -2976,6 +2977,8 @@ function fbOK(){
   // Charger les données depuis Firebase au démarrage
   chargerDepenses();
   chargerAnjarako();
+  chargerRakitra();
+  chargerCultes();
   chargerMembresAnj();
   chargerChoix();
 }
@@ -3092,14 +3095,20 @@ function snapCulte(){
   };
 }
 
-function enregistrerCulte(){
+// Identifiant fixe d'un culte dans Firebase : date + type (un seul culte de chaque type par jour)
+function idCulte(c){ return c.date+'_'+String(c.type||'culte').replace(/[^A-Za-z0-9_-]/g,'_'); }
+async function enregistrerCulte(){
   const d=snapCulte();
   if(!d.date){alert('Veuillez renseigner la date.');return;}
-  const hist=load(SK_CULTES);
-  const idx=hist.findIndex(h=>h.date===d.date&&h.type===d.type);
-  if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=d;}else hist.push(d);
-  hist.sort((a,b)=>b.date.localeCompare(a.date));
-  save(SK_CULTES,hist);
+  if(load(SK_CULTES).some(h=>h.date===d.date&&h.type===d.type)&&!confirm('Remplacer ?'))return;
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
+  // Avant, les cultes restaient sur l'appareil qui les avait saisis (audit L2) : ils vont maintenant dans Firebase.
+  const email=emailConnecte();
+  d.createdBy=email; d.createdByNom=(ROLES_CONFIG[email]||{}).nom||email; d.createdAt=new Date().toISOString();
+  try{ await ecrireGroupe([{ref:_fs.doc(_db,'cultes',idCulte(d)),data:d}]); }
+  catch(e){alert(msgEchecEnregistrement(e));return;}
+  majCacheParDate(SK_CULTES,d,function(h){return h.date===d.date&&h.type===d.type;});
   alert('✅ Culte du '+d.date+' enregistré !');
 }
 
@@ -3335,23 +3344,24 @@ async function enregistrerRakitra(){
   const _uEmail=window._auth&&window._auth.currentUser?window._auth.currentUser.email:'';
   const _uNom=ROLES_CONFIG[_uEmail]?.nom||_uEmail;
   d.createdBy=_uEmail; d.createdByNom=_uNom; d.createdAt=new Date().toISOString();
-  const hist=load(SK_RAKITRA);
-  const idx=hist.findIndex(h=>h.date===d.date);
-  if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=d;}else hist.push(d);
-  hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_RAKITRA,hist);
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db){try{
-    // Sauvegarder dans collection rakitra
-    const col=_fs.collection(_db,'rakitra');
-    const snap=await _fs.getDocs(col);let xId=null;
-    snap.forEach(function(ds){if(ds.data().date===d.date)xId=ds.id;});
-    if(xId)await _fs.updateDoc(_fs.doc(_db,'rakitra',xId),d);
-    else await _fs.addDoc(col,d);
-    // Écriture automatique dans le Grand Livre Fiangonana
-    await ecrireGrandLivreFiang(d);
-    alert('✅ Rakitra du '+d.date+' enregistré !');
-  }catch(e){alert('Local OK — Firebase: '+e.message);}}
-  else alert('✅ Rakitra enregistré localement.');
+  if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
+  // Firebase d'abord (audit L2/L3) : le Rakitra et ses lignes du Grand Livre (Fiangonana + K45)
+  // partent ensemble. La copie sur l'appareil n'est mise à jour qu'après la réussite.
+  try{
+    const src=await refParDate('rakitra',d.date);
+    if(src.existe&&!confirm('Un Rakitra existe déjà pour le '+d.date+'. Remplacer ?'))return;
+    await ecrireGroupe([{ref:src.ref,data:d,maj:src.existe}].concat(await opsGrandLivreFiang(d)));
+  }catch(e){alert(msgEchecEnregistrement(e));return;}
+  majCacheParDate(SK_RAKITRA,d,function(h){return h.date===d.date;});
+  alert('✅ Rakitra du '+d.date+' enregistré !');
+}
+// Copie sur l'appareil (cache) : remplace l'élément correspondant, ou l'ajoute. _fb = présent dans Firebase.
+function majCacheParDate(cle,rec,memeElement){
+  const hist=load(cle).filter(function(h){return !memeElement(h);});
+  hist.push(Object.assign({},rec,{_fb:true}));
+  hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  save(cle,hist);
 }
 
 // ── DIACRES ──────────────────────────────────────────────────
@@ -3624,24 +3634,18 @@ async function enregistrerAnjarako(){
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
   const rec={date,total,enveloppes:[...enveloppesJour],valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
-  const hist=load(SK_ANJ_H);
-  const idx=hist.findIndex(h=>h.date===date);
-  if(idx>=0){if(!confirm('Remplacer ?'))return;hist[idx]=rec;}else hist.push(rec);
-  hist.sort((a,b)=>b.date.localeCompare(a.date));save(SK_ANJ_H,hist);
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db){try{
-    const col=_fs.collection(_db,'anjarako');
-    const snap=await _fs.getDocs(col);let xId=null;
-    snap.forEach(function(ds){if(ds.data().date===date)xId=ds.id;});
-    if(xId)await _fs.updateDoc(_fs.doc(_db,'anjarako',xId),rec);
-    else await _fs.addDoc(col,rec);
-    // Écriture automatique dans le Grand Livre Anjarako
-    await ecrireGrandLivreAnj(rec);
-    alert('✅ Anjarako du '+date+' enregistré !');
-    calculerAnjMoisCourant();
-    correctionAnjSource=null; majBannerCorrectionAnj();
-  }catch(e){alert('Local OK — Firebase: '+e.message);}}
-  else { alert('✅ Anjarako enregistré localement.'); correctionAnjSource=null; majBannerCorrectionAnj(); }
+  if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
+  // Firebase d'abord (audit L2/L3) : l'Anjarako et sa ligne du Grand Livre Anjarako partent ensemble.
+  try{
+    const src=await refParDate('anjarako',date);
+    if(src.existe&&!confirm('Un Anjarako existe déjà pour le '+date+'. Remplacer ?'))return;
+    await ecrireGroupe([{ref:src.ref,data:rec,maj:src.existe}].concat(await opsGrandLivreAnj(rec)));
+  }catch(e){alert(msgEchecEnregistrement(e));return;}
+  majCacheParDate(SK_ANJ_H,rec,function(h){return h.date===date;});
+  alert('✅ Anjarako du '+date+' enregistré !');
+  calculerAnjMoisCourant();
+  correctionAnjSource=null; majBannerCorrectionAnj();
 }
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
@@ -4038,29 +4042,26 @@ async function ajouterDepense(livre){
     createdBy:userEmail,createdByNom:userNom,createdAt:now,nbPieces:piecesEnAttente.length
   };
 
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
+  // Firebase d'abord, en attendant la réponse (audit L3) : la dépense et sa ligne au Grand Livre du
+  // même livre (Fiangonana ou Anjarako — audit L6) partent ensemble, ou pas du tout.
+  try{
+    const glRec={
+      date,montant,es:'S',source,
+      rubrique:cat||'DEP',
+      libelle:desc||cat||'Dépense',
+      piece,page,
+      createdBy:userEmail,createdByNom:userNom,createdAt:now,
+      savedAt:now,depenseId:rec.id
+    };
+    await ecrireGroupe([
+      {ref:_fs.doc(_db,'depenses',String(rec.id)),data:rec},
+      {ref:nouvelleRef('grandlivre_'+livre),data:glRec,numero:true}
+    ]);
+  }catch(e){alert(msgEchecEnregistrement(e));return;}
   const dep=load(SK_DEP);
   dep.push(rec);dep.sort((a,b)=>b.date.localeCompare(a.date));save(SK_DEP,dep);
-
-  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db){
-    try{
-      // Sauvegarder dans collection depenses
-      _fs.addDoc(_fs.collection(_db,'depenses'),rec).catch(e=>console.log('FB dep:',e.message));
-      // Écriture automatique dans le Grand Livre du même livre (Fiangonana ou Anjarako — audit L6)
-      {
-        const numOp=await prochainNumeroOp();
-        const glRec={
-          date,montant,es:'S',source,
-          rubrique:cat||'DEP',
-          libelle:desc||cat||'Dépense',
-          piece,page,numOp,
-          createdBy:userEmail,createdByNom:userNom,createdAt:now,
-          savedAt:now,depenseId:rec.id
-        };
-        _fs.addDoc(_fs.collection(_db,'grandlivre_'+livre),glRec).catch(e=>console.log('GL dep:',e.message));
-      }
-    }catch(e){console.log('FB dep:',e.message);}
-  }
 
   // Reset formulaire
   document.getElementById(p+'-montant').value='';
@@ -4153,24 +4154,22 @@ async function enregistrerCorrectionDepense(livre,v){
 
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté : la correction n\'a pas été enregistrée.');return;}
+  let glCorrige=false;
   try{
     // 1. La dépense elle-même
-    const snap=await _fs.getDocs(_fs.collection(_db,'depenses'));
-    let trouvee=false;
-    for(const ds of snap.docs){ if(ds.data().id===id){ await _fs.updateDoc(ds.ref,maj); trouvee=true; break; } }
-    if(!trouvee){alert('Cette dépense n\'a pas été trouvée dans Firebase : correction annulée.');return;}
-    // 2. Sa copie au Grand Livre du même livre (même numéro d'opération)
-    let glCorrige=false;
-    {
-      const snapGL=await _fs.getDocs(_fs.collection(_db,'grandlivre_'+livre));
-      for(const ds of snapGL.docs){
-        if(ds.data().depenseId===id){
-          await _fs.updateDoc(ds.ref,{date:v.date,montant:v.montant,source:v.source,rubrique:v.cat||'DEP',
-            libelle:v.desc||v.cat||'Dépense',piece:v.piece,page:v.page,modifiedBy:userEmail,modifiedByNom:userNom,modifiedAt:now});
-          glCorrige=true; break;
-        }
-      }
+    const snap=await _fs.getDocs(_fs.query(_fs.collection(_db,'depenses'),_fs.where('id','==',id)));
+    if(snap.empty){alert('Cette dépense n\'a pas été trouvée dans Firebase : correction annulée.');return;}
+    const ops=[{ref:snap.docs[0].ref,data:maj,maj:true}];
+    // 2. Sa copie au Grand Livre du même livre (même numéro d'opération) — corrigées ensemble (audit L3)
+    const snapGL=await _fs.getDocs(_fs.query(_fs.collection(_db,'grandlivre_'+livre),_fs.where('depenseId','==',id)));
+    if(!snapGL.empty){
+      glCorrige=true;
+      ops.push({ref:snapGL.docs[0].ref,maj:true,data:{date:v.date,montant:v.montant,source:v.source,rubrique:v.cat||'DEP',
+        libelle:v.desc||v.cat||'Dépense',piece:v.piece,page:v.page,modifiedBy:userEmail,modifiedByNom:userNom,modifiedAt:now}});
     }
+    await ecrireGroupe(ops);
+  }catch(e){alert(msgEchecEnregistrement(e));return;}
+  try{
     // 3. Copie locale
     const dep=load(SK_DEP);
     const rec=dep.find(function(d){return d.id===id;});
@@ -4181,29 +4180,29 @@ async function enregistrerCorrectionDepense(livre,v){
     await sauverPiecesPourOp(id); // photos ajoutées pendant la correction
     afficherDepenses(livre);
     if(typeof chargerTout==='function') chargerTout();
-    alert('✅ Dépense corrigée !'+(!glCorrige?'\n\n⚠️ Aucune ligne liée au Grand Livre n\'a été trouvée : utilise « Rattraper les dépenses » si besoin.':''));
-  }catch(e){alert('Erreur, la correction n\'est peut-être pas complète : '+e.message);}
+    alert('✅ Dépense corrigée !'+(!glCorrige?'\n\n⚠️ Aucune ligne liée au Grand Livre n\'a été trouvée : vérifie le Grand Livre.':''));
+  }catch(e){alert('✅ Dépense corrigée dans Firebase, mais l\'affichage n\'a pas pu être rafraîchi : '+e.message);}
 }
 
 async function supprimerDepense(id){
   if(!confirm('Supprimer ?'))return;
-  if(correctionDep&&correctionDep.id===id){ viderFormDepense(correctionDep.livre); terminerCorrectionDep(); }
-  const dep=load(SK_DEP);
-  const rec=dep.find(d=>d.id===id);
-  save(SK_DEP,dep.filter(d=>d.id!==id));
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
-  if(_db){try{
-    const col=_fs.collection(_db,'depenses');
-    const snap=await _fs.getDocs(col);
-    for(const ds of snap.docs){if(ds.data().id===id){await _fs.deleteDoc(ds.ref);break;}}
-    // Supprimer aussi la copie liée dans le Grand Livre du même livre, pour ne pas laisser d'écriture orpheline
+  if(!_db){alert('Firebase non connecté : rien n\'a été supprimé.');return;}
+  const rec=load(SK_DEP).find(d=>d.id===id);
+  // La dépense et sa copie au Grand Livre sont supprimées ensemble (audit L3) : jamais d'écriture orpheline
+  try{
+    const ops=[];
+    const snap=await _fs.getDocs(_fs.query(_fs.collection(_db,'depenses'),_fs.where('id','==',id)));
+    snap.forEach(function(ds){ops.push({suppr:ds.ref});});
     if(rec&&(rec.livre==='fiang'||rec.livre==='anj')){
-      const colGL=_fs.collection(_db,'grandlivre_'+rec.livre);
-      const snapGL=await _fs.getDocs(colGL);
-      for(const ds of snapGL.docs){if(ds.data().depenseId===id){await _fs.deleteDoc(ds.ref);break;}}
+      const snapGL=await _fs.getDocs(_fs.query(_fs.collection(_db,'grandlivre_'+rec.livre),_fs.where('depenseId','==',id)));
+      snapGL.forEach(function(ds){ops.push({suppr:ds.ref});});
     }
-    await supprimerPiecesPourOp(id);
-  }catch(e){console.log('Firebase delete:',e.message);}}
+    if(ops.length) await ecrireGroupe(ops);
+  }catch(e){alert(msgEchecEnregistrement(e).replace('enregistré','supprimé'));return;}
+  if(correctionDep&&correctionDep.id===id){ viderFormDepense(correctionDep.livre); terminerCorrectionDep(); }
+  save(SK_DEP,load(SK_DEP).filter(d=>d.id!==id));
+  try{ await supprimerPiecesPourOp(id); }catch(e){console.log('Photos:',e.message);}
   afficherDepenses('fiang');afficherDepenses('anj');
 }
 
@@ -4373,15 +4372,57 @@ function exporterExcelDepenses(livre){
 
 
 // ── ÉCRITURE AUTOMATIQUE GRAND LIVRE ────────────────────────
-async function ecrireGrandLivreFiang(d){
-  if(!_db) return;
+// ── ENREGISTREMENT GROUPÉ (audit L3) ─────────────────────────
+// Toutes les écritures d'une même opération (document source, lignes du Grand Livre, n° d'opération)
+// partent ensemble dans UNE transaction Firebase : soit tout est enregistré, soit rien.
+// Une coupure au milieu ne laisse donc plus de Grand Livre à moitié écrit.
+// ops : {suppr:ref} supprime ; {ref,data} crée/remplace ; {ref,data,maj:true} met à jour ;
+//       numero:true → la ligne reçoit un n° d'opération (OP-AAAA-NNNN).
+// Une transaction a besoin d'Internet : hors connexion, elle échoue et RIEN n'est enregistré.
+async function ecrireGroupe(ops){
+  const fs=window._fs, db=window._db;
+  if(!db) throw new Error('Firebase non connecté');
+  const nb=ops.filter(function(o){return o.numero;}).length;
+  const annee=new Date().getFullYear();
+  const refCpt=fs.doc(db,'compteurs','operations_'+annee);
+  await fs.runTransaction(db,async function(tx){
+    let n=0;
+    if(nb){ const s=await tx.get(refCpt); n=s.exists()?(s.data().dernier||0):0; }
+    ops.forEach(function(o){
+      if(o.suppr){ tx.delete(o.suppr); return; }
+      const data=Object.assign({},o.data);
+      if(o.numero){ n++; data.numOp=o._numOp='OP-'+annee+'-'+String(n).padStart(4,'0'); }
+      if(o.maj) tx.update(o.ref,data); else tx.set(o.ref,data);
+    });
+    if(nb) tx.set(refCpt,{dernier:n},{merge:true});
+  });
+  // Réussi : chaque ligne numérotée garde son n° (pour l'affichage immédiat)
+  ops.forEach(function(o){ if(o._numOp) o.data.numOp=o._numOp; });
+}
+function nouvelleRef(collection){ return window._fs.doc(window._fs.collection(window._db,collection)); }
+// Message d'erreur clair quand l'enregistrement groupé échoue
+function msgEchecEnregistrement(e){
+  const horsLigne=e&&(e.code==='unavailable'||e.code==='failed-precondition'||!navigator.onLine);
+  return (horsLigne?'📵 Pas de connexion Internet.':'❌ Erreur : '+(e&&e.message||e))
+    +'\n\nRIEN n\'a été enregistré. La saisie reste à l\'écran : réessaie quand la connexion revient.';
+}
+// Document source (rakitra, anjarako…) : on reprend l'existant pour cette date s'il y en a un
+// (anciens documents à identifiant aléatoire), sinon identifiant fixe = la date (audit L10).
+async function refParDate(collection,date){
+  const snap=await _fs.getDocs(_fs.query(_fs.collection(_db,collection),_fs.where('date','==',date)));
+  const refs=snap.docs.map(function(ds){return ds.ref;});
+  return {ref:refs[0]||_fs.doc(_db,collection,date), existe:refs.length>0};
+}
+
+// Lignes du Grand Livre Fiangonana générées par un Rakitra (à passer à ecrireGroupe)
+async function opsGrandLivreFiang(d){
   const col=_fs.collection(_db,'grandlivre_fiang');
   // origine:'rakitra' marque les lignes générées ici, pour ne supprimer qu'elles lors d'une correction
   const base={date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',origine:'rakitra',auto:true,savedAt:new Date().toISOString()};
   const ecritures=[];
   // Rakitra tsotra (B1.1)
   if(d.totalRakitra>0) ecritures.push({...base,es:'E',rubrique:'B1.1',libelle:'Rakitra',montant:d.totalRakitra});
-  // Raki-pandraisana : appartient au livre K45 (rubrique K45-E1), écrit plus bas par ecrireRakiPandraisanaK45()
+  // Raki-pandraisana : appartient au livre K45 (rubrique K45-E1), écrit plus bas par opsRakiPandraisanaK45()
   // Raki-pisaorana (B2) — chaque offrande
   if(d.rakis&&d.rakis.length){
     d.rakis.forEach(function(r){
@@ -4400,16 +4441,12 @@ async function ecrireGrandLivreFiang(d){
   // Supprimer UNIQUEMENT les anciennes écritures générées par le Rakitra de cette date.
   // Avant, toutes les écritures « caisse » du jour étaient effacées, y compris les dépenses
   // et les saisies manuelles du même dimanche.
-  const existing=await _fs.getDocs(col);
-  const toDelete=[];
-  existing.forEach(function(ds){if(ds.data().date===d.date&&estEcritureRakitra(ds.data()))toDelete.push(ds.ref);});
-  for(const ref of toDelete) await _fs.deleteDoc(ref);
-  // Écrire les nouvelles, chacune avec son propre numéro
-  for(const ec of ecritures){
-    ec.numOp=await prochainNumeroOp();
-    await _fs.addDoc(col,ec);
-  }
-  await ecrireRakiPandraisanaK45(d);
+  const ops=[];
+  const existing=await _fs.getDocs(_fs.query(col,_fs.where('date','==',d.date)));
+  existing.forEach(function(ds){if(estEcritureRakitra(ds.data()))ops.push({suppr:ds.ref});});
+  // Les nouvelles, chacune avec son propre numéro
+  ecritures.forEach(function(ec){ ops.push({ref:_fs.doc(col),data:ec,numero:true}); });
+  return ops.concat(await opsRakiPandraisanaK45(d));
 }
 
 // ── RAKI-PANDRAISANA → LIVRE K45 ──────────────────────────────
@@ -4420,16 +4457,17 @@ async function ecrireGrandLivreFiang(d){
 function estJumelleRP(e,date,montant){
   return e.es==='E' && e.rubrique==='K45-E1' && e.origine!=='rakitra' && e.date===date && Number(e.montant)===Number(montant);
 }
-async function ecrireRakiPandraisanaK45(d){
+async function opsRakiPandraisanaK45(d){
   const colK=_fs.collection(_db,'grandlivre_k45');
-  const snap=await _fs.getDocs(colK);
+  const snap=await _fs.getDocs(_fs.query(colK,_fs.where('date','==',d.date)));
   const lignes=[]; snap.forEach(function(ds){ lignes.push({ref:ds.ref,data:ds.data()}); });
-  for(const l of lignes){ if(l.data.date===d.date && l.data.origine==='rakitra') await _fs.deleteDoc(l.ref); }
-  if(!(d.rpOn&&d.totalRP>0)) return;
-  if(lignes.some(function(l){return estJumelleRP(l.data,d.date,d.totalRP);})) return;
-  await _fs.addDoc(colK,{date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',origine:'rakitra',auto:true,
-    es:'E',rubrique:'K45-E1',libelle:'Raki-pandraisana',montant:d.totalRP,
-    numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()});
+  const ops=[];
+  lignes.forEach(function(l){ if(l.data.origine==='rakitra') ops.push({suppr:l.ref}); });
+  if(!(d.rpOn&&d.totalRP>0)) return ops;
+  if(lignes.some(function(l){return estJumelleRP(l.data,d.date,d.totalRP);})) return ops;
+  ops.push({ref:_fs.doc(colK),numero:true,data:{date:d.date,page:d.page||'',lettrage:d.lettrage||'',source:'caisse',origine:'rakitra',auto:true,
+    es:'E',rubrique:'K45-E1',libelle:'Raki-pandraisana',montant:d.totalRP,savedAt:new Date().toISOString()}});
+  return ops;
 }
 
 // Écriture du Grand Livre Fiangonana créée automatiquement par un Rakitra.
@@ -4443,17 +4481,17 @@ function estEcritureRakitra(e){
   return ['B1.1','K45-INFO','B2','C7.1'].indexOf(e.rubrique)>=0;
 }
 
-async function ecrireGrandLivreAnj(rec){
-  if(!_db) return;
+// Ligne « Anjarako voaray » du Grand Livre Anjarako (à passer à ecrireGroupe)
+async function opsGrandLivreAnj(rec){
   const col=_fs.collection(_db,'grandlivre_anj');
   const base={date:rec.date,page:'',lettrage:'',source:'caisse',savedAt:new Date().toISOString()};
+  const ops=[];
   // Supprimer anciennes écritures auto de cette date
-  const existing=await _fs.getDocs(col);
-  const toDelete=[];
-  existing.forEach(function(ds){if(ds.data().date===rec.date&&ds.data().auto===true)toDelete.push(ds.ref);});
-  for(const ref of toDelete) await _fs.deleteDoc(ref);
+  const existing=await _fs.getDocs(_fs.query(col,_fs.where('date','==',rec.date)));
+  existing.forEach(function(ds){if(ds.data().auto===true)ops.push({suppr:ds.ref});});
   // Écriture entrée Anjarako voaray
-  await _fs.addDoc(col,{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true,numOp:await prochainNumeroOp()});
+  ops.push({ref:_fs.doc(col),numero:true,data:{...base,es:'E',rubrique:'ANJ-E1',libelle:'Anjarako voaray',montant:rec.total,auto:true}});
+  return ops;
 }
 // ── CHARGEMENT FIREBASE AU DÉMARRAGE ─────────────────────────
 async function chargerDepenses(){
@@ -4479,6 +4517,59 @@ async function chargerAnjarako(){
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
     save(SK_ANJ_H,hist);
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
+}
+
+// ── RAKITRA ET CULTES : relus depuis Firebase (audit L2) ──────
+// Firebase est la seule référence ; la copie sur l'appareil n'est qu'un cache pour le hors-ligne.
+// Un élément marqué _fb qui a disparu de Firebase (supprimé ailleurs) disparaît aussi de l'appareil.
+// Un élément jamais marqué _fb et absent de Firebase vient d'une ancienne version (« Local OK ») :
+// il est gardé et renvoyé à l'appelant.
+async function fusionnerDepuisFirebase(collection,cle,memeElement){
+  const snap=await _fs.getDocs(_fs.collection(_db,collection));
+  const distants=[]; snap.forEach(function(ds){distants.push(Object.assign(ds.data(),{_fb:true}));});
+  const locauxSeuls=load(cle).filter(function(l){return !l._fb&&!distants.some(function(r){return memeElement(l,r);});});
+  save(cle,distants.concat(locauxSeuls).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}));
+  return locauxSeuls;
+}
+function roleConnecte(){ return window._currentRole||(ROLES_CONFIG[emailConnecte()]||{}).role||''; }
+function rafraichirDashboardSiVisible(){
+  const el=document.getElementById('dash-annee-label');
+  if(el&&el.offsetParent&&typeof renderDashboard==='function') renderDashboard();
+}
+async function chargerRakitra(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db)return;
+  try{
+    const seuls=await fusionnerDepuisFirebase('rakitra',SK_RAKITRA,function(a,b){return a.date===b.date;});
+    rafraichirDashboardSiVisible();
+    // Rakitra restés sur cet appareil : on prévient (une fois par session) ceux qui peuvent les réenregistrer
+    if(seuls.length&&['secretaire','tresoriere','diacre','diacre_journal'].indexOf(roleConnecte())>=0){
+      let dejaDit=false; try{dejaDit=sessionStorage.getItem('fkma_rak_locaux')==='1';}catch(e){}
+      if(!dejaDit){
+        try{sessionStorage.setItem('fkma_rak_locaux','1');}catch(e){}
+        alert('⚠️ '+seuls.length+' Rakitra sont enregistrés seulement sur cet appareil, pas dans Firebase :\n'
+          +seuls.map(function(h){return '• '+fmtDateFr(h.date)+' — '+fmt(h.totalRakitra||h.total||0)+' F';}).join('\n')
+          +'\n\nPour les mettre dans Firebase (et au Grand Livre) : Dashboard → Historique → choisir la date → recharger le Rakitra → Enregistrer.');
+      }
+    }
+  }catch(e){console.log('Erreur chargement rakitra:',e.message);}
+}
+async function chargerCultes(){
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(!_db)return;
+  try{
+    const seuls=await fusionnerDepuisFirebase('cultes',SK_CULTES,function(a,b){return a.date===b.date&&a.type===b.type;});
+    // Les cultes n'allaient jamais dans Firebase : ceux saisis sur cet appareil y sont envoyés une fois
+    if(seuls.length&&['secretaire','tresoriere','diacre','diacre_journal'].indexOf(roleConnecte())>=0){
+      for(let i=0;i<seuls.length;i+=200){
+        await ecrireGroupe(seuls.slice(i,i+200).map(function(c){return {ref:_fs.doc(_db,'cultes',idCulte(c)),data:c};}));
+      }
+      const cles=seuls.map(idCulte);
+      save(SK_CULTES,load(SK_CULTES).map(function(c){return cles.indexOf(idCulte(c))>=0?Object.assign(c,{_fb:true}):c;}));
+      console.log(seuls.length+' culte(s) envoyé(s) dans Firebase');
+    }
+    rafraichirDashboardSiVisible();
+  }catch(e){console.log('Erreur chargement cultes:',e.message);}
 }
 
 // ── MODIFIER SAISIE EXISTANTE ─────────────────────────────────
@@ -5319,11 +5410,14 @@ async function verserRecetteEnBanque(btn){
     recetteDate:e.date,recetteRubrique:e.rubrique,
     createdBy:email,createdByNom:(ROLES_CONFIG[email]||{}).nom||email,savedAt:new Date().toISOString()};
   try{
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
-    await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
+    // Sortie caisse + entrée banque : enregistrées ensemble (audit L3)
+    await ecrireGroupe([
+      {ref:nouvelleRef('grandlivre_'+livre),numero:true,data:{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'}},
+      {ref:nouvelleRef('grandlivre_'+livre),numero:true,data:{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'}}
+    ]);
     alert('✅ Versement enregistré : '+fmt(e.montant)+' F en banque.');
     await chargerTout();
-  }catch(err){ btn.disabled=false; alert('Erreur : '+err.message); }
+  }catch(err){ btn.disabled=false; alert(msgEchecEnregistrement(err)); }
 }
 
 function renderFiang(){renderLivre('fiang');renderSoldes('fiang');}
@@ -5415,17 +5509,16 @@ async function faireTransfert(){
       // Mise à jour des deux écritures existantes (sortie caisse + entrée banque) : même numéro d'opération
       opId=correctionOp.opId;
       const maj={date,page,montant,comment,piece,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
-      for(const id of correctionOp.ids){
-        await fs.updateDoc(fs.doc(db,'grandlivre_'+correctionOp.livre,id),maj);
-      }
+      await ecrireGroupe(correctionOp.ids.map(function(id){return {ref:fs.doc(db,'grandlivre_'+correctionOp.livre,id),data:maj,maj:true};}));
       alert('✅ Transfert corrigé !');
     } else {
       opId=Date.now();
       const base={date,page,montant,comment,piece,transfert:true,opId,savedAt:new Date().toISOString()};
-      // Sortie caisse
-      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB',numOp:await prochainNumeroOp()});
-      // Entrée banque
-      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB',numOp:await prochainNumeroOp()});
+      // Sortie caisse + entrée banque : enregistrées ensemble (audit L3)
+      await ecrireGroupe([
+        {ref:nouvelleRef('grandlivre_'+livre),numero:true,data:{...base,es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'}},
+        {ref:nouvelleRef('grandlivre_'+livre),numero:true,data:{...base,es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'}}
+      ]);
       alert('✅ Transfert enregistré !');
     }
     viderFormOp('tr');
@@ -5452,16 +5545,14 @@ async function enregistrerOpBancaire(){
     if(enCorrection){
       opId=correctionOp.opId;
       const maj={date,montant,es:obES,rubrique:nature,libelle,comment,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
-      for(const id of correctionOp.ids){
-        await fs.updateDoc(fs.doc(db,'grandlivre_'+correctionOp.livre,id),maj);
-      }
+      await ecrireGroupe(correctionOp.ids.map(function(id){return {ref:fs.doc(db,'grandlivre_'+correctionOp.livre,id),data:maj,maj:true};}));
       alert('✅ Opération bancaire corrigée !');
     } else {
       opId=Date.now();
-      await fs.addDoc(fs.collection(db,'grandlivre_'+livre),{
+      await ecrireGroupe([{ref:nouvelleRef('grandlivre_'+livre),numero:true,data:{
         date,montant,es:obES,source:'banque',rubrique:nature,libelle,
-        comment,opbancaire:true,opId,numOp:await prochainNumeroOp(),savedAt:new Date().toISOString()
-      });
+        comment,opbancaire:true,opId,savedAt:new Date().toISOString()
+      }}]);
       alert('✅ Opération bancaire enregistrée !');
     }
     viderFormOp('ob');
@@ -5646,11 +5737,12 @@ async function enregistrerK45(){
     libelle:document.getElementById('k45-libelle').value||'',
     piece:document.getElementById('k45-piece').value||'',
     saispar:document.getElementById('k45-saispar').value||'',
-    numOp:await prochainNumeroOp(),
     savedAt:new Date().toISOString()
   };
   try{
-    const docRef=await fs.addDoc(fs.collection(db,'grandlivre_k45'),rec);
+    // Écriture et n° d'opération ensemble (audit L3)
+    const docRef=nouvelleRef('grandlivre_k45');
+    await ecrireGroupe([{ref:docRef,data:rec,numero:true}]);
     GL['k45'].push({...rec,_id:docRef.id});
     GL['k45'].sort(cmpChrono);
     renderLivre('k45');renderSoldes('k45');renderSynth();
@@ -6333,21 +6425,7 @@ function sdRenderFivoriana(){
 // opérations bancaires), qui repart de 0001 chaque année : OP-2026-0001, OP-2026-0002…
 // Pour Rakitra et Anjarako, dont les lignes sont recréées à chaque correction d'une saisie,
 // une correction consomme un nouveau numéro (l'ancien reste inutilisé) — accepté tel quel.
-async function prochainNumeroOp(){
-  if(!window._db||!window._fs||!window._fs.runTransaction) return null;
-  const annee=new Date().getFullYear();
-  const ref=window._fs.doc(window._db,'compteurs','operations_'+annee);
-  try{
-    const num=await window._fs.runTransaction(window._db,async function(tx){
-      const snap=await tx.get(ref);
-      const dernier=snap.exists()?(snap.data().dernier||0):0;
-      const nouveau=dernier+1;
-      tx.set(ref,{dernier:nouveau},{merge:true});
-      return nouveau;
-    });
-    return 'OP-'+annee+'-'+String(num).padStart(4,'0');
-  }catch(e){ console.log('Erreur numérotation:',e.message); return null; }
-}
+// Les numéros sont attribués par ecrireGroupe(), dans la même transaction que les écritures (audit L3).
 
 // ══════════════════════════════════════════════════════════════
 // ── PIÈCES JOINTES (photos liées aux dépenses, versements, opérations bancaires,
