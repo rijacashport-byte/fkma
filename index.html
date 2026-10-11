@@ -3700,11 +3700,19 @@ function calculerAnjMoisCourant(){
   // Le jour affiché à l'écran ne doit être compté qu'une fois : on exclut sa version déjà
   // enregistrée dans l'historique, et on ajoute la saisie en cours à la place (nouvelle ou en
   // train d'être corrigée). Sans ça, rouvrir l'onglet après un enregistrement comptait ce jour deux fois.
+  // MAIS seulement si l'écran contient une saisie : écran vide (après remise à zéro, ou appli rouverte
+  // le jour même), on garde la version enregistrée — sinon le dimanche enregistré disparaissait du cumul.
+  // Et la saisie de l'écran ne compte que si sa date est dans le mois affiché.
   const dateEnCours=document.getElementById('rak-date-input')?.value||'';
-  let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==dateEnCours).reduce((a,h)=>a+(h.total||0),0)
-    +(parseInt(document.getElementById('anj-total')?.value)||0);
-  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==dateEnCours).reduce((a,h)=>a+nbEnvelopesRec(h),0)
-    +compteEnveloppes().officiel;
+  const totEcran=parseInt(document.getElementById('anj-total')?.value)||0;
+  const envEcran=compteEnveloppes().officiel;
+  const ecranVide=!totEcran&&!envEcran;
+  const exclue=ecranVide?'':dateEnCours;
+  const ecranDuMois=!ecranVide&&(!dateEnCours||dateEnCours.startsWith(mc7));
+  let cumulM=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==exclue).reduce((a,h)=>a+(h.total||0),0)
+    +(ecranDuMois?totEcran:0);
+  let cumulE=hist.filter(h=>h.date&&h.date.startsWith(mc7)&&h.date!==exclue).reduce((a,h)=>a+nbEnvelopesRec(h),0)
+    +(ecranDuMois?envEcran:0);
   const pctM=obj>0?Math.min((cumulM/obj)*100,150):0;
   const pctE=objE>0?Math.min((cumulE/objE)*100,150):0;
   const lm=document.getElementById('anj-pct-label');const bm=document.getElementById('anj-pct-bar');
