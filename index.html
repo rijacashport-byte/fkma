@@ -18,7 +18,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction, deleteField }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -42,7 +42,7 @@ enableIndexedDbPersistence(db).catch(function(err){
   // err.code==='unimplemented' -> navigateur trop ancien / non supporté
 });
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction};
+window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction,deleteField};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._sendReset=sendPasswordResetEmail;
@@ -3440,6 +3440,13 @@ function afficherEnveloppesJour(){
   const nb=enveloppesJour.length;
   document.getElementById('env-count').textContent=nb;
   mettreAJourBannerAnj();
+  const cachees=nbCartesCachees();
+  if(!nb&&cachees){
+    el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">🔒 '+cachees+' n° de carte déjà enregistrés pour ce dimanche'
+      +' (visibles seulement par le secrétaire et les diacres).<br>Ils restent tels quels si tu n\'en saisis pas.'
+      +' Si tu saisis des cartes, elles <b>remplaceront toute la liste</b>.</div>';
+    return;
+  }
   if(!nb){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div>';return;}
   el.innerHTML=enveloppesJour.map((e,i)=>`<div class="env-item">
     <div class="env-badge">${esc(e.carte)}</div>
@@ -3452,7 +3459,7 @@ function afficherEnveloppesJour(){
 // Règle : le nombre retenu est celui des n° de carte saisis (ou du nombre saisi directement, en mode
 // "Nombre direct"). S'il n'y en a pas, on prend le nombre d'enveloppes comptées avec les montants (valopy).
 function compteEnveloppes(){
-  const nbCartes=enveloppesJour.length;
+  const nbCartes=enveloppesJour.length||nbCartesCachees();
   const nbDirect=envMode==='nb'?(parseInt(document.getElementById('env-nb-direct')?.value)||0):0;
   const nbCompte=(typeof valopyListe!=='undefined'&&valopyListe)?valopyListe.length:0;
   const nbDeclare=nbDirect>0?nbDirect:nbCartes;
@@ -3462,7 +3469,8 @@ function compteEnveloppes(){
 }
 // Même règle appliquée à un enregistrement déjà sauvegardé (les anciens enregistrements n'ont pas de valopy)
 function nbEnvelopesRec(h){
-  const cartes=(h.enveloppes||[]).length;
+  // Le détail des cartes peut être absent (invisible pour ce rôle) : on prend alors le nombre enregistré
+  const cartes=(h.enveloppes||[]).length||h.nbCartes||0;
   const direct=h.nbDirect||0;
   const declare=direct>0?direct:cartes;
   return declare>0?declare:((h.valopy||[]).length);
@@ -3633,19 +3641,66 @@ async function enregistrerAnjarako(){
   }
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
-  const rec={date,total,enveloppes:[...enveloppesJour],valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
+  const rec={date,total,valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
+  const enveloppes=[...enveloppesJour];
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
-  // Firebase d'abord (audit L2/L3) : l'Anjarako et sa ligne du Grand Livre Anjarako partent ensemble.
+  // Firebase d'abord (audit L2/L3) : l'Anjarako, le détail de ses cartes et sa ligne du Grand Livre
+  // Anjarako partent ensemble.
+  // Détail des cartes (qui a payé quel mois) : à part, dans anjarako_cartes/{date}, que seuls le
+  // secrétaire et les diacres peuvent lire. Ceux qui ne le voient pas (trésorière, vomieran) ne
+  // l'écrasent que s'ils ont saisi des cartes ; sinon la liste déjà enregistrée reste telle quelle.
+  const ecrireCartes=enveloppes.length>0||peutLireCartesAnj();
   try{
     const src=await refParDate('anjarako',date);
     if(src.existe&&!confirm('Un Anjarako existe déjà pour le '+date+'. Remplacer ?'))return;
-    await ecrireGroupe([{ref:src.ref,data:rec,maj:src.existe}].concat(await opsGrandLivreAnj(rec)));
+    const docAnj=Object.assign({},rec);
+    if(src.existe) docAnj.enveloppes=_fs.deleteField(); // anciens documents : le détail en sort
+    const ops=[{ref:src.ref,data:docAnj,maj:src.existe}];
+    if(ecrireCartes) ops.push({ref:_fs.doc(_db,'anjarako_cartes',date),data:{date,enveloppes,
+      savedBy:emailConnecte(),savedAt:new Date().toISOString()}});
+    await ecrireGroupe(ops.concat(await opsGrandLivreAnj(rec)));
   }catch(e){alert(msgEchecEnregistrement(e));return;}
-  majCacheParDate(SK_ANJ_H,rec,function(h){return h.date===date;});
+  // Copie sur l'appareil : le détail des cartes seulement pour ceux qui ont le droit de le lire
+  const recCache=Object.assign({},rec);
+  if(peutLireCartesAnj()) recCache.enveloppes=enveloppes;
+  majCacheParDate(SK_ANJ_H,recCache,function(h){return h.date===date;});
   alert('✅ Anjarako du '+date+' enregistré !');
   calculerAnjMoisCourant();
-  correctionAnjSource=null; majBannerCorrectionAnj();
+  correctionAnjSource=null; cartesCacheesAnj=null; majBannerCorrectionAnj();
+}
+// ── DÉTAIL DES CARTES ANJARAKO (isolé — audit) ──────────────
+// Lisible seulement par le secrétaire et les diacres (Suivi des paiements). La trésorière et les
+// vomieran le saisissent mais ne peuvent pas le relire.
+function peutLireCartesAnj(){ return ['secretaire','diacre'].indexOf(roleConnecte())>=0; }
+// Correction d'un dimanche par quelqu'un qui ne voit pas les cartes : nombre de cartes déjà
+// enregistrées (cachées), pour que le nombre d'enveloppes retenu ne change pas.
+let cartesCacheesAnj=null; // {date, nb} ou null
+function nbCartesCachees(){
+  const d=(document.getElementById('rak-date-input')||{}).value||'';
+  return (cartesCacheesAnj&&cartesCacheesAnj.date===d&&!enveloppesJour.length)?cartesCacheesAnj.nb:0;
+}
+// Ajoute aux Anjarako le détail des cartes (secrétaire / diacres seulement) et sort le détail des
+// anciens documents « anjarako » qui le contenaient encore (migration automatique, sans perte).
+async function chargerCartesAnj(hist,docsAnj){
+  if(!peutLireCartesAnj()) return hist;
+  const snapC=await _fs.getDocs(_fs.collection(_db,'anjarako_cartes'));
+  const parDate={}; snapC.forEach(function(ds){parDate[ds.data().date]=ds.data().enveloppes||[];});
+  const ops=[];
+  (docsAnj||[]).forEach(function(ds){
+    const d=ds.data();
+    if(!Array.isArray(d.enveloppes)) return;
+    if(!(d.date in parDate)){
+      parDate[d.date]=d.enveloppes;
+      ops.push({ref:_fs.doc(_db,'anjarako_cartes',d.date),data:{date:d.date,enveloppes:d.enveloppes,migreLe:new Date().toISOString()}});
+    }
+    ops.push({ref:ds.ref,maj:true,data:{enveloppes:_fs.deleteField(),nbCartes:d.nbCartes!=null?d.nbCartes:d.enveloppes.length}});
+  });
+  for(let i=0;i<ops.length;i+=400){
+    try{ await ecrireGroupe(ops.slice(i,i+400)); }catch(e){ console.log('Migration cartes Anjarako :',e.message); break; }
+  }
+  if(ops.length) console.log('Cartes Anjarako : '+ops.length+' écriture(s) de migration');
+  return hist.map(function(h){ return (h.date in parDate)?Object.assign({},h,{enveloppes:parDate[h.date]}):h; });
 }
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
@@ -4512,8 +4567,10 @@ async function chargerAnjarako(){
   try{
     const snap=await _fs.getDocs(_fs.collection(_db,'anjarako'));
     if(snap.empty)return;
-    const hist=[];
-    snap.forEach(function(ds){hist.push(ds.data());});
+    let hist=[];
+    // Le détail des cartes n'est gardé sur l'appareil que pour le secrétaire et les diacres
+    snap.forEach(function(ds){const d=Object.assign({},ds.data());delete d.enveloppes;hist.push(d);});
+    hist=await chargerCartesAnj(hist,snap.docs);
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
     save(SK_ANJ_H,hist);
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
@@ -4667,12 +4724,23 @@ async function chargerAnjHist(){
   let anj=null;
   if(_db){
     try{
-      const snap=await _fs.getDocs(_fs.collection(_db,'anjarako'));
-      snap.forEach(ds=>{if(ds.data().date===_dateSelectionnee)anj=ds.data();});
-    }catch(e){}
+      const snap=await _fs.getDocs(_fs.query(_fs.collection(_db,'anjarako'),_fs.where('date','==',_dateSelectionnee)));
+      snap.forEach(ds=>{anj=Object.assign({},ds.data());});
+      // Détail des cartes : dans anjarako_cartes, lisible seulement par le secrétaire et les diacres
+      if(anj){
+        delete anj.enveloppes;
+        if(peutLireCartesAnj()){
+          const c=await _fs.getDoc(_fs.doc(_db,'anjarako_cartes',_dateSelectionnee));
+          if(c.exists()) anj.enveloppes=c.data().enveloppes||[];
+          else{ const loc=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee); if(loc&&loc.enveloppes) anj.enveloppes=loc.enveloppes; }
+        }
+      }
+    }catch(e){console.log('Anjarako :',e.message);}
   }
   if(!anj) anj=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee);
   if(!anj){alert('Aucun Anjarako pour cette date.');return;}
+  // Cartes déjà enregistrées mais invisibles pour cette personne : on retient leur nombre
+  cartesCacheesAnj=(!peutLireCartesAnj()&&(anj.nbCartes||0)>0)?{date:anj.date,nb:anj.nbCartes}:null;
   document.querySelectorAll('.nav-btn')[1].click();
   const dateInp=document.getElementById('rak-date-input');
   if(dateInp) dateInp.value=anj.date;
@@ -6919,7 +6987,7 @@ function remettreDateCorrectionAnj(){
 }
 // Remet réellement à zéro la saisie du jour : cartes, montants comptés, billetage, montant direct, total
 function viderSaisieAnj(){
-  enveloppesJour=[]; valopyListe=[];
+  enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null;
   BILLETS.forEach(function(b){ const el=document.getElementById('anj_b_'+b.v); if(el) el.value=''; });
   ['anj-total-direct','env-nb-direct','env-mois-direct','env-carte','valopy-autre'].forEach(function(id){
     const el=document.getElementById(id); if(el) el.value='';
