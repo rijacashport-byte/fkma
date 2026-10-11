@@ -1368,6 +1368,16 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div id="anj-view-saisie">
   <aside id="anj-correction-banner"></aside>
 
+ <!-- Lecture automatique de la fiche papier (photo → Claude, via le relais Apps Script) -->
+ <div class="card" id="fiche-lecture-card">
+ <div class="card-titre">📷 Lire la fiche papier</div>
+ <div style="font-size:12px;color:var(--texte2);margin-bottom:10px">Photo de la fiche Anjarako bien à plat, entière (les 4 carrés noirs visibles), sans reflet.
+  L'appli remplit la saisie ci-dessous ; vérifie les lignes signalées, puis enregistre comme d'habitude.</div>
+ <input type="file" accept="image/*" capture="environment" id="fiche-photo" style="display:none" onchange="lireFicheAnjPhoto(this)">
+ <button type="button" class="btn btn-vert" id="fiche-btn" onclick="document.getElementById('fiche-photo').click()">📷 Photographier / choisir la fiche</button>
+ <div id="fiche-resultat"></div>
+ </div>
+
  <div class="card">
  <div class="card-titre">💰 Collecte Anjarako du dimanche</div>
 
@@ -3702,6 +3712,154 @@ async function chargerCartesAnj(hist,docsAnj){
   if(ops.length) console.log('Cartes Anjarako : '+ops.length+' écriture(s) de migration');
   return hist.map(function(h){ return (h.date in parDate)?Object.assign({},h,{enveloppes:parDate[h.date]}):h; });
 }
+
+// ══════════════════════════════════════════════════════════════
+// ── LECTURE AUTOMATIQUE DE LA FICHE PAPIER ANJARAKO (11/10/2026) ──
+// ══════════════════════════════════════════════════════════════
+// La photo part au relais Apps Script, qui la fait lire par Claude (Anthropic) et renvoie le contenu.
+// L'appli remplit la saisie (date, billetage, cartes, valopy) puis fait ses propres contrôles :
+// carte inconnue, nom écrit ≠ nom de la carte, totaux qui ne concordent pas, signatures manquantes.
+// RIEN n'est enregistré automatiquement : la personne vérifie, puis clique « Enregistrer ».
+function peutLireFiche(){ return ['secretaire','tresoriere','diacre','vomieran'].indexOf(roleConnecte())>=0; }
+
+// Photo réduite à 2400 px de long (assez pour lire l'écriture), JPEG, moins de 2,5 Mo
+function preparerPhotoFiche(file){
+  return chargerImageDepuisFichier(file).then(function(img){
+    const max=2400, r=Math.min(1,max/Math.max(img.width,img.height));
+    const c=document.createElement('canvas');
+    c.width=Math.round(img.width*r); c.height=Math.round(img.height*r);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    let q=0.85, url=c.toDataURL('image/jpeg',q);
+    while(url.length*0.75>2.5*1024*1024&&q>0.4){ q-=0.1; url=c.toDataURL('image/jpeg',q); }
+    return url;
+  });
+}
+
+async function lireFicheAnjPhoto(input){
+  const file=input.files&&input.files[0]; input.value='';
+  if(!file) return;
+  if(!peutLireFiche()){ alert('La lecture de la fiche est réservée à ceux qui saisissent l\'Anjarako.'); return; }
+  const dejaSaisi=enveloppesJour.length||(valopyListe||[]).length||(parseInt(document.getElementById('anj-total')?.value)||0);
+  if(dejaSaisi&&!confirm('La saisie Anjarako à l\'écran va être remplacée par le contenu de la fiche. Continuer ?')) return;
+  const btn=document.getElementById('fiche-btn'), zone=document.getElementById('fiche-resultat');
+  btn.disabled=true; btn.textContent='⏳ Lecture de la fiche… (30 s à 1 min)';
+  zone.innerHTML='';
+  try{
+    const dataUrl=await preparerPhotoFiche(file);
+    const resp=await fetch(APPS_SCRIPT_PHOTOS_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // évite une requête OPTIONS que le relais ne gère pas
+      body:JSON.stringify({action:'lireFicheAnj',base64:dataUrl,mimeType:'image/jpeg',idToken:await jetonConnexion()})
+    });
+    const json=await resp.json();
+    if(!json||!json.ok) throw new Error((json&&json.error)||'réponse vide du relais');
+    // Ancien relais (pas encore mis à jour) : il range la photo dans Drive au lieu de la lire
+    if(!json.fiche){
+      if(json.fileId) supprimerFichierDrive(json.fileId);
+      throw new Error('le relais Apps Script n\'est pas encore à jour pour la lecture des fiches');
+    }
+    appliquerFicheAnj(json.fiche,json);
+  }catch(e){
+    zone.innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:#fdecea;color:var(--rouge);font-size:13px">❌ Lecture impossible : '+esc(e.message)
+      +'<br>Vérifie la connexion et réessaie, ou fais la saisie à la main.</div>';
+  }finally{
+    btn.disabled=false; btn.textContent='📷 Photographier / choisir la fiche';
+  }
+}
+
+// Comparaison souple d'un nom écrit à la main avec le nom enregistré pour la carte
+function normNom(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z]/g,''); }
+function nomsCompatibles(ecrit,enregistre){
+  const a=normNom(ecrit), b=normNom(enregistre);
+  if(!a||!b) return true;                       // rien à comparer
+  if(b.indexOf(a.slice(0,5))>=0||a.indexOf(b.slice(0,5))>=0) return true;
+  // mots de 4 lettres ou plus en commun (ex. le prénom)
+  const mots=String(ecrit||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').split(/[^A-Z]+/).filter(function(m){return m.length>=4;});
+  return mots.some(function(m){return b.indexOf(m.slice(0,4))>=0;});
+}
+
+function appliquerFicheAnj(f,meta){
+  const alertes=[];   // à vérifier absolument
+  const infos=[];     // pour information
+  // 1. Date
+  const dateInp=document.getElementById('rak-date-input');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){
+    if(dateInp&&dateInp.value&&dateInp.value!==f.date) infos.push('Date de l\'écran remplacée par celle de la fiche : '+fmtDateFr(f.date)+'.');
+    if(dateInp) dateInp.value=f.date;
+  } else alertes.push('Date de la fiche illisible : vérifie la date avant d\'enregistrer.');
+  // 2. On repart d'une saisie vide
+  viderSaisieAnj(); correctionAnjSource=null; majBannerCorrectionAnj();
+  // 3. Billetage
+  let totalBillets=0;
+  (f.billetage||[]).forEach(function(b){
+    const el=document.getElementById('anj_b_'+b.coupure);
+    if(el&&b.nombre>0){ el.value=b.nombre; totalBillets+=b.coupure*b.nombre; }
+    else if(b.nombre>0) alertes.push('Coupure '+fmt(b.coupure)+' inconnue dans l\'appli ('+b.nombre+' billets) : à saisir à la main.');
+  });
+  const pieces=f.pieces||0;
+  if(pieces>0){
+    // La saisie par billetage n'a pas de ligne « pièces » : on passe au montant direct
+    showAnjMode('total');
+    const td=document.getElementById('anj-total-direct'); if(td) td.value=totalBillets+pieces;
+    infos.push('Pièces : '+fmt(pieces)+' F → total saisi en « Montant direct ».');
+  } else showAnjMode('billets');
+  calculerAnjTotal();
+  const totalLu=totalBillets+pieces;
+  if(f.total_billetage_ecrit&&f.total_billetage_ecrit!==totalLu)
+    alertes.push('Billetage : le calcul donne '+fmt(totalLu)+' F mais le TOTAL écrit est '+fmt(f.total_billetage_ecrit)+' F.');
+  // 4. Cartes (enveloppes)
+  showEnvMode('carte');
+  const membres=load(SK_ANJ_M);
+  const lignes=(f.lignes||[]).slice().sort(function(a,b){return a.ligne-b.ligne;});
+  lignes.forEach(function(l){
+    const n='Ligne '+l.ligne+' : ';
+    const carte=parseInt(String(l.carte||'').replace(/\D/g,''),10);
+    if(!carte){ alertes.push(n+'n° de carte illisible (« '+esc(l.carte)+' » — '+esc(l.nom)+') : à saisir à la main.'); return; }
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(l.mois||'')){ alertes.push(n+'carte '+carte+' : mois illisible : à saisir à la main.'); return; }
+    if(enveloppesJour.some(function(e){return e.carte===carte&&e.mois===l.mois;})){
+      alertes.push(n+'carte '+carte+' déjà comptée pour '+moisLabel(l.mois)+' (doublon ignoré).'); return;
+    }
+    const m=membres.find(function(x){return x.num===carte;});
+    enveloppesJour.push({carte:carte,nom:m?m.nom||'':'',mois:l.mois});
+    if(!m) alertes.push(n+'carte '+carte+' inconnue dans la liste des membres (nom écrit : « '+esc(l.nom)+' »).');
+    else if(!nomsCompatibles(l.nom,m.nom)) alertes.push(n+'carte '+carte+' : nom écrit « '+esc(l.nom)+' », mais la carte est au nom de « '+esc(m.nom)+' ».');
+    if(l.douteux) alertes.push(n+'carte '+carte+', '+moisLabel(l.mois)+' — lecture incertaine'+(l.remarque?' : '+esc(l.remarque):'')+'.');
+  });
+  afficherEnveloppesJour();
+  // 5. Valopy (une entrée par enveloppe)
+  let totalValopy=0, nbValopy=0;
+  (f.valopy||[]).forEach(function(v){
+    for(let i=0;i<(v.nb||0);i++) valopyListe.push(v.montant);
+    totalValopy+=v.montant*(v.nb||0); nbValopy+=(v.nb||0);
+    if(v.douteux) alertes.push('Valopy '+fmt(v.montant)+' F : comptage incertain ('+v.nb+').');
+  });
+  renderValopy();
+  // 6. Contrôles croisés
+  if(f.total_valopy_ecrit&&f.total_valopy_ecrit!==totalValopy)
+    alertes.push('Valopy : le calcul donne '+fmt(totalValopy)+' F mais le TOTAL écrit est '+fmt(f.total_valopy_ecrit)+' F.');
+  if(nbValopy&&totalLu&&totalValopy!==totalLu)
+    alertes.push('Les enveloppes comptées font '+fmt(totalValopy)+' F, le billetage '+fmt(totalLu)+' F : écart de '+fmt(Math.abs(totalValopy-totalLu))+' F.');
+  if(nbValopy&&enveloppesJour.length&&nbValopy!==enveloppesJour.length)
+    alertes.push(enveloppesJour.length+' cartes lues mais '+nbValopy+' enveloppes comptées en valopy.');
+  const s=f.signatures||{};
+  if(!s.vomieran1||!s.vomieran2||!s.tresoriere)
+    alertes.push('Signature manquante : '+[!s.vomieran1&&'vomieran 1',!s.vomieran2&&'vomieran 2',!s.tresoriere&&'trésorière'].filter(Boolean).join(', ')+'.');
+  if(f.remarques) infos.push('Remarques de la lecture : '+esc(f.remarques));
+  calculerAnjMoisCourant(); mettreAJourBannerAnj();
+  // 7. Compte rendu
+  const u=(meta&&meta.usage)||{};
+  const zone=document.getElementById('fiche-resultat');
+  zone.innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:'+(alertes.length?'#fff4e5':'#eafaf1')+';font-size:13px;line-height:1.45">'
+    +'<b>'+(alertes.length?'⚠️ Fiche lue — '+alertes.length+' point(s) à vérifier':'✅ Fiche lue — tous les contrôles sont bons')+'</b><br>'
+    +'📅 '+esc(fmtDateFr(f.date||''))+(f.page?' · page '+esc(f.page):'')
+    +' · 💰 '+fmt(totalLu)+' F · ✉️ '+enveloppesJour.length+' carte(s) · '+nbValopy+' enveloppe(s) comptée(s)'
+    +(alertes.length?'<ul style="margin:8px 0 0 18px;padding:0">'+alertes.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul>':'')
+    +(infos.length?'<div style="margin-top:6px;color:var(--texte2)">'+infos.map(function(a){return 'ℹ️ '+a;}).join('<br>')+'</div>':'')
+    +'<div style="margin-top:8px;font-weight:600">Rien n\'est encore enregistré : vérifie la saisie ci-dessous puis clique « Enregistrer ».</div>'
+    +'<div style="margin-top:4px;font-size:11px;color:var(--texte2)">Lu par '+esc((meta&&meta.modele)||'Claude')+' · '+fmt(u.entree||0)+' + '+fmt(u.sortie||0)+' tokens</div>'
+    +'</div>';
+  zone.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function resetAnjarako(){
   if(!confirm('Effacer la saisie Anjarako ?'))return;
   viderSaisieAnj();
@@ -4588,7 +4746,6 @@ async function fusionnerDepuisFirebase(collection,cle,memeElement){
   save(cle,distants.concat(locauxSeuls).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}));
   return locauxSeuls;
 }
-function roleConnecte(){ return window._currentRole||(ROLES_CONFIG[emailConnecte()]||{}).role||''; }
 function rafraichirDashboardSiVisible(){
   const el=document.getElementById('dash-annee-label');
   if(el&&el.offsetParent&&typeof renderDashboard==='function') renderDashboard();
