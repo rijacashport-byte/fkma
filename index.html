@@ -3444,7 +3444,7 @@ function ajouterEnveloppe(){
   document.getElementById('env-carte').focus();
   afficherEnveloppesJour();
 }
-function supprimerEnveloppe(i){enveloppesJour.splice(i,1);afficherEnveloppesJour();}
+function supprimerEnveloppe(i){enveloppesJour.splice(i,1);envEnEdition=null;afficherEnveloppesJour();}
 function afficherEnveloppesJour(){
   const el=document.getElementById('liste-enveloppes');
   const nb=enveloppesJour.length;
@@ -3458,12 +3458,91 @@ function afficherEnveloppesJour(){
     return;
   }
   if(!nb){el.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune enveloppe</div>';return;}
-  el.innerHTML=enveloppesJour.map((e,i)=>`<div class="env-item">
+  el.innerHTML=enveloppesJour.map((e,i)=>i===envEnEdition?htmlEditionEnveloppe(e,i):`<div class="env-item"${e._alerte?' style="border-color:var(--orange);background:#fff4e5"':''}>
     <div class="env-badge">${esc(e.carte)}</div>
     <div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(e.nom||'Carte n°'+e.carte)}</div>
-      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${esc(moisLabel(e.mois))}</strong></div></div>
-    <button class="env-del" onclick="supprimerEnveloppe(${i})">✕</button>
+      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${esc(moisLabel(e.mois))}</strong>${e._ligne?' · ligne '+esc(e._ligne)+' de la fiche':''}</div>
+      ${e._alerte?`<div style="font-size:11px;color:#b9770e;margin-top:2px">⚠️ ${e._alerte}</div>`:''}</div>
+    <button class="env-del" style="color:var(--bleu,#1D4E7A)" title="Corriger cette ligne" onclick="modifierEnveloppe(${i})">✏️</button>
+    <button class="env-del" title="Supprimer" onclick="supprimerEnveloppe(${i})">✕</button>
   </div>`).join('');
+  if(envEnEdition!==null){ const inp=document.getElementById('envedit-carte'); if(inp) inp.focus(); }
+}
+
+// ── CORRECTION D'UNE ENVELOPPE AVANT ENREGISTREMENT ─────────────
+// ✏️ sur une ligne : on choisit une autre carte en cherchant dans la liste des membres (n° ou nom)
+// et/ou un autre mois, sans supprimer puis rajouter. Si la carte d'origine apparaît sur d'autres
+// lignes (ex. 5 mois payés), on propose de corriger toutes ces lignes d'un coup.
+var envEnEdition=null;      // index de la ligne en cours de correction
+var envEditionCarte=null;   // carte choisie dans les suggestions
+function htmlEditionEnveloppe(e,i){
+  const m=load(SK_ANJ_M).find(x=>x.num===e.carte);
+  return `<div class="env-item" style="display:block;border-color:var(--vert);background:white">
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">✏️ Corriger la ligne${e._ligne?' '+esc(e._ligne)+' de la fiche':''} — actuellement carte ${esc(e.carte)}${m&&m.nom?' ('+esc(m.nom)+')':''}, ${esc(moisLabel(e.mois))}</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:6px;margin-bottom:6px">
+      <div class="champ carte-wrap">
+        <label>📇 Bonne carte : n° ou nom</label>
+        <input type="text" id="envedit-carte" placeholder="Ex: 30 ou Ely…" autocomplete="off" value="${esc(e.carte)}${m&&m.nom?' — '+esc(m.nom):''}"
+          oninput="rechercherCarteEdition(this.value)" onfocus="this.select()" onblur="setTimeout(function(){var s=document.getElementById('envedit-sug');if(s)s.style.display='none';},180)">
+        <div class="carte-sug" id="envedit-sug"></div>
+      </div>
+      <div class="champ"><label>📆 Mois payé</label><input type="month" id="envedit-mois" value="${esc(e.mois)}"></div>
+    </div>
+    <div id="envedit-prev" style="font-size:12px;margin-bottom:6px;color:var(--texte2)"></div>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="btn btn-vert" style="margin:0" onclick="validerEditionEnveloppe(${i})">✅ Valider</button>
+      <button type="button" class="btn btn-gris" style="margin:0" onclick="annulerEditionEnveloppe()">✖ Annuler</button>
+    </div>
+  </div>`;
+}
+function modifierEnveloppe(i){ envEnEdition=i; envEditionCarte=enveloppesJour[i].carte; afficherEnveloppesJour(); }
+function annulerEditionEnveloppe(){ envEnEdition=null; envEditionCarte=null; afficherEnveloppesJour(); }
+function rechercherCarteEdition(val){
+  envEditionCarte=null;
+  const sug=document.getElementById('envedit-sug'), prev=document.getElementById('envedit-prev');
+  val=String(val||'').trim();
+  if(!val){sug.style.display='none';prev.textContent='';return;}
+  const membres=load(SK_ANJ_M).filter(m=>m.actif!==false);
+  const v=val.toLowerCase();
+  const f=membres.filter(m=>String(m.num).startsWith(val)||(m.nom||'').toLowerCase().includes(v));
+  sug.innerHTML=f.slice(0,8).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarteEdition(${jsVal(m.num)})"><strong>${esc(m.num)}</strong>${m.nom?' — '+esc(m.nom):''}</div>`).join('');
+  sug.style.display=f.length?'block':'none';
+  const exact=membres.find(m=>String(m.num)===val);
+  if(exact){ envEditionCarte=exact.num; prev.innerHTML='✅ Carte n°'+esc(exact.num)+(exact.nom?' — '+esc(exact.nom):''); }
+  else if(/^\d+$/.test(val)){ envEditionCarte=parseInt(val,10); prev.innerHTML='⚠️ Carte n°'+esc(val)+' absente de la liste des membres'; }
+  else prev.textContent=f.length?'Choisis un nom dans la liste proposée.':'Aucun membre trouvé.';
+}
+function choisirCarteEdition(num){
+  envEditionCarte=num;
+  const m=load(SK_ANJ_M).find(x=>x.num===num);
+  document.getElementById('envedit-carte').value=m&&m.nom?num+' — '+m.nom:num;
+  document.getElementById('envedit-sug').style.display='none';
+  document.getElementById('envedit-prev').innerHTML='✅ Carte n°'+esc(num)+(m&&m.nom?' — '+esc(m.nom):'');
+}
+function validerEditionEnveloppe(i){
+  const e=enveloppesJour[i];
+  const carte=envEditionCarte, mois=document.getElementById('envedit-mois').value;
+  if(!carte){alert('Choisis la bonne carte dans la liste proposée (tape un n° ou un nom).');return;}
+  if(!/^\d{4}-\d{2}$/.test(mois||'')){alert('Choisis le mois payé.');return;}
+  if(enveloppesJour.some((x,j)=>j!==i&&x.carte===carte&&x.mois===mois)){alert('Carte n°'+carte+' déjà comptée pour '+moisLabel(mois)+'.');return;}
+  const m=load(SK_ANJ_M).find(x=>x.num===carte);
+  const ancienne=e.carte;
+  // Autres lignes de la même carte d'origine (ex. Hary a écrit 30 sur les 5 mois payés par Ely)
+  const autres=carte!==ancienne?enveloppesJour.map((x,j)=>j).filter(j=>j!==i&&enveloppesJour[j].carte===ancienne):[];
+  let aussi=[];
+  if(autres.length&&confirm('La carte '+ancienne+' apparaît sur '+autres.length+' autre(s) ligne(s) ('
+      +autres.map(j=>moisLabel(enveloppesJour[j].mois)).join(', ')+').\n\nLes passer aussi sur la carte '+carte+(m&&m.nom?' — '+m.nom:'')+' ?')){
+    aussi=autres.filter(j=>!enveloppesJour.some((x,k)=>k!==j&&x.carte===carte&&x.mois===enveloppesJour[j].mois));
+    if(aussi.length<autres.length) alert((autres.length-aussi.length)+' ligne(s) non modifiée(s) : la carte '+carte+' y est déjà comptée pour le même mois.');
+  }
+  [i].concat(aussi).forEach(function(j){
+    const x=enveloppesJour[j];
+    x.carte=carte; x.nom=m?m.nom||'':'';
+    if(j===i) x.mois=mois;
+    delete x._alerte;   // ligne vérifiée par la personne
+  });
+  envEnEdition=null; envEditionCarte=null;
+  afficherEnveloppesJour();
 }
 // ── COMPTAGE DES ENVELOPPES ANJARAKO ──────────────────────────
 // Règle : le nombre retenu est celui des n° de carte saisis (ou du nombre saisi directement, en mode
@@ -3652,7 +3731,11 @@ async function enregistrerAnjarako(){
   const nbDirect2 = envMode==='nb' ? (parseInt(document.getElementById('env-nb-direct')?.value)||0) : 0;
   const moisDirect = document.getElementById('env-mois-direct')?.value||'';
   const rec={date,total,valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
-  const enveloppes=[...enveloppesJour];
+  // Lignes signalées par la lecture de la fiche et pas encore vérifiées (✏️)
+  const nonVerifiees=enveloppesJour.filter(function(e){return e._alerte;}).length;
+  if(nonVerifiees&&!confirm('⚠️ '+nonVerifiees+' ligne(s) signalée(s) par la lecture de la fiche n\'ont pas été vérifiées (en orange dans la liste des enveloppes).\n\nEnregistrer quand même ?'))return;
+  // Seuls carte, nom et mois sont enregistrés (pas les marques de la lecture : _ligne, _alerte)
+  const enveloppes=enveloppesJour.map(function(e){return {carte:e.carte,nom:e.nom||'',mois:e.mois};});
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
   // Firebase d'abord (audit L2/L3) : l'Anjarako, le détail de ses cartes et sa ligne du Grand Livre
@@ -3749,7 +3832,9 @@ async function lireFicheAnjPhoto(input){
     const resp=await fetch(APPS_SCRIPT_PHOTOS_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'}, // évite une requête OPTIONS que le relais ne gère pas
-      body:JSON.stringify({action:'lireFicheAnj',base64:dataUrl,mimeType:'image/jpeg',idToken:await jetonConnexion()})
+      // + la liste des membres (n° de carte → nom) : Claude s'en sert pour trancher les n° douteux
+      body:JSON.stringify({action:'lireFicheAnj',base64:dataUrl,mimeType:'image/jpeg',idToken:await jetonConnexion(),
+        membres:load(SK_ANJ_M).filter(function(m){return m.actif!==false;}).map(function(m){return {num:m.num,nom:m.nom||''};})})
     });
     const json=await resp.json();
     if(!json||!json.ok) throw new Error((json&&json.error)||'réponse vide du relais');
@@ -3820,10 +3905,17 @@ function appliquerFicheAnj(f,meta){
       alertes.push(n+'carte '+carte+' déjà comptée pour '+moisLabel(l.mois)+' (doublon ignoré).'); return;
     }
     const m=membres.find(function(x){return x.num===carte;});
-    enveloppesJour.push({carte:carte,nom:m?m.nom||'':'',mois:l.mois});
-    if(!m) alertes.push(n+'carte '+carte+' inconnue dans la liste des membres (nom écrit : « '+esc(l.nom)+' »).');
-    else if(!nomsCompatibles(l.nom,m.nom)) alertes.push(n+'carte '+carte+' : nom écrit « '+esc(l.nom)+' », mais la carte est au nom de « '+esc(m.nom)+' ».');
-    if(l.douteux) alertes.push(n+'carte '+carte+', '+moisLabel(l.mois)+' — lecture incertaine'+(l.remarque?' : '+esc(l.remarque):'')+'.');
+    const env={carte:carte,nom:m?m.nom||'':'',mois:l.mois,_ligne:l.ligne};
+    const pb=[];   // problèmes de cette ligne : affichés dans le compte rendu ET sur la ligne (✏️ pour corriger)
+    if(!m) pb.push('carte '+carte+' inconnue dans la liste des membres (nom écrit : « '+esc(l.nom)+' »)');
+    else if(!nomsCompatibles(l.nom,m.nom)) pb.push('nom écrit « '+esc(l.nom)+' », mais la carte '+carte+' est au nom de « '+esc(m.nom)+' »');
+    // Seuls un n° de carte ou un mois incertains comptent : un nom mal lu n'est pas un problème
+    // quand le n° de carte est sûr (douteux = ancien format de réponse du relais)
+    const incertain=[l.carte_douteuse&&'n° de carte',l.mois_douteux&&'mois'].filter(Boolean);
+    if(!incertain.length&&l.douteux&&l.carte_douteuse===undefined) incertain.push('lecture');
+    if(incertain.length) pb.push(incertain.join(' et ')+' incertain'+(incertain.length>1?'s':'')+(l.remarque?' : '+esc(l.remarque):''));
+    if(pb.length){ env._alerte=pb.join(' ; '); alertes.push(n+'carte '+carte+', '+moisLabel(l.mois)+' — '+env._alerte+'.'); }
+    enveloppesJour.push(env);
   });
   afficherEnveloppesJour();
   // 5. Valopy (une entrée par enveloppe)
@@ -3855,7 +3947,8 @@ function appliquerFicheAnj(f,meta){
     +' · 💰 '+fmt(totalLu)+' F · ✉️ '+enveloppesJour.length+' carte(s) · '+nbValopy+' enveloppe(s) comptée(s)'
     +(alertes.length?'<ul style="margin:8px 0 0 18px;padding:0">'+alertes.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul>':'')
     +(infos.length?'<div style="margin-top:6px;color:var(--texte2)">'+infos.map(function(a){return 'ℹ️ '+a;}).join('<br>')+'</div>':'')
-    +'<div style="margin-top:8px;font-weight:600">Rien n\'est encore enregistré : vérifie la saisie ci-dessous puis clique « Enregistrer ».</div>'
+    +'<div style="margin-top:8px;font-weight:600">Rien n\'est encore enregistré : vérifie la saisie ci-dessous puis clique « Enregistrer ».'
+    +(enveloppesJour.some(function(e){return e._alerte;})?'<br>Les lignes signalées sont en orange dans la liste des enveloppes : ✏️ pour les corriger.':'')+'</div>'
     +'<div style="margin-top:4px;font-size:11px;color:var(--texte2)">Lu par '+esc((meta&&meta.modele)||'Claude')+' · '+fmt(u.entree||0)+' + '+fmt(u.sortie||0)+' tokens</div>'
     +'</div>';
   zone.scrollIntoView({behavior:'smooth',block:'start'});
@@ -7144,7 +7237,7 @@ function remettreDateCorrectionAnj(){
 }
 // Remet réellement à zéro la saisie du jour : cartes, montants comptés, billetage, montant direct, total
 function viderSaisieAnj(){
-  enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null;
+  enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null; envEnEdition=null;
   BILLETS.forEach(function(b){ const el=document.getElementById('anj_b_'+b.v); if(el) el.value=''; });
   ['anj-total-direct','env-nb-direct','env-mois-direct','env-carte','valopy-autre'].forEach(function(id){
     const el=document.getElementById(id); if(el) el.value='';
