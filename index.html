@@ -6417,8 +6417,7 @@ function sdRenderFilterRow(){
   const femmes=SD_ALL_NAMES.filter(function(n){return SD_GENRE[n]==='F';});
   let html="<div class='filter-chip active' onclick=\"sdSetFilter('all')\" id='sd-filter-all'>Toutes</div>";
   femmes.forEach(function(n){
-    const safe=n.replace(/'/g,"\\'");
-    html+="<div class='filter-chip' onclick=\"sdSetFilter('"+safe+"')\" id='sd-filter-"+n.replace(/ /g,'_')+"'>"+n+"</div>";
+    html+="<div class='filter-chip' onclick=\"sdSetFilter("+jsArg(n)+")\" id='sd-filter-"+esc(n.replace(/ /g,'_'))+"'>"+esc(n)+"</div>";
   });
   row.innerHTML=html;
 }
@@ -6469,10 +6468,10 @@ function sdGetBanner(g,p){
   const f=g.filter(function(n){return SD_GENRE[n]==="F";}).sort(function(a,b){return p[a]-p[b];});
   const h=g.filter(function(n){return SD_GENRE[n]==="H";}).sort(function(a,b){return p[a]-p[b];});
   let s="<div class='fandr-banner'><div class='fandr-title'>🙏 Fandraisana</div><div class='fandr-roles'>";
-  if(f[0]) s+="<div class='fandr-role mofo'>👩 Mizara mofo + Manomana fitaovana : "+f[0]+"</div>";
-  if(f[1]) s+="<div class='fandr-role plateau'>📋 Manaramaso plateau + Latabatra : "+f[1]+"</div>";
-  if(h[0]) s+="<div class='fandr-role divay'>👨 Mizara divay : "+h[0]+"</div>";
-  if(h[1]) s+="<div class='fandr-role kapoaka'>👨 Manangona kapoaka : "+h[1]+"</div>";
+  if(f[0]) s+="<div class='fandr-role mofo'>👩 Mizara mofo + Manomana fitaovana : "+esc(f[0])+"</div>";
+  if(f[1]) s+="<div class='fandr-role plateau'>📋 Manaramaso plateau + Latabatra : "+esc(f[1])+"</div>";
+  if(h[0]) s+="<div class='fandr-role divay'>👨 Mizara divay : "+esc(h[0])+"</div>";
+  if(h[1]) s+="<div class='fandr-role kapoaka'>👨 Manangona kapoaka : "+esc(h[1])+"</div>";
   s+="</div></div>"; return s;
 }
 
@@ -6484,32 +6483,32 @@ function sdRenderMois(){
   const mc=document.getElementById("sd-mcount");
   if(mc) mc.textContent=(sdCurMois+1)+"/"+SD_PLANNING.length;
   const sl=document.getElementById("sd-sectLabel");
-  if(sl) sl.innerHTML="Groupe du mois <span class='combo-badge'>"+(m.opt||"")+" · "+(m.combo||[]).join("+")+"</span>";
+  if(sl) sl.innerHTML="Groupe du mois <span class='combo-badge'>"+esc(m.opt||"")+" · "+esc((m.combo||[]).join("+"))+"</span>";
   const mb=document.getElementById("sd-membresBar");
   if(mb) mb.innerHTML=m.g.map(function(n){
-    return "<div class='membre "+SD_GENRE[n]+"'>"+(SD_GENRE[n]==="H"?"👨":"👩")+" "+n+"</div>";
+    return "<div class='membre "+esc(SD_GENRE[n])+"'>"+(SD_GENRE[n]==="H"?"👨":"👩")+" "+esc(n)+"</div>";
   }).join("");
   document.getElementById("sd-joursContainer").innerHTML=m.j.map(function(jour,ji){
     const id="j"+sdCurMois+"_"+ji;
     const isFandr=jour.f;
     const fa=isFandr?sdGetFandr(m.g,jour.p):{};
     const badge=isFandr
-      ?"<span class='pill pill-fandr'>🙏"+(jour.fe?" "+jour.fe:" Fandraisana")+"</span>"
-      :(jour.fe?"<span class='pill pill-fandr'>★ "+jour.fe+"</span>":"<span class='pill pill-tsotra'>Tsotra</span>");
+      ?"<span class='pill pill-fandr'>🙏"+(jour.fe?" "+esc(jour.fe):" Fandraisana")+"</span>"
+      :(jour.fe?"<span class='pill pill-fandr'>★ "+esc(jour.fe)+"</span>":"<span class='pill pill-tsotra'>Tsotra</span>");
     const postes=[1,2,3,4].map(function(p){
       let name="—";
       Object.keys(jour.p).forEach(function(n){if(jour.p[n]===p)name=n;});
       const g2=SD_GENRE[name]||"";
       const dt=SD_DISPATCH[String(p)];
-      let tHTML=(dt?dt.t:[]).map(function(t){return "<div class='task'>"+t+"</div>";}).join("");
-      if(isFandr&&fa[name]) tHTML+=fa[name].map(function(t){return "<div class='task "+t.c+"'>"+t.t+"</div>";}).join("");
+      let tHTML=(dt?dt.t:[]).map(function(t){return "<div class='task'>"+esc(t)+"</div>";}).join("");
+      if(isFandr&&fa[name]) tHTML+=fa[name].map(function(t){return "<div class='task "+esc(t.c)+"'>"+esc(t.t)+"</div>";}).join("");
       return "<div class='poste-row'><div class='poste-badge pb"+p+"'>P"+p+"</div>"
-        +"<div class='poste-info'><div class='poste-name'>"+name+" "+(g2==="H"?"👨":"👩")+"</div>"
+        +"<div class='poste-info'><div class='poste-name'>"+esc(name)+" "+(g2==="H"?"👨":"👩")+"</div>"
         +"<div class='poste-tasks'>"+tHTML+"</div></div></div>";
     }).join("");
     return "<div class='jour-card"+(isFandr?" fandraisana":jour.fe?" fete":"")+"'>"
       +"<div class='jour-head' onclick=\"sdToggleJour('"+id+"')\">"
-      +"<span class='jour-date'>"+jour.d+"</span>"
+      +"<span class='jour-date'>"+esc(jour.d)+"</span>"
       +"<div class='jour-right'>"+badge+"<span class='chevron"+(sdOpenJours[id]?" open":"")+"' id='sd-chev-"+id+"'>▼</span></div>"
       +"</div><div class='postes-body"+(sdOpenJours[id]?" open":"")+"' id='sd-body-"+id+"'>"
       +(isFandr?sdGetBanner(m.g,jour.p):"")+postes+"</div></div>";
@@ -6521,7 +6520,7 @@ function sdSelectDiacre(idx){sdCurDiacre=SD_ALL_NAMES[idx];sdRenderDiacre();}
 function sdRenderDiacre(){
   const scroll=document.getElementById("sd-diacre-scroll");
   if(scroll) scroll.innerHTML=SD_ALL_NAMES.map(function(n,idx){
-    return "<button class='diacre-btn"+(n===sdCurDiacre?" active":"")+"' onclick='sdSelectDiacre("+idx+")'>"+n+"</button>";
+    return "<button class='diacre-btn"+(n===sdCurDiacre?" active":"")+"' onclick='sdSelectDiacre("+idx+")'>"+esc(n)+"</button>";
   }).join("");
   const pc={1:0,2:0,3:0,4:0};
   let totJ=0,totF=0,totMofo=0,totDivay=0;
@@ -6558,19 +6557,19 @@ function sdRenderDiacre(){
       const bg=p?SD_PC_BG[p-1]:"var(--s3)";
       const tx=p?SD_PC_COLOR[p-1]:"var(--t3)";
       const fm=j.fat.map(function(t){return t.t==="Mizara mofo"?"👩":t.t==="Mizara divay"?"👨":"";}).filter(Boolean).join("");
-      return "<span class='jour-chip' style='background:"+bg+";color:"+tx+";border-color:"+bg+"'>"+j.d.slice(0,5)+" P"+p+fm+(j.f?"🙏":"")+"</span>";
+      return "<span class='jour-chip' style='background:"+bg+";color:"+tx+";border-color:"+bg+"'>"+esc(String(j.d||'').slice(0,5))+" P"+p+fm+(j.f?"🙏":"")+"</span>";
     }).join("");
     html+="<div class='mois-row'><div class='mois-row-head'>"
-      +"<span class='mois-nom'>"+m.m+"</span>"
-      +"<div style='display:flex;gap:5px;align-items:center;'><span class='mois-annee'>"+m.a+"</span>"
-      +"<span class='combo-badge'>"+m.combo+"</span></div></div>"
+      +"<span class='mois-nom'>"+esc(m.m)+"</span>"
+      +"<div style='display:flex;gap:5px;align-items:center;'><span class='mois-annee'>"+esc(m.a)+"</span>"
+      +"<span class='combo-badge'>"+esc(m.combo)+"</span></div></div>"
       +"<div class='jours-chips'>"+chips+"</div></div>";
   });
   if(gn==="F"&&myFita.length>0){
     html+="<div class='diacre-section' style='margin-top:14px;'><div class='ds-header'>🧺 Fitaovam-pandraisana ("+myFita.length+" fois)</div>";
     myFita.forEach(function(f){
-      html+="<div class='ds-item'><div class='ds-date-sm'>"+f.date+"</div>"
-        +"<div class='ds-info'><div>"+f.label+"</div>"+(f.fete?"<div class='ds-sub'>★ "+f.fete+"</div>":"")+"</div>"
+      html+="<div class='ds-item'><div class='ds-date-sm'>"+esc(f.date)+"</div>"
+        +"<div class='ds-info'><div>"+esc(f.label)+"</div>"+(f.fete?"<div class='ds-sub'>★ "+esc(f.fete)+"</div>":"")+"</div>"
         +"<span class='task-fete' style='background:var(--pink2);color:var(--pink);'>🧺</span></div>";
     });
     html+="</div>";
@@ -6579,9 +6578,9 @@ function sdRenderDiacre(){
     html+="<div class='diacre-section' style='margin-top:6px;'><div class='ds-header'>🏠 Fivoriana — Accueil ("+myFivo.length+" fois)</div>";
     myFivo.forEach(function(m2){
       const cfg=SD_TYPE_CONFIG[m2.type]||{icon:"👤",cls:"type-diacre"};
-      html+="<div class='ds-item'><div class='ds-date-sm'>"+m2.mois+"<br>"+m2.annee+"</div>"
+      html+="<div class='ds-item'><div class='ds-date-sm'>"+esc(m2.mois)+"<br>"+esc(m2.annee)+"</div>"
         +"<div class='ds-info'><div>Accueil réunion mensuelle</div>"
-        +"<span class='fiv-type "+cfg.cls+"' style='margin-top:4px;'>"+cfg.icon+" "+m2.nom+"</span></div></div>";
+        +"<span class='fiv-type "+esc(cfg.cls)+"' style='margin-top:4px;'>"+esc(cfg.icon)+" "+esc(m2.nom)+"</span></div></div>";
     });
     html+="</div>";
   }
@@ -6650,18 +6649,19 @@ function sdRenderRappel(){
     const msg=sdBuildMsg(name,sdCurRappelMois);
     const key=sdCurRappelMois+"_"+name;
     SD_MSGS[key]=msg;
-    const waNum=(contact.wa||"").replace("+","");
+    const waNum=String(contact.wa||"").replace(/\D/g,"");   // chiffres seulement
     const waLink="https://wa.me/"+waNum+"?text="+encodeURIComponent(msg);
-    const preview=msg.replace(/\n/g,"<br>").replace(/\*(.*?)\*/g,"<b>$1</b>").replace(/_(.*?)_/g,"<i>$1</i>");
+    // Le message est échappé AVANT la mise en forme WhatsApp (*gras*, _italique_)
+    const preview=esc(msg).replace(/\n/g,"<br>").replace(/\*(.*?)\*/g,"<b>$1</b>").replace(/_(.*?)_/g,"<i>$1</i>");
     html+="<div class='rappel-card'>"
       +"<div class='rappel-head'>"
-      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+name+"</div>"
-      +"<div class='rappel-wa'>"+(contact.wa||"—")+"</div>"
+      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+esc(name)+"</div>"
+      +"<div class='rappel-wa'>"+esc(contact.wa||"—")+"</div>"
       +"</div>"
       +"<div class='rappel-preview'>"+preview+"</div>"
       +"<div class='rappel-actions'>"
-      +"<button class='btn btn-gris' onclick='sdDoCopy(\""+key+"\")'><span>📋</span> Copier</button>"
-      +"<a class='btn btn-wa' href='"+waLink+"' target='_blank'><span>💬</span> WhatsApp</a>"
+      +"<button class='btn btn-gris' onclick=\"sdDoCopy("+jsArg(key)+")\"><span>📋</span> Copier</button>"
+      +"<a class='btn btn-wa' href='"+esc(waLink)+"' target='_blank' rel='noopener'><span>💬</span> WhatsApp</a>"
       +"</div></div>";
   });
   html+="<div class='rappel-sep'>Diacres hors service ce mois ✨</div>";
@@ -6669,7 +6669,7 @@ function sdRenderRappel(){
     if(m.g.indexOf(name)>=0) return;
     html+="<div class='rappel-card rappel-off'>"
       +"<div class='rappel-head'>"
-      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+name+"</div>"
+      +"<div class='rappel-name'>"+(SD_GENRE[name]==="H"?"👨":"👩")+" "+esc(name)+"</div>"
       +"<span class='rappel-badge'>Repos ✨</span>"
       +"</div></div>";
   });
@@ -6703,7 +6703,7 @@ function sdToast(msg){
 function sdSetFilter(f){
   sdCurFilter=f;
   document.querySelectorAll("#sd-filter-row .filter-chip").forEach(function(c){c.classList.remove("active");});
-  const el=document.getElementById("sd-filter-"+f.replace(/ /g,"_"));
+  const el=document.getElementById("sd-filter-"+String(f).replace(/ /g,"_"));
   if(el) el.classList.add("active");
   sdRenderFitaovana();
 }
@@ -6716,13 +6716,13 @@ function sdRenderFitaovana(){
   let html="";let lastYear="";
   items.forEach(function(f){
     const yr=f.date.slice(6);
-    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+yr+"  ━━</div>";lastYear=yr;}
+    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+esc(yr)+"  ━━</div>";lastYear=yr;}
     html+="<div class='task-card"+(f.fete?" highlight":"")+"'>"
       +"<div class='task-head'><div class='task-badge-f'>👩</div>"
-      +"<div class='task-info'><div class='task-label'>"+f.label+"</div>"
-      +"<div class='task-name-big'>"+f.fitaovana+"</div>"
-      +(f.fete?"<span class='task-fete'>★ "+f.fete+"</span>":"")
-      +"</div><div class='task-date-sm'>"+f.date+"</div></div></div>";
+      +"<div class='task-info'><div class='task-label'>"+esc(f.label)+"</div>"
+      +"<div class='task-name-big'>"+esc(f.fitaovana)+"</div>"
+      +(f.fete?"<span class='task-fete'>★ "+esc(f.fete)+"</span>":"")
+      +"</div><div class='task-date-sm'>"+esc(f.date)+"</div></div></div>";
   });
   if(!html) html="<div style='text-align:center;color:var(--t3);padding:30px;'>Aucun résultat</div>";
   const el=document.getElementById("sd-list-fitaovana");
@@ -6733,12 +6733,12 @@ function sdRenderFivoriana(){
   let html="";let lastYear="";
   SD_FIVORIANA.forEach(function(m){
     const yr=String(m.annee);
-    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+yr+"  ━━</div>";lastYear=yr;}
+    if(yr!==lastYear){html+="<div class='annee-header'>━━  "+esc(yr)+"  ━━</div>";lastYear=yr;}
     const cfg=SD_TYPE_CONFIG[m.type]||{icon:"👤",cls:"type-diacre"};
-    html+="<div class='fiv-card'><div class='fiv-icon'>"+cfg.icon+"</div>"
-      +"<div class='fiv-info'><div class='fiv-mois-lbl'>"+m.mois+" "+m.annee+"</div>"
-      +"<div class='fiv-nom'>"+m.nom+"</div>"
-      +"<span class='fiv-type "+cfg.cls+"'>"+m.type.toUpperCase()+"</span></div></div>";
+    html+="<div class='fiv-card'><div class='fiv-icon'>"+esc(cfg.icon)+"</div>"
+      +"<div class='fiv-info'><div class='fiv-mois-lbl'>"+esc(m.mois)+" "+esc(m.annee)+"</div>"
+      +"<div class='fiv-nom'>"+esc(m.nom)+"</div>"
+      +"<span class='fiv-type "+esc(cfg.cls)+"'>"+esc(String(m.type||'').toUpperCase())+"</span></div></div>";
   });
   const el=document.getElementById("sd-list-fivoriana");
   if(el) el.innerHTML=html;
