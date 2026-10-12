@@ -3831,7 +3831,7 @@ async function lireFicheAnjPhoto(input){
   if(!file) return;
   if(!peutLireFiche()){ alert('La lecture de la fiche est réservée à ceux qui saisissent l\'Anjarako.'); return; }
   const dejaSaisi=enveloppesJour.length||(valopyListe||[]).length||(parseInt(document.getElementById('anj-total')?.value)||0);
-  if(dejaSaisi&&!confirm('La saisie Anjarako à l\'écran va être remplacée par le contenu de la fiche. Continuer ?')) return;
+  if(dejaSaisi&&!confirm('La saisie Anjarako à l\'écran va être remplacée par le contenu de la fiche.\n(Une page SUITE, elle, ajoute ses cartes à la saisie.)\n\nContinuer ?')) return;
   const btn=document.getElementById('fiche-btn'), zone=document.getElementById('fiche-resultat');
   btn.disabled=true; btn.textContent='⏳ Lecture de la fiche… (30 s à 1 min)';
   zone.innerHTML='';
@@ -3874,31 +3874,49 @@ function nomsCompatibles(ecrit,enregistre){
 function appliquerFicheAnj(f,meta){
   const alertes=[];   // à vérifier absolument
   const infos=[];     // pour information
-  // 1. Date
   const dateInp=document.getElementById('rak-date-input');
-  if(/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){
+  // Page « SUITE » (enveloppes 57 à 112, 1er dimanche et grandes fêtes) : ses cartes s'AJOUTENT à la
+  // saisie de la page 001, déjà lue ; billetage, valopy et signatures sont sur la page 001.
+  const estSuite=!!f.suite||(parseInt(f.page,10)||1)>1;
+  if(estSuite){
+    const nbCartesAvant=enveloppesJour.length;
+    const saisieEcran=nbCartesAvant||(valopyListe||[]).length||(parseInt(document.getElementById('anj-total')?.value)||0);
+    const dateEcran=dateInp?dateInp.value:'';
+    if(!saisieEcran||(f.date&&dateEcran&&dateEcran!==f.date)){
+      document.getElementById('fiche-resultat').innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:#fdecea;color:var(--rouge);font-size:13px">'
+        +'❌ C\'est une page <b>SUITE</b>'+(f.date?' du '+esc(fmtDateFr(f.date)):'')+'. Lis d\'abord la <b>page 001</b> de ce culte, puis cette page : '
+        +'ses cartes s\'ajouteront à celles de la page 001.'+(dateEcran&&f.date&&dateEcran!==f.date?'<br>(L\'écran affiche le '+esc(fmtDateFr(dateEcran))+'.)':'')+'</div>';
+      return;
+    }
+  }
+  // 1. Date
+  if(estSuite){ /* même date que la page 001, déjà à l'écran */ }
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){
     if(dateInp&&dateInp.value&&dateInp.value!==f.date) infos.push('Date de l\'écran remplacée par celle de la fiche : '+fmtDateFr(f.date)+'.');
     if(dateInp) dateInp.value=f.date;
   } else alertes.push('Date de la fiche illisible : vérifie la date avant d\'enregistrer.');
-  // 2. On repart d'une saisie vide
-  viderSaisieAnj(); correctionAnjSource=null; majBannerCorrectionAnj();
-  // 3. Billetage
+  // 2. On repart d'une saisie vide (sauf page SUITE)
+  const nbCartesAvantLecture=enveloppesJour.length;
+  if(!estSuite){ viderSaisieAnj(); correctionAnjSource=null; majBannerCorrectionAnj(); }
+  // 3. Billetage (page 001 seulement)
   let totalBillets=0;
+  if(estSuite) f.billetage=[];
   (f.billetage||[]).forEach(function(b){
     const el=document.getElementById('anj_b_'+b.coupure);
     if(el&&b.nombre>0){ el.value=b.nombre; totalBillets+=b.coupure*b.nombre; }
     else if(b.nombre>0) alertes.push('Coupure '+fmt(b.coupure)+' inconnue dans l\'appli ('+b.nombre+' billets) : à saisir à la main.');
   });
-  const pieces=f.pieces||0;
-  if(pieces>0){
+  const pieces=estSuite?0:(f.pieces||0);
+  if(estSuite){ /* billetage de la page 001 inchangé */ }
+  else if(pieces>0){
     // La saisie par billetage n'a pas de ligne « pièces » : on passe au montant direct
     showAnjMode('total');
     const td=document.getElementById('anj-total-direct'); if(td) td.value=totalBillets+pieces;
     infos.push('Pièces : '+fmt(pieces)+' F → total saisi en « Montant direct ».');
   } else showAnjMode('billets');
   calculerAnjTotal();
-  const totalLu=totalBillets+pieces;
-  if(f.total_billetage_ecrit&&f.total_billetage_ecrit!==totalLu)
+  const totalLu=estSuite?(parseInt(document.getElementById('anj-total')?.value)||0):totalBillets+pieces;
+  if(!estSuite&&f.total_billetage_ecrit&&f.total_billetage_ecrit!==totalLu)
     alertes.push('Billetage : le calcul donne '+fmt(totalLu)+' F mais le TOTAL écrit est '+fmt(f.total_billetage_ecrit)+' F.');
   // 4. Cartes (enveloppes)
   showEnvMode('carte');
@@ -3926,23 +3944,31 @@ function appliquerFicheAnj(f,meta){
     enveloppesJour.push(env);
   });
   afficherEnveloppesJour();
-  // 5. Valopy (une entrée par enveloppe)
+  // 5. Valopy (une entrée par enveloppe) — page 001 seulement
   let totalValopy=0, nbValopy=0;
-  (f.valopy||[]).forEach(function(v){
-    for(let i=0;i<(v.nb||0);i++) valopyListe.push(v.montant);
-    totalValopy+=v.montant*(v.nb||0); nbValopy+=(v.nb||0);
-    if(v.douteux) alertes.push('Valopy '+fmt(v.montant)+' F : comptage incertain ('+v.nb+').');
-  });
-  renderValopy();
+  if(estSuite){
+    (valopyListe||[]).forEach(function(v){ totalValopy+=v; nbValopy++; });
+  } else {
+    (f.valopy||[]).forEach(function(v){
+      for(let i=0;i<(v.nb||0);i++) valopyListe.push(v.montant);
+      totalValopy+=v.montant*(v.nb||0); nbValopy+=(v.nb||0);
+      if(v.douteux) alertes.push('Valopy '+fmt(v.montant)+' F : comptage incertain ('+v.nb+').');
+    });
+    renderValopy();
+  }
   // 6. Contrôles croisés
-  if(f.total_valopy_ecrit&&f.total_valopy_ecrit!==totalValopy)
+  if(!estSuite&&f.total_valopy_ecrit&&f.total_valopy_ecrit!==totalValopy)
     alertes.push('Valopy : le calcul donne '+fmt(totalValopy)+' F mais le TOTAL écrit est '+fmt(f.total_valopy_ecrit)+' F.');
-  if(nbValopy&&totalLu&&totalValopy!==totalLu)
+  if(!estSuite&&nbValopy&&totalLu&&totalValopy!==totalLu)
     alertes.push('Les enveloppes comptées font '+fmt(totalValopy)+' F, le billetage '+fmt(totalLu)+' F : écart de '+fmt(Math.abs(totalValopy-totalLu))+' F.');
-  if(nbValopy&&enveloppesJour.length&&nbValopy!==enveloppesJour.length)
-    alertes.push(enveloppesJour.length+' cartes lues mais '+nbValopy+' enveloppes comptées en valopy.');
+  // Page 001 avec plus de 56 cartes possibles : le nombre de cartes n'est comparé qu'après la page SUITE
+  const pageRemplie=!estSuite&&lignes.length>=56;
+  if(nbValopy&&enveloppesJour.length&&nbValopy!==enveloppesJour.length){
+    if(pageRemplie&&nbValopy>enveloppesJour.length) infos.push('Page 001 remplie : '+enveloppesJour.length+' cartes pour '+nbValopy+' enveloppes comptées — lis maintenant la page SUITE.');
+    else alertes.push(enveloppesJour.length+' cartes lues'+(estSuite?' (pages 001 + SUITE)':'')+' mais '+nbValopy+' enveloppes comptées en valopy.');
+  }
   const s=f.signatures||{};
-  if(!s.vomieran1||!s.vomieran2||!s.tresoriere)
+  if(!estSuite&&(!s.vomieran1||!s.vomieran2||!s.tresoriere))
     alertes.push('Signature manquante : '+[!s.vomieran1&&'vomieran 1',!s.vomieran2&&'vomieran 2',!s.tresoriere&&'trésorière'].filter(Boolean).join(', ')+'.');
   if(f.remarques) infos.push('Remarques de la lecture : '+esc(f.remarques));
   calculerAnjMoisCourant(); mettreAJourBannerAnj();
@@ -3950,7 +3976,8 @@ function appliquerFicheAnj(f,meta){
   const u=(meta&&meta.usage)||{};
   const zone=document.getElementById('fiche-resultat');
   zone.innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:'+(alertes.length?'#fff4e5':'#eafaf1')+';font-size:13px;line-height:1.45">'
-    +'<b>'+(alertes.length?'⚠️ Fiche lue — '+alertes.length+' point(s) à vérifier':'✅ Fiche lue — tous les contrôles sont bons')+'</b><br>'
+    +'<b>'+(estSuite?'📄 Page SUITE lue — '+(enveloppesJour.length-nbCartesAvantLecture)+' carte(s) ajoutée(s). ':'')
+    +(alertes.length?'⚠️ '+(estSuite?'':'Fiche lue — ')+alertes.length+' point(s) à vérifier':'✅ '+(estSuite?'':'Fiche lue — ')+'tous les contrôles sont bons')+'</b><br>'
     +'📅 '+esc(fmtDateFr(f.date||''))+(f.page?' · page '+esc(f.page):'')
     +' · 💰 '+fmt(totalLu)+' F · ✉️ '+enveloppesJour.length+' carte(s) · '+nbValopy+' enveloppe(s) comptée(s)'
     +(alertes.length?'<ul style="margin:8px 0 0 18px;padding:0">'+alertes.map(function(a){return '<li>'+a+'</li>';}).join('')+'</ul>':'')
