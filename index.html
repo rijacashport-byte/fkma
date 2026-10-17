@@ -6064,13 +6064,18 @@ function htmlRapprochement(timbre){
   let h='';
   // (a) Versement déjà saisi sans bordereau
   const existants=bvVersementsSansBordereau();
-  const combEx=bvCombinaison(existants,BV.verse);
+  // saisi au montant versé, ou au montant crédité (lu sur le relevé, timbre déjà déduit)
+  let combEx=bvCombinaison(existants,BV.verse), auNet=false;
+  if(!combEx&&timbre){ combEx=bvCombinaison(existants,BV.net); auNet=!!combEx; }
+  BV.existantsNet=auNet;
   if(combEx&&BV.mode!=='recettes'&&BV.mode!=='nonrattache'){
     BV.existants=combEx;
     h+='<div class="bv-info">✅ Ce versement est déjà enregistré, mais <b>sans bordereau</b> :</div>';
     combEx.forEach(function(x){
       h+='<div class="bv-ligne">'+esc(NOMS_LIVRES[x.livre])+' · '+esc(fmtDateFr(x.e.date))+' · '+esc(x.e.comment||x.e.libelle||'Versement')+'<span class="m">'+fmt(x.montant)+' F</span></div>';
     });
+    if(auNet) h+='<div class="bv-attention">⚠️ Il a été saisi au montant <b>crédité</b> ('+fmt(BV.net)+' F) au lieu du montant <b>versé</b> ('+fmt(BV.verse)+' F) : '
+      +'la caisse a donné '+fmt(BV.verse)+' F. « Compléter » corrige le montant à '+fmt(BV.verse)+' F (+'+fmt(timbre)+' F sur la ligne du '+esc(fmtDateFr(combEx[0].e.date))+') et ajoute le Timbre : la banque reste à +'+fmt(BV.net)+' F.</div>';
     h+='<div class="note" style="margin-top:6px">« Compléter » y ajoute la date du dépôt ('+esc(fmtDateFr(BV.date))+'), le n° '+esc(BV.numero)+' et la photo'+(timbre?', plus la ligne Timbre de '+fmt(timbre)+' F':'')+'.</div>';
     h+='<div class="bv-actions"><button type="button" class="btn bv" onclick="enregistrerBordereau(\'completer\')">✏️ Compléter ce versement</button>'
       +'<button type="button" class="btn btn-gris" onclick="BV.mode=\'recettes\';renderBordereau()">Non, c\'est un autre versement</button></div>';
@@ -6141,13 +6146,18 @@ async function enregistrerBordereau(mode){
   let resume='';
   if(mode==='completer'){
     const maj={date:BV.date,piece:BV.numero,bordereauId:bordereauId,modifiedBy:email,modifiedByNom:nom,modifiedAt:new Date().toISOString()};
-    (BV.existants||[]).forEach(function(x){
-      ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,x.e._id),data:maj,maj:true});
+    (BV.existants||[]).forEach(function(x,i){
+      // Saisi au montant crédité : la 1re ligne reçoit la différence (le timbre), pour que la caisse
+      // sorte bien le montant versé ; le Timbre ramène ensuite la banque au montant crédité.
+      const m=Object.assign({},maj);
+      if(BV.existantsNet&&i===0) m.montant=x.montant+timbre;
+      ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,x.e._id),data:m,maj:true});
       // l'entrée banque jumelle (même opération)
       const jum=(GL[x.livre]||[]).find(function(y){return y._id!==x.e._id&&y.rubrique==='VB'&&y.es==='E'&&y.source==='banque'&&y.opId&&String(y.opId)===String(x.e.opId);});
-      if(jum) ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,jum._id),data:maj,maj:true});
+      if(jum) ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,jum._id),data:m,maj:true});
     });
-    resume='Compléter '+(BV.existants||[]).length+' versement(s) déjà saisi(s) avec le bordereau n° '+BV.numero;
+    resume='Compléter '+(BV.existants||[]).length+' versement(s) déjà saisi(s) avec le bordereau n° '+BV.numero
+      +(BV.existantsNet?'\nMontant corrigé : '+fmt(BV.net)+' → '+fmt(BV.verse)+' F':'');
   } else if(mode==='recettes'){
     const recettes=bvRecettesNonVersees().filter(function(x){return BV.coches.has(x.cle);});
     recettes.forEach(function(x,i){
