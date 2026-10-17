@@ -2221,9 +2221,9 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div class="g2">
  <div class="ch"><label>📂 Livre</label>
  <select id="tr-livre">
- <option value="fiang">📗 Fiangonana (SIB Rakitra)</option>
- <option value="anj">📘 Anjarako (SIB Anjarako)</option>
- <option value="k45">📙 K45 (SIB K45)</option>
+ <option value="fiang">📗 Fiangonana (SIB Rakitra …-90)</option>
+ <option value="anj">📘 Anjarako (SIB Anjarako …-85)</option>
+ <option value="k45">📙 K45 (SIB K45 = Rakitra …-90)</option>
  </select>
  </div>
  <div class="ch"><label>📅 Date</label><input type="date" id="tr-date"></div>
@@ -2260,9 +2260,9 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div class="g2">
  <div class="ch"><label>📂 Compte</label>
  <select id="ob-livre">
- <option value="fiang">📗 SIB Rakitra</option>
- <option value="anj">📘 SIB Anjarako</option>
- <option value="k45">📙 SIB K45</option>
+ <option value="fiang">📗 SIB Rakitra …-90</option>
+ <option value="anj">📘 SIB Anjarako …-85</option>
+ <option value="k45">📙 SIB K45 (Rakitra …-90)</option>
  </select>
  </div>
  <div class="ch"><label>📅 Date</label><input type="date" id="ob-date"></div>
@@ -2328,9 +2328,9 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div class="g2">
  <div class="ch"><label>📂 Compte</label>
  <select id="rp-livre">
- <option value="fiang">📗 SIB Rakitra</option>
- <option value="anj">📘 SIB Anjarako</option>
- <option value="k45">📙 SIB K45</option>
+ <option value="fiang">📗 SIB Rakitra …-90</option>
+ <option value="anj">📘 SIB Anjarako …-85</option>
+ <option value="k45">📙 SIB K45 (Rakitra …-90)</option>
  </select>
  </div>
  <div class="ch"><label>📅 Date relevé</label><input type="date" id="rp-date"></div>
@@ -5817,7 +5817,7 @@ async function verserRecetteEnBanque(btn){
 // « Timbre » automatique au débit de la banque.
 // Rien n'est enregistré sans validation ; Annuler = rien n'est gardé, pas même la photo.
 const BV_LIVRES={fiang:['fiang','k45'],anj:['anj']};
-const BV_NOMS_COMPTES={fiang:'📗 SIB Rakitra (Fiangonana + K45)',anj:'📘 SIB Anjarako'};
+const BV_NOMS_COMPTES={fiang:'📗 SIB Rakitra …-90 (Fiangonana + K45)',anj:'📘 SIB Anjarako …-85'};
 let BV=null;   // bordereau en cours : {lu, photo, compte, date, numero, verse, net, coches:Set, mode, ...}
 let BV_COMPTES=null;
 
