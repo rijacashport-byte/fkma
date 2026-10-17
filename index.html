@@ -3872,7 +3872,7 @@ async function lireFicheAnjPhoto(input){
       body:JSON.stringify({action:'lireFicheAnj',base64:dataUrl,mimeType:'image/jpeg',idToken:await jetonConnexion(),
         membres:load(SK_ANJ_M).filter(function(m){return m.actif!==false;}).map(function(m){return {num:m.num,nom:m.nom||''};})})
     });
-    const json=await resp.json();
+    const json=await lireReponseRelais(resp);
     if(!json||!json.ok) throw new Error((json&&json.error)||'réponse vide du relais');
     // Ancien relais (pas encore mis à jour) : il range la photo dans Drive au lieu de la lire
     if(!json.fiche){
@@ -5878,7 +5878,7 @@ async function lireBordereauPhoto(input){
       }),
       chargerComptesBanque()
     ]);
-    const json=await resp.json();
+    const json=await lireReponseRelais(resp);
     if(!json||!json.ok) throw new Error((json&&json.error)||'réponse vide du relais');
     if(!json.bordereau){
       if(json.fileId) supprimerFichierDrive(json.fileId);
@@ -7243,6 +7243,18 @@ const APPS_SCRIPT_PHOTOS_URL='https://script.google.com/macros/s/AKfycbyYT_la_lr
 async function jetonConnexion(){
   try{ return window._auth&&window._auth.currentUser?await window._auth.currentUser.getIdToken():''; }
   catch(e){ return ''; }
+}
+// Réponse du relais : JSON attendu. Une page HTML = erreur côté Google (temps dépassé, déploiement
+// en cours, quota…) : message clair au lieu de « Unexpected token '<' ».
+async function lireReponseRelais(resp){
+  const texte=await resp.text();
+  try{ return JSON.parse(texte); }
+  catch(e){
+    const titre=(texte.match(/<title>([^<]*)<\/title>/i)||[])[1]||'';
+    const detail=(texte.replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim()).slice(0,160);
+    throw new Error('le relais Google a renvoyé une page d\'erreur (code '+resp.status+(titre?' — '+titre:'')+'). '
+      +'Réessaie dans une minute ; si ça continue, regarde Apps Script → Exécutions. Détail : '+detail);
+  }
 }
 async function supprimerFichierDrive(fileId){
   if(!fileId) return;
