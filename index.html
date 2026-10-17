@@ -6048,7 +6048,7 @@ function renderBordereau(focus){
   h+='<div class="bv-bloc"><h4>② Recettes versées</h4>';
   const deja=bvDejaEnregistre();
   if(deja){
-    h+='<div class="bv-alerte">⛔ Le bordereau n° '+esc(BV.numero)+' est déjà enregistré ('+esc(NOMS_LIVRES[deja.livre])+', versement du '+esc(fmtDateFr(deja.e.date))+'). Rien à faire.</div>';
+    h+=htmlDejaEnregistre(deja,timbre);
   } else if(manque.length){
     h+='<div class="bv-attention">Complète d\'abord : '+esc(manque.join(', '))+'.</div>';
   } else {
@@ -6192,16 +6192,21 @@ async function enregistrerBordereau(mode){
   try{
     await ecrireGroupe(ops);
   }catch(err){ boutons.forEach(function(b){b.disabled=false;}); alert(msgEchecEnregistrement(err)); return; }
-  // Mémoriser le n° de compte (si demandé)
-  if(BV.memoriser&&BV.compteLu&&BV.compte&&peutMemoriserCompte()){
+  await bvFinaliser(bordereauId,true);
+}
+
+// Après enregistrement : mémoriser le n° de compte (si demandé), joindre la photo (si demandé), recharger
+async function bvFinaliser(bordereauId,avecPhoto){
+  const db=window._db,fs=window._fs, email=emailConnecte();
+  if(BV.memoriser&&BV.compteLu&&BV.compte&&peutMemoriserCompte()&&compteDuNumero(BV.compteLu)!==BV.compte){
     try{
       await fs.setDoc(fs.doc(db,'parametres','comptes_banque'),{[BV.compte]:{numero:BV.compteLu,modifiedBy:email,modifiedAt:new Date().toISOString()}},{merge:true});
       BV_COMPTES=Object.assign({},BV_COMPTES||{},{[BV.compte]:{numero:BV.compteLu}});
-    }catch(e){ alert('Versement enregistré, mais le n° de compte n\'a pas pu être mémorisé : '+e.message); }
+    }catch(e){ alert('Enregistré, mais le n° de compte n\'a pas pu être mémorisé : '+e.message); }
   }
   // Photo du bordereau = pièce justificative
   let photoOk=true;
-  try{
+  if(avecPhoto) try{
     const drive=await envoyerVersDrive(BV.photo,'bordereau_'+BV.numero+'_'+bordereauId);
     const rec={opId:bordereauId,createdAt:new Date().toISOString(),createdBy:email,type:'bordereau'};
     if(drive){ rec.driveUrl=drive.viewUrl; rec.driveImgUrl=drive.imgUrl; rec.driveFileId=drive.fileId; }
@@ -6210,8 +6215,65 @@ async function enregistrerBordereau(mode){
     await misAJourCompteurPieces(bordereauId);
   }catch(e){ photoOk=false; console.log('Photo du bordereau :',e.message); }
   BV=null;
-  document.getElementById('bv-zone').innerHTML='<div class="bv-info">✅ Bordereau enregistré.'+(photoOk?' La photo est jointe (📎).':' ⚠️ La photo n\'a pas pu être jointe : ajoute-la avec le bouton 📎 de la ligne.')+'</div>';
+  document.getElementById('bv-zone').innerHTML='<div class="bv-info">✅ Bordereau enregistré.'+(!avecPhoto?'':photoOk?' La photo est jointe (📎).':' ⚠️ La photo n\'a pas pu être jointe : ajoute-la avec le bouton 📎 de la ligne.')+'</div>';
   await chargerTout();
+}
+
+// ── Bordereau déjà saisi à la main (même n°) : on ne recrée rien, on complète ce qui manque ──
+function bvManquesDeja(deja,timbre){
+  const lignes=[];
+  ['fiang','anj','k45'].forEach(function(livre){
+    (GL[livre]||[]).forEach(function(e){ if(e.rubrique==='VB'&&String(e.piece||'').trim()===BV.numero) lignes.push({livre:livre,e:e}); });
+  });
+  const photo=!lignes.some(function(x){return x.e.bordereauId||(x.e.nbPieces||0)>0;});
+  // Timbre déjà passé ? ligne banque au débit (Timbre / Frais / Agios) du même montant, avec ce n° ou à ±5 jours
+  const livreT=deja.livre==='anj'?'anj':'fiang';
+  const proche=function(d){ const ref=deja.e.date||BV.date; return d&&ref&&Math.abs(new Date(d)-new Date(ref))<=5*86400000; };
+  const timbreFait=!timbre||(GL[livreT]||[]).some(function(e){
+    return e.es==='S'&&e.source==='banque'&&['TIM','FRB','AGI'].indexOf(e.rubrique)>=0&&Number(e.montant)===timbre
+      &&(String(e.piece||'').trim()===BV.numero||proche(e.date));
+  });
+  const memo=!!(BV.memoriser&&BV.compteLu&&BV.compte&&peutMemoriserCompte()&&compteDuNumero(BV.compteLu)!==BV.compte);
+  return {lignes:lignes,photo:photo,timbre:timbreFait?0:timbre,livreT:livreT,memo:memo};
+}
+function htmlDejaEnregistre(deja,timbre){
+  const m=bvManquesDeja(deja,timbre);
+  let h='<div class="bv-info">✅ Le bordereau n° '+esc(BV.numero)+' est déjà enregistré ('+esc(NOMS_LIVRES[deja.livre])+', versement du '+esc(fmtDateFr(deja.e.date))+') : aucun nouveau versement ne sera créé.</div>';
+  const faire=[];
+  if(m.photo) faire.push('joindre la photo du bordereau');
+  if(m.timbre) faire.push('ajouter la ligne Timbre de '+fmt(m.timbre)+' F (débit banque '+NOMS_LIVRES[m.livreT]+')');
+  if(m.memo) faire.push('mémoriser le n° '+BV.compteLu+' pour '+BV_NOMS_COMPTES[BV.compte]);
+  if(!faire.length) return h+'<div class="note" style="margin-top:6px">Photo, timbre et compte : tout est déjà en place. Rien à faire.</div>';
+  h+='<div class="note" style="margin-top:6px">Il manque encore :<br>• '+faire.map(esc).join('<br>• ')+'</div>';
+  h+='<div class="bv-actions"><button type="button" class="btn bv" onclick="completerBordereauDeja()">✏️ Compléter ce qui manque</button></div>';
+  return h;
+}
+async function completerBordereauDeja(){
+  const db=window._db,fs=window._fs;
+  if(!db){ alert('Firebase non connecté.'); return; }
+  const deja=bvDejaEnregistre(); if(!deja) return;
+  const timbre=BV.net<BV.verse?BV.verse-BV.net:0;
+  const m=bvManquesDeja(deja,timbre);
+  const email=emailConnecte(), nom=(ROLES_CONFIG[email]||{}).nom||email;
+  const bordereauId='bv_'+Date.now();
+  const ops=[];
+  // La photo sera rangée sous ce bordereauId : les lignes du versement le reçoivent pour afficher le 📎
+  if(m.photo) m.lignes.forEach(function(x){
+    ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,x.e._id),data:{bordereauId:bordereauId,modifiedBy:email,modifiedByNom:nom,modifiedAt:new Date().toISOString()},maj:true});
+  });
+  if(m.timbre) ops.push({ref:nouvelleRef('grandlivre_'+m.livreT),numero:true,data:{
+    date:deja.e.date||BV.date,montant:m.timbre,es:'S',source:'banque',rubrique:'TIM',libelle:'Timbre',piece:BV.numero,bordereauId:bordereauId,
+    comment:'Timbre retenu sur le bordereau n° '+BV.numero+' (versé '+fmt(BV.verse)+' F, crédité '+fmt(BV.net)+' F)',
+    opbancaire:true,opId:Date.now()+500,createdBy:email,createdByNom:nom,savedAt:new Date().toISOString()}});
+  if(!confirm('Bordereau n° '+BV.numero+' (déjà enregistré) — compléter :\n'
+    +(m.photo?'• photo du bordereau\n':'')+(m.timbre?'• Timbre : '+fmt(m.timbre)+' F (débit banque)\n':'')+(m.memo?'• mémoriser le n° de compte '+BV.compteLu+'\n':'')
+    +'\nConfirmer ?')) return;
+  const boutons=document.querySelectorAll('#bv-zone button'); boutons.forEach(function(b){b.disabled=true;});
+  if(ops.length){
+    try{ await ecrireGroupe(ops); }
+    catch(err){ boutons.forEach(function(b){b.disabled=false;}); alert(msgEchecEnregistrement(err)); return; }
+  }
+  await bvFinaliser(bordereauId,m.photo);
 }
 
 function renderFiang(){renderLivre('fiang');renderSoldes('fiang');}
