@@ -1188,6 +1188,20 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 .verse-form{display:none;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px;padding:8px;background:#fff;border:1px dashed var(--gris2);border-radius:8px;font-size:11.5px;color:var(--texte2);}
 .verse-form input{border:1.5px solid var(--gris2);border-radius:6px;padding:5px 7px;font-size:12px;font-family:inherit;}
 .verse-form .vf-bord{width:120px;}
+.verse-nr{margin-top:6px;font-size:11.5px;color:var(--orange);font-weight:600;}
+
+/* ── Bordereau de versement lu par photo ── */
+.bv-bloc{margin-top:12px;padding:10px;border-radius:8px;border:1px solid var(--gris2);background:#fff;font-size:13px;}
+.bv-bloc h4{margin:0 0 8px;font-size:12px;color:var(--bleu);text-transform:uppercase;letter-spacing:.4px;}
+.bv-alerte{padding:8px 10px;border-radius:8px;background:#fdecea;color:var(--rouge);font-size:12.5px;margin-top:8px;}
+.bv-info{padding:8px 10px;border-radius:8px;background:#eef6ee;color:var(--vert);font-size:12.5px;margin-top:8px;}
+.bv-attention{padding:8px 10px;border-radius:8px;background:#fff5e6;color:#a35400;font-size:12.5px;margin-top:8px;}
+.bv-ligne{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--gris1);font-size:12.5px;}
+.bv-ligne:last-child{border-bottom:none;}
+.bv-ligne .m{margin-left:auto;font-weight:600;white-space:nowrap;}
+.bv-total{display:flex;justify-content:space-between;font-weight:700;margin-top:8px;font-size:13px;}
+.bv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.bv-actions .btn{width:auto;padding:9px 14px;margin:0;}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -2183,7 +2197,21 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
     🏦 Opérations bancaires — SIB Rakitra, SIB Anjarako & SIB K45
  </div>
  <aside id="ops-correction-banner"></aside>
- 
+
+
+ <!-- Bordereau de versement SIB lu par photo (17/10/2026) -->
+ <div class="card" id="bv-card">
+ <div class="ctit">📷 Bordereau de versement SIB</div>
+ <div class="note">Photographie le bordereau remis par la banque : l'appli lit le compte, la date, le n° et les montants,
+  retrouve les recettes versées, puis tu valides. Rien n'est enregistré sans ta validation.</div>
+ <input type="file" accept="image/*" capture="environment" id="bv-photo-cam" style="display:none" onchange="lireBordereauPhoto(this)">
+ <input type="file" accept="image/*" id="bv-photo-fichier" style="display:none" onchange="lireBordereauPhoto(this)">
+ <div style="display:flex;gap:8px;flex-wrap:wrap">
+ <button type="button" class="btn bv" id="bv-btn" onclick="document.getElementById('bv-photo-cam').click()" style="width:auto;padding:9px 14px">📷 Photographier un bordereau</button>
+ <button type="button" class="btn btn-gris" onclick="document.getElementById('bv-photo-fichier').click()" style="width:auto;padding:9px 14px">🖼️ Choisir une photo</button>
+ </div>
+ <div id="bv-zone"></div>
+ </div>
 
  <!-- Transfert Caisse → Banque -->
  <div class="card" id="tr-card">
@@ -5699,7 +5727,8 @@ function renderLivre(livre){
       +'<span style="margin-left:auto;font-weight:600;color:'+(soldeAff>=0?'var(--vert)':'var(--rouge)')+'">Solde: '+fmt(soldeAff)+' F</span>'
       +'</div>'
       +htmlVersement(livre,e,vpr,peutVerser)
-      +((e.depenseId||e.transfert||e.opbancaire)?'<div style="margin-top:6px">'+badgePieces(e.depenseId||e.opId,e.nbPieces)+'</div>':'')
+      +(e.nonRattache?'<div class="verse-nr">⚠️ Non rattaché au Grand Livre'+(e.motifNonRattache?' — '+esc(e.motifNonRattache):'')+'</div>':'')
+      +((e.depenseId||e.transfert||e.opbancaire)?'<div style="margin-top:6px">'+badgePieces(e.bordereauId||e.depenseId||e.opId,e.nbPieces)+'</div>':'')
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).reverse().join('');
@@ -5727,7 +5756,7 @@ function versementsParRecette(livre){
     if(r){ res[r._id]=v; pris.add(v._id); }
   });
   versements.forEach(function(v){
-    if(pris.has(v._id)||v.recetteDate) return;
+    if(pris.has(v._id)||v.recetteDate||v.nonRattache) return;
     const r=recettes.find(function(x){return !res[x._id]&&Number(x.montant)===Number(v.montant)&&(x.date||'')<=(v.date||'');});
     if(r){ res[r._id]=v; pris.add(v._id); }
   });
@@ -5736,7 +5765,8 @@ function versementsParRecette(livre){
 function htmlVersement(livre,e,vpr,peutVerser){
   if(!estRecetteAVerser(livre,e)) return '';
   const v=vpr[e._id];
-  if(v) return '<div class="verse-ok">✅ Versé en banque le '+esc(fmtDateFr(v.date))+(v.piece?' · bordereau '+esc(v.piece):'')+'</div>';
+  if(v) return '<div class="verse-ok">✅ Versé en banque le '+esc(fmtDateFr(v.date))+(v.piece?' · bordereau '+esc(v.piece):'')
+    +(!v.piece&&peutVerser?' <button type="button" class="btn-verser" onclick="ouvrirBordereauDepuisGL()">✏️ Bordereau</button>':'')+'</div>';
   if(!peutVerser) return '<div class="verse-attente">⏳ Pas encore versé en banque</div>';
   const id=esc(e._id||'');
   return '<div class="verse-zone"><button type="button" class="btn-verser" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'flex\'?\'none\':\'flex\'">🏦 Verser en banque</button>'
@@ -5744,6 +5774,7 @@ function htmlVersement(livre,e,vpr,peutVerser){
     +'<label>Déposé le <input type="date" class="vf-date" value="'+esc(new Date().toISOString().slice(0,10))+'"></label>'
     +'<input type="text" class="vf-bord" placeholder="N° bordereau">'
     +'<button type="button" class="btn-verser ok" data-id="'+id+'" data-livre="'+livre+'" onclick="verserRecetteEnBanque(this)">💾 Valider '+fmt(e.montant)+' F</button>'
+    +'<button type="button" class="btn-verser" onclick="ouvrirBordereauDepuisGL()">📷 Avec la photo du bordereau</button>'
     +'</div></div>';
 }
 async function verserRecetteEnBanque(btn){
@@ -5771,6 +5802,406 @@ async function verserRecetteEnBanque(btn){
     alert('✅ Versement enregistré : '+fmt(e.montant)+' F en banque.');
     await chargerTout();
   }catch(err){ btn.disabled=false; alert(msgEchecEnregistrement(err)); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── BORDEREAU DE VERSEMENT SIB LU PAR PHOTO (17/10/2026) ──
+// ══════════════════════════════════════════════════════════════
+// La photo part au relais (action « lireBordereau »), Claude renvoie compte, date, n°, montants.
+// Le compte est reconnu par son n° (parametres/comptes_banque, jamais dans cette page publique).
+// SIB Rakitra couvre les livres Fiangonana ET K45 ; SIB Anjarako le livre Anjarako.
+// Rapprochement : (a) versement déjà saisi sans bordereau → le compléter ; (b) sinon la combinaison
+// de recettes non versées dont la somme = montant versé, pré-cochée. Écart → pas d'enregistrement,
+// sauf « versement non rattaché » avec motif obligatoire.
+// Montant crédité < montant versé : la différence est retenue par la banque (timbre) → ligne
+// « Timbre » automatique au débit de la banque.
+// Rien n'est enregistré sans validation ; Annuler = rien n'est gardé, pas même la photo.
+const BV_LIVRES={fiang:['fiang','k45'],anj:['anj']};
+const BV_NOMS_COMPTES={fiang:'📗 SIB Rakitra (Fiangonana + K45)',anj:'📘 SIB Anjarako'};
+let BV=null;   // bordereau en cours : {lu, photo, compte, date, numero, verse, net, coches:Set, mode, ...}
+let BV_COMPTES=null;
+
+function peutLireBordereau(){ return ['secretaire','tresoriere','diacre'].indexOf(roleConnecte())>=0; }
+function peutMemoriserCompte(){ const r=roleConnecte(); return r==='secretaire'||r==='diacre'; }
+function chiffresSeuls(s){ return String(s||'').replace(/\D/g,''); }
+
+async function chargerComptesBanque(){
+  if(!window._db||!window._fs) return BV_COMPTES||{};
+  try{
+    const snap=await window._fs.getDoc(window._fs.doc(window._db,'parametres','comptes_banque'));
+    BV_COMPTES=snap.exists()?snap.data():{};
+  }catch(e){ console.log('Comptes banque :',e.message); BV_COMPTES=BV_COMPTES||{}; }
+  return BV_COMPTES;
+}
+// Livre du compte lu ('fiang' / 'anj') ou '' s'il n'est pas reconnu
+function compteDuNumero(num){
+  const n=chiffresSeuls(num); if(n.length<6) return '';
+  const c=BV_COMPTES||{};
+  let trouve='';
+  ['fiang','anj'].forEach(function(l){
+    const ref=chiffresSeuls(c[l]&&c[l].numero);
+    if(!ref) return;
+    // n° complet identique, ou 8 derniers chiffres identiques (un chiffre de tête mal lu)
+    if(ref===n||(ref.length>=8&&n.length>=8&&ref.slice(-8)===n.slice(-8))) trouve=l;
+  });
+  return trouve;
+}
+
+// Raccourci depuis le Grand Livre (« 📷 Avec la photo du bordereau », « ✏️ Bordereau »)
+function ouvrirBordereauDepuisGL(){
+  const btnOps=document.getElementById('gltab-btn-ops');
+  if(btnOps&&btnOps.style.display!=='none') showGLTab('ops',btnOps);
+  const carte=document.getElementById('bv-card');
+  if(carte) carte.scrollIntoView({behavior:'smooth',block:'start'});
+  const inp=document.getElementById('bv-photo-cam');
+  if(inp) inp.click();
+}
+
+async function lireBordereauPhoto(input){
+  const file=input.files&&input.files[0]; input.value='';
+  if(!file) return;
+  if(!peutLireBordereau()){ alert('La lecture des bordereaux est réservée au secrétaire, au président des diacres et à la trésorière.'); return; }
+  if(BV&&!confirm('Un bordereau est déjà à l\'écran. Le remplacer par cette photo ?')) return;
+  const btn=document.getElementById('bv-btn'), zone=document.getElementById('bv-zone');
+  btn.disabled=true; btn.textContent='⏳ Lecture du bordereau… (20 à 40 s)';
+  zone.innerHTML='';
+  let photo='', lu=null, erreur='';
+  try{
+    const img=await chargerImageDepuisFichier(file);
+    photo=await compresserDepuisImage(img);          // pièce justificative gardée après validation
+    const dataUrl=await preparerPhotoFiche(file);    // version nette pour la lecture
+    const [resp]=await Promise.all([
+      fetch(APPS_SCRIPT_PHOTOS_URL,{
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, // évite une requête OPTIONS que le relais ne gère pas
+        body:JSON.stringify({action:'lireBordereau',base64:dataUrl,mimeType:'image/jpeg',idToken:await jetonConnexion()})
+      }),
+      chargerComptesBanque()
+    ]);
+    const json=await resp.json();
+    if(!json||!json.ok) throw new Error((json&&json.error)||'réponse vide du relais');
+    if(!json.bordereau){
+      if(json.fileId) supprimerFichierDrive(json.fileId);
+      throw new Error('le relais Apps Script n\'est pas encore à jour pour la lecture des bordereaux');
+    }
+    lu=json.bordereau;
+  }catch(e){ erreur=e.message||String(e); }
+  finally{ btn.disabled=false; btn.textContent='📷 Photographier un bordereau'; }
+  if(!photo){ zone.innerHTML='<div class="bv-alerte">❌ Photo illisible : '+esc(erreur)+'</div>'; return; }
+  if(!BV_COMPTES) await chargerComptesBanque();
+  lu=lu||{};
+  const compte=compteDuNumero(lu.compte);
+  BV={lu:lu,photo:photo,erreur:erreur,compte:compte,compteLu:lu.compte||'',
+    date:/^\d{4}-\d{2}-\d{2}$/.test(lu.date_depot||'')?lu.date_depot:'',
+    numero:String(lu.numero_bordereau||'').trim(),
+    verse:parseInt(lu.montant_verse,10)||0,
+    net:parseInt(lu.montant_net,10)||parseInt(lu.montant_credite_phrase,10)||0,
+    dateValeur:/^\d{4}-\d{2}-\d{2}$/.test(lu.date_valeur||'')?lu.date_valeur:'',
+    coches:null,mode:'',motif:'',livreNR:compte||'fiang',memoriser:!compte&&!!chiffresSeuls(lu.compte)};
+  renderBordereau();
+}
+
+function annulerBordereau(){
+  if(BV&&!confirm('Abandonner ce bordereau ? Rien ne sera enregistré et la photo ne sera pas gardée.')) return;
+  BV=null;
+  document.getElementById('bv-zone').innerHTML='';
+}
+
+// Champs modifiés à la main
+function bvChamp(nom,val){
+  if(!BV) return;
+  if(nom==='verse'||nom==='net') BV[nom]=parseInt(val,10)||0;
+  else if(nom==='memoriser') BV.memoriser=!!val;
+  else BV[nom]=val;
+  if(nom==='compte'||nom==='verse'||nom==='date'){ BV.coches=null; }
+  renderBordereau(nom);
+}
+function bvCocher(cle,oui){
+  if(!BV||!BV.coches) return;
+  if(oui) BV.coches.add(cle); else BV.coches.delete(cle);
+  renderBordereau();
+}
+
+// Recettes encaissées pas encore versées, des livres du compte, jusqu'à la date du dépôt
+function bvRecettesNonVersees(){
+  const res=[];
+  (BV_LIVRES[BV.compte]||[]).forEach(function(livre){
+    const vpr=versementsParRecette(livre);
+    (GL[livre]||[]).forEach(function(e){
+      if(!estRecetteAVerser(livre,e)||vpr[e._id]) return;
+      if(BV.date&&(e.date||'')>BV.date) return;
+      res.push({cle:livre+'|'+e._id,livre:livre,e:e,montant:Number(e.montant)||0});
+    });
+  });
+  return res.sort(function(a,b){ return (b.e.date||'').localeCompare(a.e.date||''); });
+}
+// Versements déjà saisis (sortie caisse « VB ») sans n° de bordereau, des 60 jours avant le dépôt
+function bvVersementsSansBordereau(){
+  const res=[];
+  const min=BV.date?decalerDate(BV.date,-60):'', max=BV.date?decalerDate(BV.date,7):'9999';
+  (BV_LIVRES[BV.compte]||[]).forEach(function(livre){
+    (GL[livre]||[]).forEach(function(e){
+      if(e.es!=='S'||(e.source||'caisse')==='banque'||e.rubrique!=='VB') return;
+      if(String(e.piece||'').trim()||e.bordereauId) return;
+      if((e.date||'')<min||(e.date||'')>max) return;
+      res.push({cle:livre+'|'+e._id,livre:livre,e:e,montant:Number(e.montant)||0});
+    });
+  });
+  return res.sort(function(a,b){ return (b.e.date||'').localeCompare(a.e.date||''); });
+}
+function decalerDate(iso,jours){
+  const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+jours); return d.toISOString().slice(0,10);
+}
+// Meilleure combinaison dont la somme = cible : le moins d'éléments, puis les plus récents.
+// (éléments triés du plus récent au plus ancien ; recherche bornée pour rester instantanée)
+function bvCombinaison(items,cible){
+  if(!cible||!items.length) return null;
+  const liste=items.slice(0,24);
+  let meilleure=null, essais=0;
+  // à nombre égal, la combinaison la plus récente (somme des rangs la plus petite)
+  function rang(c){ return c.reduce(function(s,i){return s+i;},0); }
+  (function chercher(depart,somme,choix){
+    if(++essais>300000) return;
+    if(somme===cible){
+      if(!meilleure||choix.length<meilleure.length||(choix.length===meilleure.length&&rang(choix)<rang(meilleure)))
+        meilleure=choix.slice();
+      return;
+    }
+    if(meilleure&&choix.length>=meilleure.length) return;
+    for(let i=depart;i<liste.length;i++){
+      const m=liste[i].montant;
+      if(m<=0||somme+m>cible) continue;
+      choix.push(i); chercher(i+1,somme+m,choix); choix.pop();
+    }
+  })(0,0,[]);
+  return meilleure?meilleure.map(function(i){return liste[i];}):null;
+}
+function bvDejaEnregistre(){
+  if(!BV.numero) return null;
+  for(const livre of ['fiang','anj','k45']){
+    const e=(GL[livre]||[]).find(function(x){return x.rubrique==='VB'&&String(x.piece||'').trim()===BV.numero;});
+    if(e) return {livre:livre,e:e};
+  }
+  return null;
+}
+function soldeCaisseLivre(livre){
+  let c=parseFloat(document.getElementById(livre+'-init-caisse')?.value)||0;
+  (GL[livre]||[]).forEach(function(e){ if((e.source||'caisse')!=='banque') c+=(e.es==='E'?1:-1)*(Number(e.montant)||0); });
+  return c;
+}
+
+function renderBordereau(focus){
+  const zone=document.getElementById('bv-zone'); if(!zone||!BV) return;
+  const lu=BV.lu||{};
+  const actif=document.activeElement, actifId=actif&&actif.id, pos=actif&&actif.selectionStart;
+  let h='';
+  // ── 1. Ce qui a été lu (modifiable)
+  h+='<div class="bv-bloc"><h4>① Bordereau</h4>';
+  if(BV.erreur) h+='<div class="bv-alerte">❌ Lecture automatique impossible : '+esc(BV.erreur)+'<br>Remplis les champs à la main en regardant le bordereau.</div>';
+  h+='<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+    +'<img src="'+urlSure(BV.photo)+'" style="width:90px;max-height:140px;object-fit:contain;border:1px solid var(--gris2);border-radius:6px;cursor:zoom-in" title="Agrandir / réduire" onclick="var g=this.style.width===\'100%\';this.style.width=g?\'90px\':\'100%\';this.style.maxHeight=g?\'140px\':\'none\'">'
+    +'<div style="flex:1;min-width:220px">'
+    +'<div class="ch"><label>🏦 Compte crédité'+(BV.compteLu?' — n° lu : <b>'+esc(BV.compteLu)+'</b>':'')+'</label>'
+    +'<select id="bv-compte" onchange="bvChamp(\'compte\',this.value)">'
+    +'<option value="">— Choisir —</option>'
+    +['fiang','anj'].map(function(l){return '<option value="'+l+'"'+(BV.compte===l?' selected':'')+'>'+BV_NOMS_COMPTES[l]+'</option>';}).join('')
+    +'</select></div>'
+    +'<div class="g2"><div class="ch"><label>📅 Date du dépôt</label><input type="date" id="bv-date" value="'+esc(BV.date)+'" onchange="bvChamp(\'date\',this.value)"></div>'
+    +'<div class="ch"><label>🔢 N° bordereau</label><input type="text" id="bv-numero" value="'+esc(BV.numero)+'" oninput="bvChamp(\'numero\',this.value.trim())"></div></div>'
+    +'<div class="g2"><div class="ch"><label>💵 Montant versé</label><input type="number" inputmode="numeric" id="bv-verse" value="'+(BV.verse||'')+'" onchange="bvChamp(\'verse\',this.value)"></div>'
+    +'<div class="ch"><label>🏦 Montant crédité (net)</label><input type="number" inputmode="numeric" id="bv-net" value="'+(BV.net||'')+'" onchange="bvChamp(\'net\',this.value)"></div></div>'
+    +'</div></div>';
+  // Compte non reconnu
+  const reconnu=compteDuNumero(BV.compteLu);
+  if(BV.compteLu&&!reconnu){
+    h+='<div class="bv-attention">❓ Le compte n° <b>'+esc(BV.compteLu)+'</b> n\'est pas encore connu de l\'appli. Choisis-le ci-dessus.'
+      +(peutMemoriserCompte()?'<br><label style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" '+(BV.memoriser?'checked':'')+' onchange="bvChamp(\'memoriser\',this.checked)"> Mémoriser ce n° pour ce compte (les prochains bordereaux seront reconnus)</label>'
+        :'<br>Le secrétaire ou le président des diacres pourra le mémoriser.')+'</div>';
+  } else if(reconnu&&BV.compte&&reconnu!==BV.compte){
+    h+='<div class="bv-alerte">⚠️ Le n° lu correspond au compte '+esc(BV_NOMS_COMPTES[reconnu])+', pas à celui choisi.</div>';
+  }
+  // Contrôles de cohérence
+  const ctl=[], infos=[];
+  const timbre=BV.verse&&BV.net&&BV.net<BV.verse?BV.verse-BV.net:0;
+  if(BV.net>BV.verse&&BV.verse) ctl.push('Montant crédité ('+fmt(BV.net)+') plus grand que le montant versé ('+fmt(BV.verse)+') : vérifie.');
+  if(timbre>1000) ctl.push('La banque a retenu '+fmt(timbre)+' F : c\'est beaucoup pour un timbre, vérifie les montants.');
+  const bill=(lu.billetage||[]).reduce(function(s,b){return s+(b.coupure||0)*(b.nombre||0);},0);
+  if(bill&&BV.verse&&bill!==BV.verse) ctl.push('Billetage du bordereau = '+fmt(bill)+' F, différent du montant versé '+fmt(BV.verse)+' F.');
+  else if(bill&&BV.verse) infos.push('Billetage vérifié : '+fmt(bill)+' F.');
+  if(lu.montant_lettres_valeur&&BV.net&&lu.montant_lettres_valeur!==BV.net) ctl.push('Montant en lettres (« '+(lu.montant_lettres||'')+' » = '+fmt(lu.montant_lettres_valeur)+' F) différent du montant crédité.');
+  if(lu.montant_credite_phrase&&BV.net&&lu.montant_credite_phrase!==BV.net) ctl.push('Somme portée au crédit dans la phrase du bas ('+fmt(lu.montant_credite_phrase)+' F) différente du montant net.');
+  if(BV.lu&&!BV.erreur&&lu.cachet_recu===false) ctl.push('Pas de cachet « REÇU CAISSE » de la banque repéré sur la photo.');
+  if(lu.remarques) infos.push('Remarque de lecture : '+lu.remarques);
+  if(BV.dateValeur&&BV.date&&BV.dateValeur!==BV.date) infos.push('Date de valeur à la banque : '+fmtDateFr(BV.dateValeur)+'.');
+  if(timbre) infos.push('La banque a retenu <b>'+fmt(timbre)+' F</b> (versé '+fmt(BV.verse)+' − crédité '+fmt(BV.net)+') : une ligne <b>« Timbre »</b> de '+fmt(timbre)+' F sera ajoutée au débit de la banque.');
+  ctl.forEach(function(t){ h+='<div class="bv-attention">⚠️ '+esc(t)+'</div>'; });
+  infos.forEach(function(t){ h+='<div class="bv-info">'+(t.indexOf('<b>')>=0?'ℹ️ '+t:'ℹ️ '+esc(t))+'</div>'; });
+  h+='</div>';
+
+  // ── 2. Rapprochement
+  const manque=[];
+  if(!BV.compte) manque.push('le compte');
+  if(!BV.date) manque.push('la date du dépôt');
+  if(!BV.numero) manque.push('le n° du bordereau');
+  if(!BV.verse) manque.push('le montant versé');
+  if(!BV.net) manque.push('le montant crédité');
+  h+='<div class="bv-bloc"><h4>② Recettes versées</h4>';
+  const deja=bvDejaEnregistre();
+  if(deja){
+    h+='<div class="bv-alerte">⛔ Le bordereau n° '+esc(BV.numero)+' est déjà enregistré ('+esc(NOMS_LIVRES[deja.livre])+', versement du '+esc(fmtDateFr(deja.e.date))+'). Rien à faire.</div>';
+  } else if(manque.length){
+    h+='<div class="bv-attention">Complète d\'abord : '+esc(manque.join(', '))+'.</div>';
+  } else {
+    h+=htmlRapprochement(timbre);
+  }
+  h+='</div>';
+  h+='<div class="bv-actions"><button type="button" class="btn btn-gris" onclick="annulerBordereau()">✕ Annuler</button></div>';
+  zone.innerHTML=h;
+  if(actifId){ const el=document.getElementById(actifId); if(el){ el.focus(); try{ if(pos!=null) el.setSelectionRange(pos,pos); }catch(e){} } }
+}
+
+function htmlRapprochement(timbre){
+  let h='';
+  // (a) Versement déjà saisi sans bordereau
+  const existants=bvVersementsSansBordereau();
+  const combEx=bvCombinaison(existants,BV.verse);
+  if(combEx&&BV.mode!=='recettes'&&BV.mode!=='nonrattache'){
+    BV.existants=combEx;
+    h+='<div class="bv-info">✅ Ce versement est déjà enregistré, mais <b>sans bordereau</b> :</div>';
+    combEx.forEach(function(x){
+      h+='<div class="bv-ligne">'+esc(NOMS_LIVRES[x.livre])+' · '+esc(fmtDateFr(x.e.date))+' · '+esc(x.e.comment||x.e.libelle||'Versement')+'<span class="m">'+fmt(x.montant)+' F</span></div>';
+    });
+    h+='<div class="note" style="margin-top:6px">« Compléter » y ajoute la date du dépôt ('+esc(fmtDateFr(BV.date))+'), le n° '+esc(BV.numero)+' et la photo'+(timbre?', plus la ligne Timbre de '+fmt(timbre)+' F':'')+'.</div>';
+    h+='<div class="bv-actions"><button type="button" class="btn bv" onclick="enregistrerBordereau(\'completer\')">✏️ Compléter ce versement</button>'
+      +'<button type="button" class="btn btn-gris" onclick="BV.mode=\'recettes\';renderBordereau()">Non, c\'est un autre versement</button></div>';
+    return h;
+  }
+  // (b) Recettes non versées
+  const recettes=bvRecettesNonVersees();
+  if(!BV.coches){
+    const comb=bvCombinaison(recettes,BV.verse);
+    BV.coches=new Set(comb?comb.map(function(x){return x.cle;}):[]);
+    BV.trouveAuto=!!comb;
+  }
+  if(!recettes.length){
+    h+='<div class="bv-attention">Aucune recette non versée dans '+esc(BV_NOMS_COMPTES[BV.compte])+' jusqu\'au '+esc(fmtDateFr(BV.date))+'.</div>';
+  } else {
+    h+=BV.trouveAuto?'<div class="bv-info">✅ Recettes trouvées dont la somme fait exactement '+fmt(BV.verse)+' F : elles sont cochées. Vérifie.</div>'
+      :'<div class="bv-attention">Aucune combinaison de recettes non versées ne fait exactement '+fmt(BV.verse)+' F. Coche à la main celles qui ont été versées.</div>';
+    recettes.forEach(function(x){
+      const lib=(x.livre==='k45'?'📙 K45 · ':x.livre==='anj'?'':'📗 ')+(x.e.libelle||libelleRubrique(x.e.rubrique)||'Recette');
+      h+='<label class="bv-ligne"><input type="checkbox" '+(BV.coches.has(x.cle)?'checked':'')+' onchange="bvCocher('+jsArg(x.cle)+',this.checked)">'
+        +esc(fmtDateFr(x.e.date))+' · '+esc(lib)+'<span class="m">'+fmt(x.montant)+' F</span></label>';
+    });
+  }
+  const somme=recettes.filter(function(x){return BV.coches.has(x.cle);}).reduce(function(s,x){return s+x.montant;},0);
+  const ecart=BV.verse-somme;
+  h+='<div class="bv-total"><span>Cochées : '+fmt(somme)+' F</span><span style="color:'+(ecart===0?'var(--vert)':'var(--rouge)')+'">'+(ecart===0?'✅ Égal au versement':'Écart : '+(ecart>0?'+':'')+fmt(ecart)+' F')+'</span></div>';
+  if(ecart===0&&somme>0){
+    h+='<div class="bv-actions"><button type="button" class="btn bv" onclick="enregistrerBordereau(\'recettes\')">💾 Enregistrer le versement de '+fmt(BV.verse)+' F</button></div>';
+    return h;
+  }
+  if(somme>0&&ecart!==0) h+='<div class="bv-alerte">Les recettes cochées ne font pas le montant du bordereau : impossible d\'enregistrer ainsi.</div>';
+  // Causes probables
+  const proches=recettes.filter(function(x){return Math.abs(x.montant-BV.verse)<=Math.max(1000,BV.verse*0.05)&&x.montant!==BV.verse;});
+  h+='<div class="note" style="margin-top:8px"><b>Causes probables :</b><br>'
+    +'• une recette de cette période n\'est pas encore saisie (Rakitra, Anjarako, Raki-pandraisana) : saisis-la puis reprends le bordereau ;<br>'
+    +(proches.length?'• montant proche : '+proches.map(function(x){return fmtDateFr(x.e.date)+' ('+fmt(x.montant)+' F)';}).join(', ')+' — erreur de comptage ou de saisie ?<br>':'')
+    +'• le dépôt couvre plusieurs dimanches, dont un déjà versé ou un mal saisi ;<br>'
+    +'• dépôt partiel d\'une recette : à faire dans Opérations → Transfert.</div>';
+  // Versement non rattaché
+  if(BV.mode!=='nonrattache'){
+    h+='<div class="bv-actions"><button type="button" class="btn btn-gris" onclick="BV.mode=\'nonrattache\';renderBordereau()">⚠️ Enregistrer comme versement non rattaché…</button></div>';
+  } else {
+    const livres=BV_LIVRES[BV.compte]||[];
+    if(livres.indexOf(BV.livreNR)<0) BV.livreNR=livres[0];
+    const apres=soldeCaisseLivre(BV.livreNR)-BV.verse;
+    h+='<div class="bv-attention" style="margin-top:10px"><b>Versement non rattaché</b> : '+fmt(BV.verse)+' F sortiront de la caisse vers la banque sans être reliés à une recette. Il portera la marque « ⚠️ Non rattaché au Grand Livre » jusqu\'à correction.'
+      +(livres.length>1?'<div class="ch" style="margin-top:6px"><label>Livre</label><select onchange="bvChamp(\'livreNR\',this.value)">'+livres.map(function(l){return '<option value="'+l+'"'+(BV.livreNR===l?' selected':'')+'>'+esc(NOMS_LIVRES[l])+'</option>';}).join('')+'</select></div>':'')
+      +'<div class="ch" style="margin-top:6px"><label>Motif (obligatoire)</label><input type="text" id="bv-motif" value="'+esc(BV.motif)+'" oninput="BV.motif=this.value" placeholder="Ex : recette du 05/10 pas encore saisie"></div>'
+      +(apres<0?'<div class="bv-alerte">⛔ La caisse '+esc(NOMS_LIVRES[BV.livreNR])+' passerait en négatif ('+fmt(apres)+' F) : une recette manque sûrement dans le Grand Livre.</div>':'')
+      +'<div class="bv-actions"><button type="button" class="btn bv" onclick="enregistrerBordereau(\'nonrattache\')">💾 Enregistrer comme non rattaché</button>'
+      +'<button type="button" class="btn btn-gris" onclick="BV.mode=\'\';renderBordereau()">Retour</button></div></div>';
+  }
+  return h;
+}
+
+async function enregistrerBordereau(mode){
+  const db=window._db,fs=window._fs;
+  if(!db){ alert('Firebase non connecté.'); return; }
+  if(!BV) return;
+  if(bvDejaEnregistre()){ alert('Ce bordereau est déjà enregistré.'); return; }
+  const timbre=BV.net<BV.verse?BV.verse-BV.net:0;
+  const email=emailConnecte(), nom=(ROLES_CONFIG[email]||{}).nom||email;
+  const bordereauId='bv_'+Date.now();
+  const opBase=Date.now();
+  const commun={piece:BV.numero,bordereauId:bordereauId,createdBy:email,createdByNom:nom,savedAt:new Date().toISOString()};
+  if(BV.dateValeur) commun.dateValeur=BV.dateValeur;
+  const ops=[];
+  let resume='';
+  if(mode==='completer'){
+    const maj={date:BV.date,piece:BV.numero,bordereauId:bordereauId,modifiedBy:email,modifiedByNom:nom,modifiedAt:new Date().toISOString()};
+    (BV.existants||[]).forEach(function(x){
+      ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,x.e._id),data:maj,maj:true});
+      // l'entrée banque jumelle (même opération)
+      const jum=(GL[x.livre]||[]).find(function(y){return y._id!==x.e._id&&y.rubrique==='VB'&&y.es==='E'&&y.source==='banque'&&y.opId&&String(y.opId)===String(x.e.opId);});
+      if(jum) ops.push({ref:fs.doc(db,'grandlivre_'+x.livre,jum._id),data:maj,maj:true});
+    });
+    resume='Compléter '+(BV.existants||[]).length+' versement(s) déjà saisi(s) avec le bordereau n° '+BV.numero;
+  } else if(mode==='recettes'){
+    const recettes=bvRecettesNonVersees().filter(function(x){return BV.coches.has(x.cle);});
+    recettes.forEach(function(x,i){
+      const lib=(x.e.libelle||'Recette')+' du '+fmtDateFr(x.e.date);
+      const base=Object.assign({},commun,{date:BV.date,page:'',montant:x.montant,comment:lib,transfert:true,opId:opBase+i,
+        recetteDate:x.e.date,recetteRubrique:x.e.rubrique});
+      ops.push({ref:nouvelleRef('grandlivre_'+x.livre),numero:true,data:Object.assign({},base,{es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'})});
+      ops.push({ref:nouvelleRef('grandlivre_'+x.livre),numero:true,data:Object.assign({},base,{es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'})});
+    });
+    resume=recettes.map(function(x){return '• '+(x.e.libelle||'Recette')+' du '+fmtDateFr(x.e.date)+' : '+fmt(x.montant)+' F';}).join('\n');
+  } else {
+    const motif=(BV.motif||'').trim();
+    if(!motif){ alert('Le motif est obligatoire pour un versement non rattaché.'); document.getElementById('bv-motif')?.focus(); return; }
+    const base=Object.assign({},commun,{date:BV.date,page:'',montant:BV.verse,comment:'Versement non rattaché — '+motif,transfert:true,opId:opBase,
+      nonRattache:true,motifNonRattache:motif});
+    ops.push({ref:nouvelleRef('grandlivre_'+BV.livreNR),numero:true,data:Object.assign({},base,{es:'S',source:'caisse',libelle:'Versement banque',rubrique:'VB'})});
+    ops.push({ref:nouvelleRef('grandlivre_'+BV.livreNR),numero:true,data:Object.assign({},base,{es:'E',source:'banque',libelle:'Versement depuis caisse',rubrique:'VB'})});
+    resume='⚠️ Versement NON RATTACHÉ ('+NOMS_LIVRES[BV.livreNR]+') : '+fmt(BV.verse)+' F\nMotif : '+motif;
+  }
+  // Timbre retenu par la banque : au débit de la banque du livre principal du compte
+  if(timbre){
+    const livreT=BV.compte==='anj'?'anj':'fiang';
+    ops.push({ref:nouvelleRef('grandlivre_'+livreT),numero:true,data:Object.assign({},commun,{
+      date:BV.date,montant:timbre,es:'S',source:'banque',rubrique:'TIM',libelle:'Timbre',
+      comment:'Timbre retenu sur le bordereau n° '+BV.numero+' (versé '+fmt(BV.verse)+' F, crédité '+fmt(BV.net)+' F)',
+      opbancaire:true,opId:opBase+500})});
+  }
+  if(!ops.length){ alert('Rien à enregistrer.'); return; }
+  if(!confirm('Bordereau n° '+BV.numero+' du '+fmtDateFr(BV.date)+' — '+BV_NOMS_COMPTES[BV.compte]+'\nVersé : '+fmt(BV.verse)+' F · Crédité : '+fmt(BV.net)+' F\n\n'
+    +resume+(timbre?'\n+ Timbre : '+fmt(timbre)+' F (débit banque)':'')+'\n\nLa photo sera gardée comme pièce justificative.\nConfirmer ?')) return;
+  const boutons=document.querySelectorAll('#bv-zone button'); boutons.forEach(function(b){b.disabled=true;});
+  try{
+    await ecrireGroupe(ops);
+  }catch(err){ boutons.forEach(function(b){b.disabled=false;}); alert(msgEchecEnregistrement(err)); return; }
+  // Mémoriser le n° de compte (si demandé)
+  if(BV.memoriser&&BV.compteLu&&BV.compte&&peutMemoriserCompte()){
+    try{
+      await fs.setDoc(fs.doc(db,'parametres','comptes_banque'),{[BV.compte]:{numero:BV.compteLu,modifiedBy:email,modifiedAt:new Date().toISOString()}},{merge:true});
+      BV_COMPTES=Object.assign({},BV_COMPTES||{},{[BV.compte]:{numero:BV.compteLu}});
+    }catch(e){ alert('Versement enregistré, mais le n° de compte n\'a pas pu être mémorisé : '+e.message); }
+  }
+  // Photo du bordereau = pièce justificative
+  let photoOk=true;
+  try{
+    const drive=await envoyerVersDrive(BV.photo,'bordereau_'+BV.numero+'_'+bordereauId);
+    const rec={opId:bordereauId,createdAt:new Date().toISOString(),createdBy:email,type:'bordereau'};
+    if(drive){ rec.driveUrl=drive.viewUrl; rec.driveImgUrl=drive.imgUrl; rec.driveFileId=drive.fileId; }
+    else rec.img=BV.photo;
+    await fs.addDoc(fs.collection(db,'pieces'),rec);
+    await misAJourCompteurPieces(bordereauId);
+  }catch(e){ photoOk=false; console.log('Photo du bordereau :',e.message); }
+  BV=null;
+  document.getElementById('bv-zone').innerHTML='<div class="bv-info">✅ Bordereau enregistré.'+(photoOk?' La photo est jointe (📎).':' ⚠️ La photo n\'a pas pu être jointe : ajoute-la avec le bouton 📎 de la ligne.')+'</div>';
+  await chargerTout();
 }
 
 function renderFiang(){renderLivre('fiang');renderSoldes('fiang');}
@@ -6993,7 +7424,7 @@ async function misAJourCompteurPieces(opId){
       const glSnap=await window._fs.getDocs(window._fs.collection(window._db,'grandlivre_'+livre));
       for(const ds of glSnap.docs){
         const d=ds.data();
-        if(String(d.depenseId)===String(opId)||String(d.opId)===String(opId)){
+        if(String(d.depenseId)===String(opId)||String(d.opId)===String(opId)||(d.bordereauId&&String(d.bordereauId)===String(opId))){
           await window._fs.updateDoc(ds.ref,{nbPieces:n});
           const item=(GL[livre]||[]).find(function(x){return x._id===ds.id;});
           if(item) item.nbPieces=n;
