@@ -50,6 +50,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid 
 .mini{min-height:40px;min-width:40px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;cursor:pointer;font-weight:600;font-size:.88rem;padding:0 10px}
 .mini.del{color:var(--bad);border-color:var(--bad)}
 .empty{color:var(--muted);padding:14px 0;text-align:center}
+.two{display:grid;grid-template-columns:1fr 112px;gap:10px;align-items:end}
+.two input[type=text]{width:100%}
 .foot{display:flex;gap:10px;flex-wrap:wrap}
 .foot .btn{flex:1;min-width:150px}
 [hidden]{display:none!important}
@@ -68,7 +70,8 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid 
 <div id="otherBox" hidden><label for="other">Nom de la personne ajoutée</label><input type="text" id="other" placeholder="Nom et prénom"></div>
 <div><label for="nb">Nombre de personnes <span style="font-weight:400;color:var(--muted)">(la personne comprise)</span></label>
 <div class="stepper"><button type="button" id="minus" aria-label="Une personne de moins">−</button><input id="nb" inputmode="numeric" value="1" aria-live="polite"><button type="button" id="plus" aria-label="Une personne de plus">+</button></div></div>
-<div><label for="note">Remarque (facultatif)</label><input type="text" id="note" placeholder="Ex : vient avec 2 enfants"></div>
+<div class="two"><div><label for="note">Remarque (facultatif)</label><input type="text" id="note" placeholder="Ex : vient avec 2 enfants"></div><div><label for="cov">🚗 Covoiturage</label><input type="text" id="cov" inputmode="numeric" placeholder="0" aria-label="Nombre de personnes qui ont besoin de covoiturage"></div></div>
+<p class="hint" style="margin-top:-6px">Covoiturage : écris combien de personnes ont besoin d'une place en voiture (laisse vide si aucune).</p>
 <button class="btn" id="save" type="submit">Enregistrer l'inscription</button>
 <button class="btn ghost" id="cancel" type="button" hidden>Annuler la modification</button>
 <p class="msg" id="msg" role="status" aria-live="polite"></p>
@@ -77,8 +80,9 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid 
 <section class="card" id="listCard" hidden>
 <div class="listhead"><h2 id="listTitle">Inscrits</h2><button class="toggle" id="tgl" type="button" aria-expanded="true">Réduire</button></div>
 <div id="listBox"><input type="text" id="f" placeholder="Filtrer la liste" style="margin-bottom:6px" aria-label="Filtrer la liste des inscrits">
+<p class="hint" id="covTot" style="margin:2px 0 6px" hidden></p>
 <ul class="rows" id="rows"></ul>
-<div class="foot" style="margin-top:12px"><button class="btn ghost" id="copy" type="button">Copier la liste</button><button class="btn ghost" id="csv" type="button">Télécharger (Excel)</button><button class="btn ghost" id="imp" type="button" hidden>Importer les 7 premières inscriptions</button></div>
+<div class="foot" style="margin-top:12px"><button class="btn ghost" id="copy" type="button">Copier la liste</button><button class="btn ghost" id="csv" type="button">Télécharger (Excel)</button><button class="btn ghost" id="imp" type="button" hidden>Importer les 8 inscriptions de l'ancienne page</button></div>
 <p class="msg" id="msg2" role="status"></p></div>
 </section>
 </div>
@@ -136,17 +140,17 @@ function onSel(){
   if(editing)return;
   if(v===lastSel)return;lastSel=v;
   const rec=v&&v!==OTHER?(insc.get(/^\d+$/.test(v)?memberId(v):v)):null;
-  if(rec){$('nb').value=rec.nb;$('note').value=rec.note||'';$('formTitle').textContent='Cette personne est déjà inscrite';$('save').textContent='Modifier l\'inscription';say('Déjà inscrit pour '+rec.nb+' personne'+(rec.nb>1?'s':'')+'. Change le nombre puis enregistre.','')}
+  if(rec){$('nb').value=rec.nb;$('note').value=rec.note||'';$('cov').value=rec.cov?rec.cov:'';$('formTitle').textContent='Cette personne est déjà inscrite';$('save').textContent='Modifier l\'inscription';say('Déjà inscrit pour '+rec.nb+' personne'+(rec.nb>1?'s':'')+'. Change le nombre puis enregistre.','')}
   else{$('formTitle').textContent='Nouvelle inscription';$('save').textContent='Enregistrer l\'inscription';if(!busy)say('')}
 }
 function setNb(n){n=Math.max(1,Math.min(50,Math.round(+n)||1));$('nb').value=n}
-function resetForm(){editing=null;lastSel='';$('q').value='';$('other').value='';$('note').value='';setNb(1);$('cancel').hidden=true;buildSelect('');$('sel').value=''}
+function resetForm(){editing=null;lastSel='';$('q').value='';$('other').value='';$('note').value='';$('cov').value='';setNb(1);$('cancel').hidden=true;buildSelect('');$('sel').value=''}
 function startEdit(id){
   const r=insc.get(id);if(!r)return;editing=id;lastSel='';
   $('q').value='';
   if(r.extra){buildSelect(id)}else{buildSelect(String(r.isa))}
   $('otherBox').hidden=true;
-  $('nb').value=r.nb;$('note').value=r.note||'';
+  $('nb').value=r.nb;$('note').value=r.note||'';$('cov').value=r.cov?r.cov:'';
   $('formTitle').textContent='Modifier : '+r.nom;$('save').textContent='Enregistrer la modification';$('cancel').hidden=false;
   say('');window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -161,7 +165,8 @@ $('form').addEventListener('submit',async e=>{
   else if(/^\d+$/.test(v)){const m=MEMBRES.find(m=>String(m[0])===v);id=memberId(m[0]);nom=m[1];isa=m[0]}
   else{const r=insc.get(v);id=v;nom=r.nom;extra=true}
   const nb=Math.max(1,Math.min(50,Math.round(+$('nb').value)||1));
-  const rec={nom,nb,note:$('note').value.trim().slice(0,120),isa,extra,at:Date.now()};
+  const cov=Math.max(0,Math.min(50,Math.round(+String($('cov').value).replace(/[^0-9]/g,''))||0));
+  const rec={nom,nb,note:$('note').value.trim().slice(0,120),cov,isa,extra,at:Date.now()};
   busy=true;$('save').disabled=true;say('Enregistrement…');
   try{await put(id,rec);say(nom+' : '+nb+' personne'+(nb>1?'s':'')+' enregistrée'+(nb>1?'s':'')+'.','ok');resetForm();flash(id)}
   catch(err){say(err&&err.code==='permission-denied'?'Enregistrement refusé. Les inscriptions sont peut-être closes.':'L\'enregistrement a échoué. Vérifie ta connexion et réessaie.','err')}
@@ -183,6 +188,7 @@ function render(){
   const all=sorted();const pers=all.reduce((s,r)=>s+(+r.nb||0),0);
   $('tPers').textContent=pers;$('tInsc').textContent=all.length;
   $('listTitle').textContent='Inscrits ('+all.length+')';
+  const covT=all.reduce((s,r)=>s+(+r.cov||0),0);const ct=$('covTot');ct.hidden=!covT;ct.textContent='🚗 Covoiturage demandé : '+covT+' personne'+(covT>1?'s':'');
   const f=norm($('f').value);const shown=all.filter(r=>!f||norm(r.nom).includes(f));
   const ul=$('rows');
   if(!all.length){ul.innerHTML='<li class="empty">Aucune inscription pour l\'instant. Choisis un nom dans la liste ci-dessus, indique le nombre de personnes, puis enregistre.</li>'}
@@ -191,7 +197,7 @@ function render(){
     const conf=pendingDel===r.id;
     return `<li class="row${flashId===r.id?' flash':''}"><div class="nm">${esc(r.nom)}${r.extra?'<span class="tag">ajouté</span>':''}</div>
     <div class="acts"><span class="pill" title="Nombre de personnes">${r.nb}</span>${canWrite?(conf?`<button class="mini del" data-a="yes" data-id="${esc(r.id)}">Retirer</button><button class="mini" data-a="no">Non</button>`:`<button class="mini" data-a="edit" data-id="${esc(r.id)}" aria-label="Modifier ${esc(r.nom)}">Modifier</button><button class="mini del" data-a="ask" data-id="${esc(r.id)}" aria-label="Retirer ${esc(r.nom)}">✕</button>`):''}</div>
-    ${r.note?`<div class="nt">${esc(r.note)}</div>`:''}</li>`}).join('');
+    ${(r.note||r.cov)?`<div class="nt">${r.cov?'🚗 Covoiturage : '+(+r.cov)+(r.note?' · ':''):''}${esc(r.note||'')}</div>`:''}</li>`}).join('');
   buildSelectKeep();
 }
 function buildSelectKeep(){if(!editing&&!$('q').value){const v=$('sel').value;buildSelect(v)}else{const v=$('sel').value;buildSelect(v)}}
@@ -207,7 +213,7 @@ $('tgl').addEventListener('click',()=>{open=!open;$('listBox').hidden=!open;$('t
 
 /* ---- export ---- */
 function textList(){const all=sorted();const pers=all.reduce((s,r)=>s+r.nb,0);
-  return 'Inscriptions du 1er novembre 2026 (45ᵉ anniversaire FKMA, ITCJ Angré)\nTotal : '+pers+' personnes, '+all.length+' inscriptions\n\n'+all.map(r=>'- '+r.nom+' : '+r.nb+(r.note?' ('+r.note+')':'')).join('\n')}
+  return 'Inscriptions du 1er novembre 2026 (45ᵉ anniversaire FKMA, ITCJ Angré)\nTotal : '+pers+' personnes, '+all.length+' inscriptions\n\n'+all.map(r=>'- '+r.nom+' : '+r.nb+(r.cov?' [covoiturage '+r.cov+']':'')+(r.note?' ('+r.note+')':'')).join('\n')}
 $('copy').addEventListener('click',async()=>{
   const t=textList();
   try{await navigator.clipboard.writeText(t);say('Liste copiée. Tu peux la coller dans WhatsApp.','ok','msg2')}
@@ -216,7 +222,7 @@ $('copy').addEventListener('click',async()=>{
 $('csv').addEventListener('click',async()=>{
   const all=sorted();if(!all.length){say('Rien à télécharger pour l\'instant.','err','msg2');return}
   const q=s=>'"'+String(s||'').replace(/"/g,'""')+'"';
-  const csv='﻿'+['Nom;Personnes;Remarque;Origine'].concat(all.map(r=>[q(r.nom),r.nb,q(r.note),r.extra?'ajouté':'liste'].join(';'))).join('\r\n')+'\r\nTOTAL;'+all.reduce((s,r)=>s+r.nb,0)+';;';
+  const csv='﻿'+['Nom;Personnes;Covoiturage;Remarque;Origine'].concat(all.map(r=>[q(r.nom),r.nb,r.cov||0,q(r.note),r.extra?'ajouté':'liste'].join(';'))).join('\r\n')+'\r\nTOTAL;'+all.reduce((s,r)=>s+r.nb,0)+';'+all.reduce((s,r)=>s+(+r.cov||0),0)+';;';
   try{const bl=new Blob([csv],{type:'text/csv;charset=utf-8'});const u=URL.createObjectURL(bl);const l=document.createElement('a');l.href=u;l.download='inscriptions_1er_novembre_2026.csv';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);say('Fichier prêt.','ok','msg2')}
   catch(e){say('Téléchargement impossible ici. Utilise « Copier la liste ».','err','msg2')}
 });
@@ -227,20 +233,20 @@ function banner(){
   else bn.hidden=true;
   render();
 }
-const SEED=[["m17","ANDRIAMBAHINY Patrick",5,17],["m52","RABETRANO Hantasoanirina Josette",4,52],["m53","RABETSIMIALONA Ndriana",1,53],["m85","RAKOTOARIVONY Evah",2,85],["m89","RAKOTOMAHEFA Lewis",2,89],["m150","RAZAFIMAHATRA Mamy Rijason",7,150]];
+const SEED=[["m17","ANDRIAMBAHINY Patrick",5,17],["m18","ANDRIAMIADANA Mirintsoa",1,18],["m52","RABETRANO Hantasoanirina Josette",4,52],["m53","RABETSIMIALONA Ndriana",1,53],["m85","RAKOTOARIVONY Evah",2,85],["m89","RAKOTOMAHEFA Lewis",2,89],["m113","RAKOTOSON Rija",4,113],["m150","RAZAFIMAHATRA Mamy Rijason",7,150]];
+let allIds=new Set();
 function showApp(on){['form','totals','listCard'].forEach(i=>$(i).hidden=!on)}
 function connect(){
   local=false;
   unsub=onSnapshot(collection(fdb,COL),snap=>{
-    const m=new Map();snap.docs.forEach(x=>{const v=x.data();if(v&&v.nom&&(+v.nb)>0)m.set(x.id,v)});insc=m;
+    const m=new Map();allIds=new Set(snap.docs.map(x=>x.id));snap.docs.forEach(x=>{const v=x.data();if(v&&v.nom&&(+v.nb)>0)m.set(x.id,v)});insc=m;
     showApp(true);banner();
   },err=>{say('La liste ne se met plus à jour. Vérifie ta connexion et recharge la page.','err','msg2');showApp(true)});
 }
 if(new URLSearchParams(location.search).get('import')==='1')$('imp').hidden=false;
 $('imp').addEventListener('click',async()=>{
-  try{for(const [id,nom,nb,isa] of SEED){if(!insc.has(id))await setDoc(ref(id),{nom,nb,note:'',isa,extra:false,at:Date.now()})}
-    if(!insc.has('x_mirantsoa'))await setDoc(ref('x_mirantsoa'),{nom:'Mirantsoa',nb:1,note:'',isa:null,extra:true,at:Date.now()});
-    say('Importé.','ok','msg2')}catch(e){say('Import impossible.','err','msg2')}
+  try{let n=0;for(const [id,nom,nb,isa] of SEED){if(!allIds.has(id)){await setDoc(ref(id),{nom,nb,note:'',cov:0,isa,extra:false,at:Date.now()});n++}}
+    say(n?('Importé : '+n+' inscription'+(n>1?'s':'')+' ajoutée'+(n>1?'s':'')+'. Les autres existaient déjà et n\'ont pas été touchées.'):'Rien à importer : tout existe déjà.','ok','msg2')}catch(e){say('Import impossible.','err','msg2')}
 });
 
 /* ---- démarrage ---- */
