@@ -2211,6 +2211,8 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <button type="button" class="btn btn-gris" onclick="document.getElementById('bv-photo-fichier').click()" style="width:auto;padding:9px 14px">🖼️ Choisir une photo</button>
  </div>
  <div id="bv-zone"></div>
+ <div style="margin-top:10px"><button type="button" class="btn btn-gris" onclick="afficherComptesMemorises()" style="width:auto;padding:6px 12px;font-size:.85rem">🔎 Vérifier les comptes mémorisés</button>
+ <div id="bv-comptes-etat" style="margin-top:6px;font-size:.9rem"></div></div>
  </div>
 
  <!-- Transfert Caisse → Banque -->
@@ -5843,8 +5845,44 @@ function compteDuNumero(num){
     if(!ref) return;
     // n° complet identique, ou 8 derniers chiffres identiques (un chiffre de tête mal lu)
     if(ref===n||(ref.length>=8&&n.length>=8&&ref.slice(-8)===n.slice(-8))) trouve=l;
+    // même clé (2 derniers chiffres) et un n° contenu dans l'autre : le bordereau de retrait
+    // imprime aussi le code agence (01068-…) et parfois un 0 de plus avant la clé
+    else{
+      const cr=ref.slice(0,-2).replace(/^0+/,''), cn=n.slice(0,-2).replace(/^0+/,'');
+      const court=cr.length<cn.length?cr:cn;
+      if(ref.slice(-2)===n.slice(-2)&&court.length>=8&&(cr.indexOf(cn)>=0||cn.indexOf(cr)>=0)) trouve=l;
+    }
   });
   return trouve;
+}
+// N° masqué pour l'affichage : « …511557-90 » (6 chiffres avant la clé)
+function compteMasque(num){
+  const n=chiffresSeuls(num);
+  return n.length<8?'':'…'+n.slice(-8,-2)+'-'+n.slice(-2);
+}
+// Comptes déjà mémorisés (bouton « Vérifier » de la carte Bordereau)
+async function afficherComptesMemorises(){
+  const el=document.getElementById('bv-comptes-etat'); if(!el) return;
+  el.innerHTML='⏳';
+  const c=await chargerComptesBanque();
+  el.innerHTML=['fiang','anj'].map(function(l){
+    const num=c[l]&&c[l].numero;
+    return '<div>'+(num?'✅ ':'❌ ')+esc(BV_NOMS_COMPTES[l])+' : '+(num?'mémorisé (<b>'+esc(compteMasque(num))+'</b>)':'<b>pas encore mémorisé</b>')+'</div>';
+  }).join('')+(['fiang','anj'].some(function(l){return !(c[l]&&c[l].numero);})
+    ?'<div class="note" style="margin-top:4px">Pour mémoriser : photographie un bordereau de ce compte, choisis le compte et appuie sur « 💾 Mémoriser ce n° maintenant ».</div>':'');
+}
+// Mémoriser le n° lu sans enregistrer de versement (ex. sur un bordereau de retrait)
+async function bvMemoriserMaintenant(){
+  if(!BV||!BV.compte||!BV.compteLu) return;
+  if(!peutMemoriserCompte()){ alert('Seuls le secrétaire et le président des diacres peuvent mémoriser un n° de compte.'); return; }
+  if(!confirm('Mémoriser le n° '+BV.compteLu+' pour '+BV_NOMS_COMPTES[BV.compte]+' ?')) return;
+  try{
+    await window._fs.setDoc(window._fs.doc(window._db,'parametres','comptes_banque'),{[BV.compte]:{numero:BV.compteLu,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()}},{merge:true});
+    BV_COMPTES=Object.assign({},BV_COMPTES||{},{[BV.compte]:{numero:BV.compteLu}});
+    BV.memoriser=false;
+    renderBordereau();
+    afficherComptesMemorises();
+  }catch(e){ alert('Le n° de compte n\'a pas pu être mémorisé : '+e.message); }
 }
 
 // Raccourci depuis le Grand Livre (« 📷 Avec la photo du bordereau », « ✏️ Bordereau »)
@@ -5892,6 +5930,9 @@ async function lireBordereauPhoto(input){
   lu=lu||{};
   const compte=compteDuNumero(lu.compte);
   BV={lu:lu,photo:photo,erreur:erreur,compte:compte,compteLu:lu.compte||'',
+    // (relais d'avant le 29/10 : pas de type_document, mais la remarque de lecture signale le retrait)
+    retrait:lu.type_document==='retrait'||lu.type_document==='autre'
+      ||(!lu.type_document&&lu.cachet_recu===false&&/\bretrait\b/i.test(lu.remarques||'')),
     date:/^\d{4}-\d{2}-\d{2}$/.test(lu.date_depot||'')?lu.date_depot:'',
     numero:String(lu.numero_bordereau||'').trim(),
     verse:parseInt(lu.montant_verse,10)||0,
@@ -6013,9 +6054,18 @@ function renderBordereau(focus){
     +'</div></div>';
   // Compte non reconnu
   const reconnu=compteDuNumero(BV.compteLu);
+  if(BV.retrait){
+    h+='<div class="bv-alerte">⛔ Ce document n\'est pas un bordereau de <b>versement</b>'
+      +(BV.lu.type_document==='retrait'?' : c\'est un <b>retrait</b> (argent sorti du compte, cachet « PAYÉ CAISSE »)':'')+'.<br>'
+      +'Il ne peut pas être enregistré ici. Un retrait ou un chèque se saisit dans Vola mivoaka (paiement par banque) ; '
+      +'la photo peut y être jointe avec 📎. Tu peux quand même mémoriser le n° de compte ci-dessous.</div>';
+  }
   if(BV.compteLu&&!reconnu){
     h+='<div class="bv-attention">❓ Le compte n° <b>'+esc(BV.compteLu)+'</b> n\'est pas encore connu de l\'appli. Choisis-le ci-dessus.'
-      +(peutMemoriserCompte()?'<br><label style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" '+(BV.memoriser?'checked':'')+' onchange="bvChamp(\'memoriser\',this.checked)"> Mémoriser ce n° pour ce compte (les prochains bordereaux seront reconnus)</label>'
+      +(peutMemoriserCompte()
+        ?(BV.retrait?'':'<br><label style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" '+(BV.memoriser?'checked':'')+' onchange="bvChamp(\'memoriser\',this.checked)"> Mémoriser ce n° en enregistrant le bordereau</label>')
+          +(BV.compte?'<div class="bv-actions"><button type="button" class="btn bv" onclick="bvMemoriserMaintenant()">💾 Mémoriser ce n° maintenant pour '+esc(BV_NOMS_COMPTES[BV.compte])+'</button></div>'
+            :'<br>Choisis d\'abord le compte pour pouvoir mémoriser ce n°.')
         :'<br>Le secrétaire ou le président des diacres pourra le mémoriser.')+'</div>';
   } else if(reconnu&&BV.compte&&reconnu!==BV.compte){
     h+='<div class="bv-alerte">⚠️ Le n° lu correspond au compte '+esc(BV_NOMS_COMPTES[reconnu])+', pas à celui choisi.</div>';
@@ -6046,8 +6096,10 @@ function renderBordereau(focus){
   if(!BV.verse) manque.push('le montant versé');
   if(!BV.net) manque.push('le montant crédité');
   h+='<div class="bv-bloc"><h4>② Recettes versées</h4>';
-  const deja=bvDejaEnregistre();
-  if(deja){
+  const deja=BV.retrait?null:bvDejaEnregistre();
+  if(BV.retrait){
+    h+='<div class="bv-attention">Rien à rapprocher : ce n\'est pas un versement.</div>';
+  } else if(deja){
     h+=htmlDejaEnregistre(deja,timbre);
   } else if(manque.length){
     h+='<div class="bv-attention">Complète d\'abord : '+esc(manque.join(', '))+'.</div>';
