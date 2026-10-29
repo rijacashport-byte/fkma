@@ -6058,7 +6058,7 @@ function renderBordereau(focus){
     h+='<div class="bv-alerte">⛔ Ce document n\'est pas un bordereau de <b>versement</b>'
       +(BV.lu.type_document==='retrait'?' : c\'est un <b>retrait</b> (argent sorti du compte, cachet « PAYÉ CAISSE »)':'')+'.<br>'
       +'Il ne peut pas être enregistré ici. Un retrait ou un chèque se saisit dans Vola mivoaka (paiement par banque) ; '
-      +'la photo peut y être jointe avec 📎. Tu peux quand même mémoriser le n° de compte ci-dessous.</div>';
+      +'l\'appli cherche plus bas la sortie banque déjà saisie pour y joindre la photo. Tu peux aussi mémoriser le n° de compte.</div>';
   }
   if(BV.compteLu&&!reconnu){
     h+='<div class="bv-attention">❓ Le compte n° <b>'+esc(BV.compteLu)+'</b> n\'est pas encore connu de l\'appli. Choisis-le ci-dessus.'
@@ -6095,10 +6095,10 @@ function renderBordereau(focus){
   if(!BV.numero) manque.push('le n° du bordereau');
   if(!BV.verse) manque.push('le montant versé');
   if(!BV.net) manque.push('le montant crédité');
-  h+='<div class="bv-bloc"><h4>② Recettes versées</h4>';
+  h+='<div class="bv-bloc"><h4>'+(BV.retrait?'② Retrait au Grand Livre':'② Recettes versées')+'</h4>';
   const deja=BV.retrait?null:bvDejaEnregistre();
   if(BV.retrait){
-    h+='<div class="bv-attention">Rien à rapprocher : ce n\'est pas un versement.</div>';
+    h+=htmlRetrait();
   } else if(deja){
     h+=htmlDejaEnregistre(deja,timbre);
   } else if(manque.length){
@@ -6110,6 +6110,63 @@ function renderBordereau(focus){
   h+='<div class="bv-actions"><button type="button" class="btn btn-gris" onclick="annulerBordereau()">✕ Annuler</button></div>';
   zone.innerHTML=h;
   if(actifId){ const el=document.getElementById(actifId); if(el){ el.focus(); try{ if(pos!=null) el.setSelectionRange(pos,pos); }catch(e){} } }
+}
+
+// ── Bordereau de RETRAIT : on ne crée rien, on retrouve la sortie banque déjà saisie ──
+// Même montant, à ±10 jours, dans les livres du compte (tous si le compte n'est pas choisi) ;
+// le n° de chèque lu dans le libellé ou le commentaire passe en tête.
+function bvRetraitsCandidats(){
+  const cheque=chiffresSeuls((BV.lu||{}).numero_cheque);
+  const livres=BV_LIVRES[BV.compte]||['fiang','anj','k45'];
+  const res=[];
+  livres.forEach(function(livre){
+    (GL[livre]||[]).forEach(function(e){
+      if(e.es!=='S'||e.source!=='banque'||Number(e.montant)!==BV.verse) return;
+      const ecartJ=BV.date&&e.date?Math.abs(new Date(e.date)-new Date(BV.date))/86400000:0;
+      const avecCheque=cheque.length>=5&&chiffresSeuls((e.libelle||'')+' '+(e.comment||'')+' '+(e.piece||'')).indexOf(cheque)>=0;
+      if(ecartJ>10&&!avecCheque) return;
+      res.push({livre:livre,e:e,ecartJ:ecartJ,avecCheque:avecCheque,cle:e.bordereauId||e.depenseId||e.opId||''});
+    });
+  });
+  return res.sort(function(a,b){ return (b.avecCheque-a.avecCheque)||(a.ecartJ-b.ecartJ); });
+}
+function htmlRetrait(){
+  let h='';
+  if(!BV.verse) return '<div class="bv-attention">Complète d\'abord le montant du retrait.</div>';
+  const cand=bvRetraitsCandidats();
+  const cheque=(BV.lu||{}).numero_cheque||'';
+  if(!cand.length){
+    return '<div class="bv-attention">Aucune sortie banque de '+fmt(BV.verse)+' F'+(BV.date?' autour du '+esc(fmtDateFr(BV.date)):'')
+      +' dans le Grand Livre. Saisis d\'abord ce retrait dans Vola mivoaka (paiement par banque'+(cheque?', chèque n° '+esc(cheque):'')+'), puis reprends la photo.</div>';
+  }
+  h+='<div class="bv-info">✅ Ce retrait est déjà saisi au Grand Livre'+(cand.length>1?' (plusieurs lignes possibles, choisis la bonne)':'')+'. Joins-lui la photo comme pièce justificative :</div>';
+  cand.forEach(function(x){
+    const e=x.e;
+    h+='<div class="bv-ligne" style="flex-wrap:wrap">'+esc(NOMS_LIVRES[x.livre])+' · '+esc(fmtDateFr(e.date))+' · '+esc(libelleRubrique(e.rubrique))+' · '+esc(e.libelle||'')
+      +(x.avecCheque?' <b>(chèque n° '+esc(cheque)+')</b>':'')+'<span class="m">'+fmt(e.montant)+' F</span></div>';
+    h+='<div class="bv-actions" style="margin-top:2px">'
+      +(x.cle?'<button type="button" class="btn bv" onclick="bvJoindreRetrait('+jsArg(x.livre)+','+jsArg(e._id)+')">📎 Joindre la photo à cette ligne'+((e.nbPieces||0)>0?' (a déjà '+e.nbPieces+' photo'+(e.nbPieces>1?'s':'')+')':'')+'</button>'
+        :'<span class="note">Cette ligne ne peut pas recevoir de photo (saisie à la main au Grand Livre).</span>')
+      +'</div>';
+  });
+  return h;
+}
+async function bvJoindreRetrait(livre,id){
+  if(!BV) return;
+  const e=(GL[livre]||[]).find(function(x){return x._id===id;}); if(!e) return;
+  const cle=e.bordereauId||e.depenseId||e.opId; if(!cle) return;
+  if(!confirm('Joindre la photo du retrait à la ligne du '+fmtDateFr(e.date)+' — '+(e.libelle||'')+' ('+fmt(e.montant)+' F) ?\nRien d\'autre ne sera modifié.')) return;
+  const boutons=document.querySelectorAll('#bv-zone button'); boutons.forEach(function(b){b.disabled=true;});
+  try{
+    const drive=await envoyerVersDrive(BV.photo,'retrait_'+(BV.numero||'')+'_'+cle);
+    const rec={opId:String(cle),createdAt:new Date().toISOString(),createdBy:emailConnecte(),type:'retrait'};
+    if(drive){ rec.driveUrl=drive.viewUrl; rec.driveImgUrl=drive.imgUrl; rec.driveFileId=drive.fileId; }
+    else rec.img=BV.photo;
+    await window._fs.addDoc(window._fs.collection(window._db,'pieces'),rec);
+    await misAJourCompteurPieces(cle);
+  }catch(err){ boutons.forEach(function(b){b.disabled=false;}); alert('La photo n\'a pas pu être jointe : '+err.message); return; }
+  BV=null;
+  document.getElementById('bv-zone').innerHTML='<div class="bv-info">✅ Photo du retrait jointe à la ligne (📎).</div>';
 }
 
 function htmlRapprochement(timbre){
