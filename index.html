@@ -6473,7 +6473,8 @@ async function faireTransfert(){
     if(enCorrection){
       // Mise à jour des deux écritures existantes (sortie caisse + entrée banque) : même numéro d'opération
       opId=correctionOp.opId;
-      const maj={date,page,montant,comment,piece,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
+      // opId réécrit : relie pour de bon les deux lignes d'un ancien transfert saisi sans opId
+      const maj={date,page,montant,comment,piece,opId,modifiedBy:emailConnecte(),modifiedAt:new Date().toISOString()};
       await ecrireGroupe(correctionOp.ids.map(function(id){return {ref:fs.doc(db,'grandlivre_'+correctionOp.livre,id),data:maj,maj:true};}));
       alert('✅ Transfert corrigé !');
     } else {
@@ -6542,7 +6543,9 @@ function listerOperations(){
     (GL[livre]||[]).forEach(function(e){
       const type=e.transfert?'tr':(e.opbancaire?'ob':'');
       if(!type||(ft&&ft!==type)) return;
-      const cle=livre+'|'+type+'|'+(e.opId||e._id);
+      // Anciens transferts (août 2026) saisis sans opId : la sortie caisse et l'entrée banque sont
+      // regroupées par date, montant, commentaire et n° de pièce, pour n'afficher qu'une opération
+      const cle=livre+'|'+type+'|'+(e.opId||(type==='tr'?'sans-opId|'+e.date+'|'+e.montant+'|'+(e.comment||'')+'|'+(e.piece||''):e._id));
       if(!groupes[cle]) groupes[cle]={type:type,livre:livre,opId:e.opId||null,ids:[],e:e};
       groupes[cle].ids.push(e._id);
       // Pour un transfert, on garde l'écriture « entrée banque » comme référence d'affichage
