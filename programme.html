@@ -293,11 +293,11 @@ function render(){
   h+='<span>Fin prévue <b id="s-end">'+fmt(T.end)+'</b></span>';
   h+='<span>Durée <b id="s-total">'+dur(total)+'</b></span>';
   h+='<span>'+state.items.length+' passages</span></div><div class="acts">';
-  
+  h+='<button class="primary" id="btn-save" data-a="save"'+(dirty?'':' hidden')+'>Enregistrer</button>';
   if(edit||order){h+='<button data-a="endedit">Terminer</button>';}
   else{
     if(anyDone()){h+='<button data-a="uncheck">Tout décocher</button>';}
-    
+    if(canW){h+='<button data-a="order">Réorganiser</button><button data-a="edit">Modifier</button>';}
   }
   h+='</div></div>';
   h+='<p class="msg" id="msg" role="status">'+esc(msg)+'</p>';
@@ -371,18 +371,14 @@ function buildDoc(){
     +'<script type="application/json" id="state">'+json+'<\/script><script id="code">'+code+'<\/script></body></html>';
 }
 async function save(){
+  if(!fdb||!canW){msg='Entre d’abord le code (Accès maître de cérémonie).';setMsg();return;}
   msg='Enregistrement en cours…';setMsg();
   try{
-    var a=window.claude&&await window.claude.use('artifact');
-    if(!a){msg='L’enregistrement n’est pas disponible ici.';setMsg();return;}
-    await a.publish(buildDoc());
-  }catch(err){
-    var c=err&&err.code;
-    if(c==='not_writer'||c==='not_granted'||c==='capability_disabled'||c==='capability_removed'||c==='not_declared'||c==='consent_required'){msg='Cette vue est en lecture seule : les changements ne peuvent pas être enregistrés.';}
-    else if(c==='conflict'){msg='Une version plus récente vient d’être publiée. La page se recharge.';}
-    else{msg='Enregistrement impossible pour le moment. Réessaie dans un instant.';}
-    setMsg();
-  }
+    await fdb.ref('pw').remove();
+    await fdb.ref().update({program:JSON.stringify(state),pw:pinVal});
+    fdb.ref('pw').remove();
+    dirty=false;msg='Programme enregistré : tout le monde le voit maintenant.';render();
+  }catch(e){canW=false;pinVal='';edit=false;order=false;msg='Code incorrect ou accès refusé. Rien n’a été enregistré (tes changements sont encore sur cet écran).';render();}
 }
 function toggleDone(li){
   var it=state.items[+li.dataset.i];if(!it){return;}
@@ -482,6 +478,7 @@ setInterval(function(){if(live&&live.cur!=null&&!edit&&!order&&!askPin&&document
     firebase.initializeApp(cfg);
     fdb=firebase.database();db=true;
     fdb.ref('live').on('value',function(s){live=s.val()||null;remote=live;if(!edit&&!order&&!askPin&&document.activeElement.id!=='q'){render();}},function(){});
+    fdb.ref('program').on('value',function(s){var v=s.val();if(typeof v==='string'&&!dirty&&!edit&&!order){try{var j=JSON.parse(v);if(j&&j.items&&j.items.length){state=j;}}catch(x){}render();}},function(){});
     render();
   }catch(e){}
 })();
