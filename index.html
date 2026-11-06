@@ -1452,6 +1452,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  </div>
  <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
  <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
+ <button class="btn btn-vert" type="button" style="margin-top:8px" onclick="ouvrirScanCartes()"><span>📷</span> Scanner les cartes (QR)</button>
  </div>
 
  <!-- Mode nombre direct -->
@@ -3473,6 +3474,212 @@ function ajouterEnveloppe(){
   document.getElementById('carte-preview').style.display='none';
   document.getElementById('env-carte').focus();
   afficherEnveloppesJour();
+}
+// ── SCAN DES CARTES ANJARAKO (QR « FKMA-ANJ-0145 ») ─────────────
+// Le QR ne contient que le n° de carte ; le nom vient de la liste des membres. Chaque mois coché
+// ajoute une ligne aux enveloppes du dimanche, exactement comme une saisie à la main (même contrôle
+// des doublons, même enregistrement). Caméra : BarcodeDetector quand le téléphone le propose
+// (Android), sinon la bibliothèque jsQR, chargée au premier scan (iPhone).
+const URL_JSQR='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+const MOIS_COURTS=['Janv.','Févr.','Mars','Avril','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+let scanEtat=null; // {flux, timer, detecteur, occupe, pause, carte, ignorer:{num,t}, audio, nbAjouts}
+function lireCodeCarte(txt){
+  const m=/^FKMA-ANJ-(\d{1,5})$/.exec(String(txt||'').trim().toUpperCase());
+  return m?parseInt(m[1],10):null;
+}
+function chargerJsQR(){
+  if(window.jsQR) return Promise.resolve();
+  return new Promise(function(res,rej){
+    const s=document.createElement('script'); s.src=URL_JSQR;
+    s.onload=res; s.onerror=function(){rej(new Error('jsQR'));};
+    document.head.appendChild(s);
+  });
+}
+function decalerMois(ym,n){
+  const p=ym.split('-'); const d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1+n,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function moisCourt(ym,annee){
+  const p=ym.split('-'); return MOIS_COURTS[parseInt(p[1],10)-1]+(p[0]!==annee?' '+p[0].slice(2):'');
+}
+function bipScan(ok){
+  try{
+    if(navigator.vibrate) navigator.vibrate(ok?80:[60,60,60]);
+    const a=scanEtat&&scanEtat.audio; if(!a) return;
+    const o=a.createOscillator(), g=a.createGain();
+    o.frequency.value=ok?1200:300; g.gain.value=0.15;
+    o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+(ok?0.12:0.3));
+  }catch(e){}
+}
+function htmlScanCartes(){
+  return `<div id="scan-overlay" style="position:fixed;inset:0;z-index:9999;background:#111;color:white;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px">
+      <div style="font-weight:700">📷 Scanner les cartes</div>
+      <button type="button" onclick="fermerScanCartes()" style="background:white;color:#111;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px">✖ Terminer</button>
+    </div>
+    <div style="position:relative;flex:1;min-height:0;overflow:hidden">
+      <video id="scan-video" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video>
+      <div style="position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.85);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div>
+    </div>
+    <div id="scan-statut" style="padding:10px 14px;font-size:14px;text-align:center;min-height:22px">Présente le QR code de la carte dans le cadre.</div>
+    <div id="scan-panneau" style="display:none;background:white;color:#1e1e1e;padding:14px;border-radius:14px 14px 0 0"></div>
+    <div id="scan-compteur" style="padding:0 14px 12px;font-size:12px;text-align:center;color:#bbb"></div>
+  </div>`;
+}
+async function ouvrirScanCartes(){
+  if(scanEtat) return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    alert('Ce téléphone ou ce navigateur ne permet pas d\'utiliser la caméra ici.\n\nOuvre l\'appli FKMA dans Chrome (Android) ou Safari (iPhone).');return;
+  }
+  document.body.insertAdjacentHTML('beforeend',htmlScanCartes());
+  scanEtat={flux:null,timer:null,detecteur:null,occupe:false,pause:false,carte:null,ignorer:null,audio:null,nbAjouts:0};
+  // Le son doit être créé pendant le toucher du bouton (sinon l'iPhone reste muet)
+  try{ const AC=window.AudioContext||window.webkitAudioContext; if(AC) scanEtat.audio=new AC(); }catch(e){}
+  majCompteurScan();
+  try{
+    const flux=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    // « Terminer » touché pendant la demande d'autorisation : on rend la caméra tout de suite
+    if(!scanEtat){ flux.getTracks().forEach(function(t){t.stop();}); return; }
+    scanEtat.flux=flux;
+  }catch(e){
+    if(!scanEtat) return;
+    fermerScanCartes();
+    alert(e&&e.name==='NotAllowedError'
+      ?'L\'appli n\'a pas le droit d\'utiliser la caméra.\n\nAutorise la caméra pour ce site dans les réglages du navigateur, puis réessaie.'
+      :'Impossible d\'ouvrir la caméra ('+((e&&e.name)||'erreur')+').');
+    return;
+  }
+  const v=document.getElementById('scan-video');
+  v.srcObject=scanEtat.flux;
+  try{ await v.play(); }catch(e){}
+  let detecteur=null;
+  try{
+    if('BarcodeDetector' in window){
+      const formats=await window.BarcodeDetector.getSupportedFormats();
+      if(formats.indexOf('qr_code')>=0) detecteur=new window.BarcodeDetector({formats:['qr_code']});
+    }
+  }catch(e){ detecteur=null; }
+  if(!detecteur){
+    try{ await chargerJsQR(); }
+    catch(e){ fermerScanCartes(); alert('Le lecteur de QR code n\'a pas pu se charger. Vérifie la connexion Internet et réessaie.'); return; }
+  }
+  if(!scanEtat) return;   // « Terminer » touché pendant le démarrage
+  scanEtat.detecteur=detecteur;
+  scanEtat.timer=setInterval(analyserImageScan,250);
+}
+async function analyserImageScan(){
+  const s=scanEtat; if(!s||s.pause||s.occupe) return;
+  const v=document.getElementById('scan-video');
+  if(!v||v.readyState<2||!v.videoWidth) return;
+  s.occupe=true;
+  try{
+    let texte=null;
+    if(s.detecteur){
+      const codes=await s.detecteur.detect(v);
+      if(codes&&codes.length) texte=codes[0].rawValue;
+    } else {
+      const ech=Math.min(1,640/Math.max(v.videoWidth,v.videoHeight));
+      const w=Math.round(v.videoWidth*ech), h=Math.round(v.videoHeight*ech);
+      const c=s.canvas||(s.canvas=document.createElement('canvas'));
+      c.width=w; c.height=h;
+      const ctx=c.getContext('2d',{willReadFrequently:true});
+      ctx.drawImage(v,0,0,w,h);
+      const code=window.jsQR(ctx.getImageData(0,0,w,h).data,w,h,{inversionAttempts:'dontInvert'});
+      if(code) texte=code.data;
+    }
+    if(texte&&scanEtat) traiterCodeScan(texte);
+  }catch(e){ console.log('Scan :',e.message); }
+  if(scanEtat) scanEtat.occupe=false;
+}
+function traiterCodeScan(texte){
+  const s=scanEtat, st=document.getElementById('scan-statut');
+  const num=lireCodeCarte(texte);
+  const cle=num||texte;
+  // La même carte reste devant la caméra juste après validation : on l'ignore 3 secondes
+  if(s.ignorer&&s.ignorer.cle===cle&&Date.now()-s.ignorer.t<3000) return;
+  if(!num){
+    s.ignorer={cle,t:Date.now()}; bipScan(false);
+    st.innerHTML='⚠️ Ce QR code n\'est pas une carte Anjarako FKMA.';
+    return;
+  }
+  bipScan(true);
+  s.pause=true; s.carte=num;
+  afficherPanneauScan(num);
+}
+function afficherPanneauScan(num){
+  const m=load(SK_ANJ_M).find(function(x){return x.num===num;});
+  const base=(document.getElementById('env-mois')||{}).value||moisActuel();
+  const annee=base.slice(0,4);
+  const mois=[]; for(let k=-4;k<=1;k++) mois.push(decalerMois(base,k));
+  const deja=function(ym){return enveloppesJour.some(function(e){return e.carte===num&&e.mois===ym;});};
+  let avert='';
+  if(!m) avert='⚠️ Carte n°'+num+' absente de la liste des membres : la ligne sera signalée en orange.';
+  else if(m.actif===false) avert='⚠️ Cette carte est désactivée dans la liste des membres : la ligne sera signalée en orange.';
+  const nbDeja=mois.filter(deja).length;
+  const p=document.getElementById('scan-panneau');
+  p.innerHTML=`<div style="font-size:12px;color:#666">Carte n°${esc(String(num).padStart(4,'0'))}</div>
+    <div style="font-size:18px;font-weight:700;margin:2px 0 8px">${m&&m.nom?esc(m.nom):'(nom inconnu)'}</div>
+    ${avert?`<div style="font-size:12px;color:#b9770e;background:#fff4e5;border-radius:6px;padding:6px 8px;margin-bottom:8px">${avert}</div>`:''}
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Mois payé(s) :</div>
+    <div id="scan-mois" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      ${mois.map(function(ym){
+        const d=deja(ym);
+        return `<label style="display:flex;align-items:center;gap:4px;border:1.5px solid ${d?'#ccc':'var(--vert)'};border-radius:8px;padding:7px 9px;font-size:14px;${d?'color:#999;background:#f2f2f2':''}">
+          <input type="checkbox" value="${ym}" ${d?'disabled':''} ${!d&&ym===base?'checked':''}>${moisCourt(ym,annee)}${d?' ✓':''}</label>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px">Autre mois : <input type="month" id="scan-autre-mois" style="flex:1"></div>
+    ${nbDeja?`<div style="font-size:11px;color:#666;margin-bottom:8px">✓ = déjà compté pour cette carte aujourd'hui.</div>`:''}
+    <div style="display:flex;gap:8px">
+      <button type="button" class="btn btn-vert" style="margin:0;flex:2" onclick="validerScanCarte()">✅ Valider</button>
+      <button type="button" class="btn btn-gris" style="margin:0;flex:1" onclick="reprendreScan('Scan annulé. Présente la carte suivante.')">✖ Annuler</button>
+    </div>`;
+  p.style.display='block';
+  document.getElementById('scan-statut').textContent='';
+}
+function validerScanCarte(){
+  const s=scanEtat; if(!s||!s.carte) return;
+  const num=s.carte;
+  const choisis=[].slice.call(document.querySelectorAll('#scan-mois input:checked')).map(function(x){return x.value;});
+  const autre=(document.getElementById('scan-autre-mois')||{}).value||'';
+  if(/^\d{4}-\d{2}$/.test(autre)&&choisis.indexOf(autre)<0) choisis.push(autre);
+  if(!choisis.length){alert('Coche au moins un mois payé.');return;}
+  const m=load(SK_ANJ_M).find(function(x){return x.num===num;});
+  const alerte=!m?'carte '+num+' scannée mais absente de la liste des membres'
+    :(m.actif===false?'carte '+num+' scannée mais désactivée dans la liste des membres':'');
+  let ajoutes=0; const doublons=[];
+  choisis.sort().forEach(function(ym){
+    if(enveloppesJour.some(function(e){return e.carte===num&&e.mois===ym;})){doublons.push(moisLabel(ym));return;}
+    const env={carte:num,nom:m?m.nom||'':'',mois:ym};
+    if(alerte) env._alerte=alerte;
+    enveloppesJour.push(env); ajoutes++;
+  });
+  s.nbAjouts+=ajoutes;
+  afficherEnveloppesJour();
+  reprendreScan((ajoutes?'✅ Carte '+num+(m&&m.nom?' — '+esc(m.nom):'')+' : '+ajoutes+' mois ajouté'+(ajoutes>1?'s':'')+'.':'')
+    +(doublons.length?' ⚠️ Déjà compté : '+esc(doublons.join(', '))+'.':''));
+}
+function reprendreScan(message){
+  const s=scanEtat; if(!s) return;
+  s.ignorer={cle:s.carte,t:Date.now()};
+  s.carte=null; s.pause=false;
+  document.getElementById('scan-panneau').style.display='none';
+  document.getElementById('scan-statut').innerHTML=message||'';
+  majCompteurScan();
+}
+function majCompteurScan(){
+  const el=document.getElementById('scan-compteur');
+  if(el) el.textContent=enveloppesJour.length+' enveloppe(s) dans la liste du dimanche'
+    +(scanEtat&&scanEtat.nbAjouts?' · '+scanEtat.nbAjouts+' ajoutée(s) par ce scan':'');
+}
+function fermerScanCartes(){
+  const s=scanEtat; scanEtat=null;
+  if(s){
+    if(s.timer) clearInterval(s.timer);
+    if(s.flux) s.flux.getTracks().forEach(function(t){t.stop();});
+    try{ if(s.audio) s.audio.close(); }catch(e){}
+  }
+  const o=document.getElementById('scan-overlay'); if(o) o.remove();
 }
 function supprimerEnveloppe(i){enveloppesJour.splice(i,1);envEnEdition=null;afficherEnveloppesJour();}
 function afficherEnveloppesJour(){
