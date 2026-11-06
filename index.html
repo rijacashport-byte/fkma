@@ -18,7 +18,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction, deleteField }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction, deleteField, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -42,7 +42,7 @@ enableIndexedDbPersistence(db).catch(function(err){
   // err.code==='unimplemented' -> navigateur trop ancien / non supporté
 });
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction,deleteField};
+window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction,deleteField,serverTimestamp};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._sendReset=sendPasswordResetEmail;
@@ -1453,6 +1453,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
  <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
  <button class="btn btn-vert" type="button" style="margin-top:8px" onclick="ouvrirScanCartes()"><span>📷</span> Scanner les cartes (QR)</button>
+ <button class="btn btn-gris" type="button" style="margin-top:8px" onclick="recupererScansPartages()"><span>📥</span> Récupérer les scans des autres téléphones</button>
  </div>
 
  <!-- Mode nombre direct -->
@@ -3495,10 +3496,6 @@ function chargerJsQR(){
     document.head.appendChild(s);
   });
 }
-function decalerMois(ym,n){
-  const p=ym.split('-'); const d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1+n,1);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-}
 function moisCourt(ym,annee){
   const p=ym.split('-'); return MOIS_COURTS[parseInt(p[1],10)-1]+(p[0]!==annee?' '+p[0].slice(2):'');
 }
@@ -3512,9 +3509,9 @@ function bipScan(ok){
   }catch(e){}
 }
 function htmlScanCartes(){
-  return `<div id="scan-overlay" style="position:fixed;inset:0;z-index:9999;background:#111;color:white;display:flex;flex-direction:column">
+  return `<div id="scan-overlay" style="position:fixed;inset:0;z-index:10000;background:#111;color:white;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px">
-      <div style="font-weight:700">📷 Scanner les cartes</div>
+      <div style="font-weight:700">📷 Scanner les cartes<div style="font-size:12px;font-weight:400;color:#bbb">Culte du ${esc(fmtDateFr(dateCulteAnj())||'—')}</div></div>
       <button type="button" onclick="fermerScanCartes()" style="background:white;color:#111;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px">✖ Terminer</button>
     </div>
     <div style="position:relative;flex:1;min-height:0;overflow:hidden">
@@ -3528,6 +3525,7 @@ function htmlScanCartes(){
 }
 async function ouvrirScanCartes(){
   if(scanEtat) return;
+  if(!dateCulteAnj()){alert('Choisis d\'abord la date du culte (en haut de la page).');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
     alert('Ce téléphone ou ce navigateur ne permet pas d\'utiliser la caméra ici.\n\nOuvre l\'appli FKMA dans Chrome (Android) ou Safari (iPhone).');return;
   }
@@ -3610,7 +3608,8 @@ function afficherPanneauScan(num){
   const m=load(SK_ANJ_M).find(function(x){return x.num===num;});
   const base=(document.getElementById('env-mois')||{}).value||moisActuel();
   const annee=base.slice(0,4);
-  const mois=[]; for(let k=-4;k<=1;k++) mois.push(decalerMois(base,k));
+  // Les 12 mois de l'année du mois choisi ; « Autre mois » pour une autre année
+  const mois=[]; for(let k=1;k<=12;k++) mois.push(annee+'-'+String(k).padStart(2,'0'));
   const deja=function(ym){return enveloppesJour.some(function(e){return e.carte===num&&e.mois===ym;});};
   let avert='';
   if(!m) avert='⚠️ Carte n°'+num+' absente de la liste des membres : la ligne sera signalée en orange.';
@@ -3621,10 +3620,10 @@ function afficherPanneauScan(num){
     <div style="font-size:18px;font-weight:700;margin:2px 0 8px">${m&&m.nom?esc(m.nom):'(nom inconnu)'}</div>
     ${avert?`<div style="font-size:12px;color:#b9770e;background:#fff4e5;border-radius:6px;padding:6px 8px;margin-bottom:8px">${avert}</div>`:''}
     <div style="font-size:12px;font-weight:600;margin-bottom:6px">Mois payé(s) :</div>
-    <div id="scan-mois" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+    <div id="scan-mois" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">
       ${mois.map(function(ym){
         const d=deja(ym);
-        return `<label style="display:flex;align-items:center;gap:4px;border:1.5px solid ${d?'#ccc':'var(--vert)'};border-radius:8px;padding:7px 9px;font-size:14px;${d?'color:#999;background:#f2f2f2':''}">
+        return `<label style="display:flex;align-items:center;gap:4px;border:1.5px solid ${d?'#ccc':'var(--vert)'};border-radius:8px;padding:7px 5px;font-size:14px;${d?'color:#999;background:#f2f2f2':''}">
           <input type="checkbox" value="${ym}" ${d?'disabled':''} ${!d&&ym===base?'checked':''}>${moisCourt(ym,annee)}${d?' ✓':''}</label>`;
       }).join('')}
     </div>
@@ -3637,8 +3636,56 @@ function afficherPanneauScan(num){
   p.style.display='block';
   document.getElementById('scan-statut').textContent='';
 }
-function validerScanCarte(){
-  const s=scanEtat; if(!s||!s.carte) return;
+// ── SCANS PARTAGÉS ENTRE TÉLÉPHONES (anjarako_scans/{date}) ─────
+// Chaque « Valider » du scan part tout de suite dans un document par culte, commun à tous les
+// téléphones : {date, creeLe, scans:{"74_2026-11":{carte,mois,par,le}}}. Une transaction empêche
+// qu'une même carte soit comptée deux fois pour le même mois par deux téléphones. La personne qui
+// enregistre le dimanche touche « Récupérer les scans » pour regrouper. Trésorière et vomieran ne
+// lisent ce document que 2 jours (règles Firestore) ; ensuite, seuls le secrétaire et les diacres.
+function dateCulteAnj(){ return (document.getElementById('rak-date-input')||{}).value||''; }
+function cleScan(carte,mois){ return carte+'_'+mois; }
+function avecDelai(promesse,ms){
+  return Promise.race([promesse,new Promise(function(_,rej){setTimeout(function(){rej(new Error('délai dépassé'));},ms);})]);
+}
+// lignes : [{carte,mois}] → {ok:[…], deja:[{carte,mois,par}]}
+function envoyerScansPartages(date,lignes){
+  const ref=window._fs.doc(window._db,'anjarako_scans',date);
+  const moi=emailConnecte();
+  return avecDelai(window._fs.runTransaction(window._db,async function(tx){
+    const s=await tx.get(ref);
+    const d=s.exists()?s.data():null;
+    const scans=Object.assign({},(d&&d.scans)||{});
+    const res={ok:[],deja:[]};
+    lignes.forEach(function(l){
+      const k=cleScan(l.carte,l.mois);
+      if(scans[k]){ res.deja.push({carte:l.carte,mois:l.mois,par:scans[k].par||''}); return; }
+      scans[k]={carte:l.carte,mois:l.mois,par:moi,le:new Date().toISOString()};
+      res.ok.push(l);
+    });
+    if(res.ok.length){
+      if(d) tx.update(ref,{scans:scans});
+      else tx.set(ref,{date:date,creeLe:window._fs.serverTimestamp(),scans:scans});
+    }
+    return res;
+  }),10000);
+}
+// Une ligne scannée supprimée (✕) sort aussi des scans partagés, pour ne pas revenir au regroupement
+function retirerScanPartage(date,carte,mois){
+  if(!window._db||!date) return;
+  const ref=window._fs.doc(window._db,'anjarako_scans',date);
+  window._fs.runTransaction(window._db,async function(tx){
+    const s=await tx.get(ref); if(!s.exists()) return;
+    const scans=Object.assign({},s.data().scans||{});
+    const k=cleScan(carte,mois); if(!scans[k]) return;
+    delete scans[k]; tx.update(ref,{scans:scans});
+  }).catch(function(e){ console.log('Retrait du scan partagé :',e.message); });
+}
+function nomCompte(email){
+  const c=(typeof ROLES_CONFIG!=='undefined'&&ROLES_CONFIG&&ROLES_CONFIG[email])||{};
+  return c.nom||c.prenom||String(email||'?').split('@')[0];
+}
+async function validerScanCarte(){
+  const s=scanEtat; if(!s||!s.carte||s.envoi) return;
   const num=s.carte;
   const choisis=[].slice.call(document.querySelectorAll('#scan-mois input:checked')).map(function(x){return x.value;});
   const autre=(document.getElementById('scan-autre-mois')||{}).value||'';
@@ -3647,17 +3694,70 @@ function validerScanCarte(){
   const m=load(SK_ANJ_M).find(function(x){return x.num===num;});
   const alerte=!m?'carte '+num+' scannée mais absente de la liste des membres'
     :(m.actif===false?'carte '+num+' scannée mais désactivée dans la liste des membres':'');
-  let ajoutes=0; const doublons=[];
+  const doublons=[];
+  let aAjouter=[];
   choisis.sort().forEach(function(ym){
-    if(enveloppesJour.some(function(e){return e.carte===num&&e.mois===ym;})){doublons.push(moisLabel(ym));return;}
-    const env={carte:num,nom:m?m.nom||'':'',mois:ym};
+    if(enveloppesJour.some(function(e){return e.carte===num&&e.mois===ym;})) doublons.push(moisLabel(ym));
+    else aAjouter.push({carte:num,mois:ym});
+  });
+  // Envoi aux autres téléphones
+  let autresTel=[], echec='';
+  const date=dateCulteAnj();
+  if(aAjouter.length&&window._db&&date){
+    s.envoi=true;
+    const st=document.getElementById('scan-statut'); if(st) st.textContent='⏳ Envoi…';
+    try{
+      const r=await envoyerScansPartages(date,aAjouter);
+      autresTel=r.deja; aAjouter=r.ok;
+    }catch(e){ echec=e.message||'erreur'; console.log('Scan partagé :',echec); }
+    if(scanEtat) scanEtat.envoi=false;
+  } else if(aAjouter.length) echec=date?'Firebase non connecté':'date du culte vide';
+  let ajoutes=0;
+  aAjouter.forEach(function(l){
+    // _scan : ligne venue du scan, gardée quand on lit ensuite la photo de la fiche (non enregistré)
+    const env={carte:num,nom:m?m.nom||'':'',mois:l.mois,_scan:true};
     if(alerte) env._alerte=alerte;
     enveloppesJour.push(env); ajoutes++;
   });
-  s.nbAjouts+=ajoutes;
+  if(scanEtat) scanEtat.nbAjouts+=ajoutes;
   afficherEnveloppesJour();
+  if(autresTel.length||echec) bipScan(false);
   reprendreScan((ajoutes?'✅ Carte '+num+(m&&m.nom?' — '+esc(m.nom):'')+' : '+ajoutes+' mois ajouté'+(ajoutes>1?'s':'')+'.':'')
-    +(doublons.length?' ⚠️ Déjà compté : '+esc(doublons.join(', '))+'.':''));
+    +(doublons.length?' ⚠️ Déjà compté sur ce téléphone : '+esc(doublons.join(', '))+'.':'')
+    +(autresTel.length?' ⚠️ Déjà scanné par un autre téléphone : '+esc(autresTel.map(function(x){return moisLabel(x.mois)+' ('+nomCompte(x.par)+')';}).join(', '))+'.':'')
+    +(echec&&ajoutes?'<br><span style="color:#ffb3a7">⚠️ Non envoyé aux autres téléphones ('+esc(echec)+') : gardé sur ce téléphone seulement.</span>':''));
+}
+// Bouton « Récupérer les scans des autres téléphones » : ajoute à la liste du dimanche toutes les
+// cartes scannées pour la date du culte, sur tous les téléphones
+async function recupererScansPartages(){
+  const date=dateCulteAnj();
+  if(!date){alert('Choisis d\'abord la date du culte.');return;}
+  if(!window._db){alert('Firebase non connecté : réessaie dans un instant.');return;}
+  let snap;
+  try{ snap=await avecDelai(window._fs.getDoc(window._fs.doc(window._db,'anjarako_scans',date)),10000); }
+  catch(e){
+    alert(e&&e.code==='permission-denied'
+      ?'Les scans de ce culte ne sont plus lisibles avec ton compte (ils datent de plus de 2 jours). Demande au secrétaire ou à un diacre.'
+      :'Impossible de récupérer les scans ('+((e&&e.message)||'erreur')+'). Vérifie la connexion et réessaie.');
+    return;
+  }
+  const scans=snap.exists()?Object.values(snap.data().scans||{}):[];
+  if(!scans.length){alert('Aucune carte scannée pour le culte du '+fmtDateFr(date)+'.');return;}
+  const membres=load(SK_ANJ_M);
+  const parPersonne={}; let ajoutes=0, deja=0;
+  scans.sort(function(a,b){return (a.carte-b.carte)||String(a.mois).localeCompare(b.mois);}).forEach(function(x){
+    const n=nomCompte(x.par); parPersonne[n]=(parPersonne[n]||0)+1;
+    if(enveloppesJour.some(function(e){return e.carte===x.carte&&e.mois===x.mois;})){deja++;return;}
+    const m=membres.find(function(y){return y.num===x.carte;});
+    const env={carte:x.carte,nom:m?m.nom||'':'',mois:x.mois,_scan:true};
+    if(!m) env._alerte='carte '+x.carte+' scannée mais absente de la liste des membres';
+    else if(m.actif===false) env._alerte='carte '+x.carte+' scannée mais désactivée dans la liste des membres';
+    enveloppesJour.push(env); ajoutes++;
+  });
+  afficherEnveloppesJour();
+  alert('📥 Scans du culte du '+fmtDateFr(date)+' : '+scans.length+' ligne(s).\n\n'
+    +'• '+ajoutes+' ajoutée(s) à la liste\n• '+deja+' déjà dans la liste\n\nScannées par : '
+    +Object.keys(parPersonne).map(function(n){return n+' ('+parPersonne[n]+')';}).join(', '));
 }
 function reprendreScan(message){
   const s=scanEtat; if(!s) return;
@@ -3681,7 +3781,11 @@ function fermerScanCartes(){
   }
   const o=document.getElementById('scan-overlay'); if(o) o.remove();
 }
-function supprimerEnveloppe(i){enveloppesJour.splice(i,1);envEnEdition=null;afficherEnveloppesJour();}
+function supprimerEnveloppe(i){
+  const e=enveloppesJour[i];
+  if(e&&e._scan) retirerScanPartage(dateCulteAnj(),e.carte,e.mois);
+  enveloppesJour.splice(i,1);envEnEdition=null;afficherEnveloppesJour();
+}
 function afficherEnveloppesJour(){
   const el=document.getElementById('liste-enveloppes');
   const nb=enveloppesJour.length;
@@ -4134,7 +4238,10 @@ function appliquerFicheAnj(f,meta){
   } else alertes.push('Date de la fiche illisible : vérifie la date avant d\'enregistrer.');
   // 2. On repart d'une saisie vide (sauf page SUITE)
   const nbCartesAvantLecture=enveloppesJour.length;
-  if(!estSuite){ viderSaisieAnj(); correctionAnjSource=null; majBannerCorrectionAnj(); }
+  // Les cartes déjà scannées restent : la fiche n'apporte que les personnes venues sans carte
+  const scannees=estSuite?[]:enveloppesJour.filter(function(e){return e._scan;});
+  if(!estSuite){ viderSaisieAnj(); correctionAnjSource=null; majBannerCorrectionAnj(); enveloppesJour=scannees; }
+  if(scannees.length) infos.push(scannees.length+' ligne(s) venue(s) du scan des cartes conservée(s) ; les lignes de la fiche s\'y ajoutent.');
   // 3. Billetage (page 001 seulement)
   let totalBillets=0;
   if(estSuite) f.billetage=[];
