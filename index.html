@@ -1202,6 +1202,14 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 .bv-total{display:flex;justify-content:space-between;font-weight:700;margin-top:8px;font-size:13px;}
 .bv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 .bv-actions .btn{width:auto;padding:9px 14px;margin:0;}
+
+/* ── Bouton « Scanner les cartes » en haut de Gestion ── */
+.btn-scan-qr{justify-content:flex-start;gap:14px;padding:10px 14px;margin-bottom:10px;background:var(--bleu);color:#fff;text-align:left;}
+.scan-qr-icone{display:flex;background:#fff;color:var(--bleu);padding:5px;border-radius:7px;flex-shrink:0;}
+.scan-qr-texte{display:flex;flex-direction:column;line-height:1.3;}
+.scan-qr-texte b{font-size:16px;font-weight:700;}
+.scan-qr-texte small{font-size:12px;font-weight:400;opacity:.85;}
+body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1258,6 +1266,10 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 
 
 <div id="section-gest" style="display:block">
+<button class="btn btn-scan-qr" id="btn-scan-accueil" type="button" onclick="ouvrirScanDepuisGestion()">
+ <span class="scan-qr-icone"><svg viewBox="0 0 22 22" width="38" height="38" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1 1h7v7h-7z M2 2h5v5h-5z M3 3h3v3h-3z M14 1h7v7h-7z M15 2h5v5h-5z M16 3h3v3h-3z M1 14h7v7h-7z M2 15h5v5h-5z M3 16h3v3h-3z M10 1h2v2h-2z M10 5h1v3h-1z M12 4h1v2h-1z M1 10h2v1h-2z M5 10h3v2h-3z M10 10h3v2h-3z M14 10h2v1h-2z M18 10h3v2h-3z M10 14h2v2h-2z M14 14h3v3h-3z M19 14h2v1h-2z M10 18h3v3h-3z M15 19h2v2h-2z M19 17h2v4h-2z"/></svg></span>
+ <span class="scan-qr-texte"><b>Scanner les cartes</b><small>QR code de la carte Anjarako</small></span>
+</button>
 <div class="nav-tabs">
  <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
  <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
@@ -1452,7 +1464,6 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  </div>
  <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
  <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
- <button class="btn btn-vert" type="button" style="margin-top:8px" onclick="ouvrirScanCartes()"><span>📷</span> Scanner les cartes (QR)</button>
  <button class="btn btn-gris" type="button" style="margin-top:8px" onclick="recupererScansPartages()"><span>📥</span> Récupérer les scans des autres téléphones</button>
  </div>
 
@@ -3523,6 +3534,14 @@ function htmlScanCartes(){
     <div id="scan-panneau" style="display:none;background:white;color:#1e1e1e;padding:14px;border-radius:14px 14px 0 0"></div>
     <div id="scan-compteur" style="padding:0 14px 12px;font-size:12px;text-align:center;color:#bbb"></div>
   </div>`;
+}
+// Bouton en haut de Gestion : amène sur l'écran Anjarako (où s'ajoutent les cartes scannées) puis ouvre la caméra.
+// Sans attente avant ouvrirScanCartes() : la caméra et le son doivent partir du toucher sur le bouton.
+function ouvrirScanDepuisGestion(){
+  const onglet=document.getElementById('gnav-anjarako');
+  if(onglet) showGestTab('anjarako',onglet);
+  if(envMode!=='carte') showEnvMode('carte');
+  ouvrirScanCartes();
 }
 async function ouvrirScanCartes(){
   if(scanEtat) return;
