@@ -4457,7 +4457,23 @@ function toggleSuiviListe(which){
   if(btn) btn.textContent=suiviCollapsed[which]?'▸ Afficher':'▾ Réduire';
 }
 
-function exporterExcelSuiviAnjarako(){
+// La version gratuite de SheetJS n'écrit pas les couleurs : xlsx-js-style (même format) est chargée au
+// premier besoin, puis gardée à part pour que tous les autres exports restent sur window.XLSX.
+let _xlsxCouleurs=null;
+function chargerXlsxCouleurs(){
+  if(_xlsxCouleurs) return Promise.resolve(_xlsxCouleurs);
+  return new Promise(function(resolve){
+    const base=window.XLSX;
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+    s.integrity='sha384-OUW9euuUyxyHcAhTqbhI+Iyb8LMssXt/cpz0yXhs9UWG2/R/uaWdakx/4cfww7Vb';
+    s.crossOrigin='anonymous';
+    s.onload=function(){ _xlsxCouleurs=window.XLSX; window.XLSX=base; resolve(_xlsxCouleurs); };
+    s.onerror=function(){ window.XLSX=base; resolve(null); };
+    document.head.appendChild(s);
+  });
+}
+async function exporterExcelSuiviAnjarako(){
   if(!aAccesSuiviAnj()){ alert("Le suivi des paiements est réservé au secrétaire et aux diacres."); return; }
   const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;}).sort(function(a,b){return a.num-b.num;});
   const ym=document.getElementById('suivi-mois')?.value||moisActuel();
@@ -4493,9 +4509,22 @@ function exporterExcelSuiviAnjarako(){
   });
   const wsAnnee=XLSX.utils.aoa_to_sheet(rowsAnnee);
   wsAnnee['!cols']=[{wch:10},{wch:30}].concat(MOIS_FR.map(function(){return{wch:9};}));
+  // Payé en vert, non payé en rouge ; gris pour le mois en cours et les suivants (pas encore un retard)
+  const styleCase=function(fond,texte){return {fill:{patternType:'solid',fgColor:{rgb:fond}},font:{bold:true,color:{rgb:texte}},alignment:{horizontal:'center'}};};
+  const stylePaye=styleCase('C6EFCE','006100'), styleNonPaye=styleCase('FFC7CE','9C0006'), styleAVenir=styleCase('EDEDED','7F7F7F');
+  const moisCourant=new Date().getMonth();
+  for(let R=1;R<rowsAnnee.length;R++){
+    for(let C=2;C<rowsAnnee[R].length;C++){
+      const c=wsAnnee[XLSX.utils.encode_cell({r:R,c:C})];
+      if(c) c.s=c.v==='✓'?stylePaye:(C-2>=moisCourant?styleAVenir:styleNonPaye);
+    }
+  }
   XLSX.utils.book_append_sheet(wb,wsAnnee,'Année '+annee);
 
-  XLSX.writeFile(wb,'suivi_paiements_anjarako_'+ym+'.xlsx');
+  const nomFichier='suivi_paiements_anjarako_'+ym+'.xlsx';
+  const libCouleurs=await chargerXlsxCouleurs();
+  (libCouleurs||XLSX).writeFile(wb,nomFichier);
+  if(!libCouleurs) alert('Fichier exporté sans les couleurs : la bibliothèque n\'a pas pu être chargée (connexion ?).');
 }
 
 // Répartition des enveloppes par montant (comptage "valopy" enregistré avec chaque dimanche)
@@ -4536,6 +4565,46 @@ function montantLePlusFrequent(parMontant){
   });
   return meilleur;
 }
+// Tableau « mois concerné × mois de paiement », à partir du détail des cartes de chaque dimanche
+// (ou du « Nombre direct » et de son mois). Résultat agrégé : aucun nom ni n° de carte.
+function rowsMoisConcerne(annee){
+  const vide=function(){return {paye:new Array(12).fill(0),autre:0,avance:0,retard:0,estime:0};};
+  const lignes={}; MOIS_FR.forEach(function(m,i){ lignes[annee+'-'+String(i+1).padStart(2,'0')]=vide(); });
+  const autres=vide();
+  let sansDetail=0;
+  load(SK_ANJ_H).forEach(function(h){
+    if(!h.date) return;
+    const direct=h.nbDirect>0&&/^\d{4}-\d{2}$/.test(h.moisDirect||'');
+    const liste=(h.enveloppes&&h.enveloppes.length)?h.enveloppes.map(function(e){return e.mois;})
+      :(direct?new Array(h.nbDirect).fill(h.moisDirect):[]);
+    const dansAnnee=h.date.slice(0,4)===annee;
+    if(!liste.length){ if(dansAnnee) sansDetail+=(h.total||0); return; }
+    const part=(h.total||0)/liste.length, ymPaye=h.date.slice(0,7);
+    liste.forEach(function(mc){
+      const cible=lignes[mc]||(dansAnnee?autres:null);
+      if(!cible) return;
+      if(dansAnnee) cible.paye[parseInt(ymPaye.slice(5),10)-1]++; else cible.autre++;
+      if(ymPaye<mc) cible.avance++; else if(ymPaye>mc) cible.retard++;
+      cible.estime+=part;
+    });
+  });
+  const ligne=function(nom,x){
+    const tot=x.paye.reduce(function(a,n){return a+n;},0)+x.autre;
+    return [nom].concat(x.paye.map(function(n){return n||'';}),[x.autre||'',tot,x.avance,x.retard,Math.round(x.estime)]);
+  };
+  const entete=['Mois concerné'].concat(MOIS_COURTS,['Autre année','Total mois payés','dont en avance','dont en retard','Montant estimé (F)']);
+  const rows=[['MOIS PAYÉS PAR MOIS CONCERNÉ — '+annee+' (colonnes : mois où le paiement a été fait). Le nombre est exact, le montant est une estimation.'],[],entete];
+  const tous=MOIS_FR.map(function(m,i){ return lignes[annee+'-'+String(i+1).padStart(2,'0')]; });
+  MOIS_FR.forEach(function(m,i){ rows.push(ligne(m+' '+annee,tous[i])); });
+  const avecAutres=tous.concat([autres]);
+  if(autres.paye.some(function(n){return n;})||autres.autre) rows.push(ligne('Mois d\'une autre année',autres));
+  if(sansDetail) rows.push(['Dimanches sans détail (mois inconnu)'].concat(new Array(13).fill(''),['','','',Math.round(sansDetail)]));
+  const somme=function(f){return avecAutres.reduce(function(a,x){return a+f(x);},0);};
+  rows.push(['TOTAL'].concat(MOIS_FR.map(function(m,i){return somme(function(x){return x.paye[i];})||'';}),
+    [somme(function(x){return x.autre;})||'',somme(function(x){return x.paye.reduce(function(a,n){return a+n;},0)+x.autre;}),
+     somme(function(x){return x.avance;}),somme(function(x){return x.retard;}),Math.round(somme(function(x){return x.estime;})+sansDetail)]));
+  return rows;
+}
 async function exporterExcelValopy(){
   if(!aAccesSuiviAnj()){ alert("Le suivi des paiements est réservé au secrétaire et aux diacres."); return; }
   await chargerAnjarako(); // chiffres à jour (reste sur la copie de l'appareil si pas de connexion)
@@ -4572,7 +4641,7 @@ async function exporterExcelValopy(){
   XLSX.utils.book_append_sheet(wb,wsSyn,'Synthèse '+annee);
 
   // ── Nombre d'enveloppes par montant et par mois ──
-  const rowsAn=[['Montant (F)'].concat(MOIS_FR.map(function(m){return m.substring(0,3);}),['Total enveloppes','% enveloppes','Total (F)','% du montant'])];
+  const rowsAn=[['Montant (F)'].concat(MOIS_COURTS,['Total enveloppes','% enveloppes','Total (F)','% du montant'])];
   montants.forEach(function(m){
     const nb=tousMontants[m];
     rowsAn.push([m].concat(mois.map(function(x){return x.r.parMontant[m]||'';}),[nb,nbAn?nb/nbAn:0,m*nb,sommeAn?m*nb/sommeAn:0]));
@@ -4582,6 +4651,14 @@ async function exporterExcelValopy(){
   wsAn['!cols']=[{wch:12}].concat(MOIS_FR.map(function(){return{wch:6};}),[{wch:12},{wch:11},{wch:14},{wch:11}]);
   formatColonnes(wsAn,{0:F,14:P,15:F,16:P},1);
   XLSX.utils.book_append_sheet(wb,wsAn,'Par montant '+annee);
+
+  // ── Par mois concerné (mois payé, et non date du dimanche) ──
+  // Les montants d'enveloppes sont anonymes : aucun lien avec le mois payé. Le nombre de mois payés est
+  // exact ; le montant est une ESTIMATION (total du dimanche réparti à parts égales entre ses lignes).
+  const wsCon=XLSX.utils.aoa_to_sheet(rowsMoisConcerne(annee));
+  wsCon['!cols']=[{wch:30}].concat(MOIS_FR.map(function(){return{wch:6};}),[{wch:8},{wch:12},{wch:10},{wch:10},{wch:16}]);
+  formatColonnes(wsCon,{17:F},3);
+  XLSX.utils.book_append_sheet(wb,wsCon,'Par mois concerné '+annee);
 
   // ── Le mois choisi ──
   const rm=repartitionValopy(ym);
