@@ -2055,6 +2055,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  <button class="tab-btn" onclick="showGLTab('k45',this)">📙<br>K45</button>
  <button class="tab-btn" id="gltab-btn-ops" onclick="showGLTab('ops',this)" style="display:none">🏦<br>Opérations</button>
  <button class="tab-btn" onclick="showGLTab('synth',this)">📊<br>Synthèse</button>
+ <button class="tab-btn" id="gltab-btn-rappro" onclick="showGLTab('rappro',this)" style="display:none">🔎<br>Rapprochement</button>
 </div>
 
 <!-- ══ FIANGONANA ══ -->
@@ -2364,6 +2365,18 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  </div>
 
 </div><!-- /gl-tab-ops -->
+<!-- Rapprochement avec le brouillard Excel de la trésorière (09/11/2026) -->
+<div id="gl-tab-rappro" style="display:none">
+ <div class="card">
+ <div class="ctit">🔎 Rapprochement avec le brouillard d'Ando</div>
+ <div class="note">Choisis le fichier Excel d'Ando (onglets FIANGONANA et ANJARAKO) : l'appli compare ses lignes de caisse au Grand Livre.
+  Le fichier reste sur cet appareil, il n'est ni envoyé ni gardé.</div>
+ <div id="rb-etat" style="margin:8px 0;font-size:13px"></div>
+ <input type="file" accept=".xlsx,.xls" id="rb-fichier" style="display:none" onchange="rbLireFichier(this)">
+ <button type="button" class="btn bv" onclick="document.getElementById('rb-fichier').click()">📂 Choisir le fichier d'Ando</button>
+ <div id="rb-zone"></div>
+ </div>
+</div><!-- /gl-tab-rappro -->
 <div id="gl-tab-synth" style="display:none">
  <div class="card">
  <div class="ctit">📊 Vue globale</div>
@@ -2542,13 +2555,15 @@ function appliquerRole(role){
   const tabK45  = document.getElementById('mnav-k45');
   const tabGL   = document.getElementById('mnav-gl');
   const tabOps  = document.getElementById('gltab-btn-ops'); // Opérations : sous-onglet du Grand Livre
+  const tabRappro = document.getElementById('gltab-btn-rappro'); // Rapprochement : comptables seulement
   const tabServices = document.getElementById('mnav-services');
 
   // Cacher tout par défaut
   if(tabOps) tabOps.style.display='none';
-  // Si le compte précédent était resté sur Opérations, revenir sur le premier livre
-  const glOps=document.getElementById('gl-tab-ops');
-  if(glOps && glOps.style.display!=='none') showGLTab('fiang',document.querySelector('#section-gl .tab-btn'));
+  if(tabRappro) tabRappro.style.display='none';
+  // Si le compte précédent était resté sur Opérations ou Rapprochement, revenir sur le premier livre
+  const glOps=document.getElementById('gl-tab-ops'), glRappro=document.getElementById('gl-tab-rappro');
+  if((glOps && glOps.style.display!=='none')||(glRappro && glRappro.style.display!=='none')) showGLTab('fiang',document.querySelector('#section-gl .tab-btn'));
   // Toujours réafficher les sous-onglets de Gestion par défaut (remis à zéro à chaque connexion,
   // pour ne pas rester caché si un compte plus restreint (ex: Nataly) s'est connecté juste avant)
   const gnavAnjDefault=document.getElementById('gnav-anjarako');
@@ -2624,6 +2639,7 @@ function appliquerRole(role){
     if(tabK45)  tabK45.style.display='';
     if(tabGL)   tabGL.style.display='';
     if(tabOps)  tabOps.style.display=''; // Opérations visibles
+    if(tabRappro) tabRappro.style.display='';
     showMain('gest', tabGest);
     if(window._db){ chargerDepenses(); chargerAnjarako(); chargerRakitra(); chargerCultes(); chargerTout(); chargerMembresAnj(); }
     return;
@@ -6163,13 +6179,14 @@ let obES='S';
 function showGLTab(tab,btn){
   document.querySelectorAll('#section-gl .tab-btn').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['fiang','anj','k45','ops','synth'].forEach(function(t){
+  ['fiang','anj','k45','ops','synth','rappro'].forEach(function(t){
     const el=document.getElementById('gl-tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
   if(tab==='synth')renderSynth();
   if(tab==='fiang'||tab==='anj'||tab==='k45') chargerTout();
   if(tab==='ops') chargerTout();
+  if(tab==='rappro') rbChargerEtat();
 }
 
 // ── CHARGEMENT FIREBASE ───────────────────────────────────────
@@ -6310,6 +6327,347 @@ async function verserRecetteEnBanque(btn){
     alert('✅ Versement enregistré : '+fmt(e.montant)+' F en banque.');
     await chargerTout();
   }catch(err){ btn.disabled=false; alert(msgEchecEnregistrement(err)); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── RAPPROCHEMENT BROUILLARD DE LA TRÉSORIÈRE ↔ GRAND LIVRE (09/11/2026) ──
+// ══════════════════════════════════════════════════════════════
+// Le fichier Excel est lu dans le navigateur : il n'est ni envoyé ni gardé. Seuls la date du dernier
+// rapprochement validé et les écarts déjà connus sont conservés (parametres/rapprochement).
+// Comparaison en caisse seulement, livre par livre : même date et montant, puis versements regroupés,
+// part K45 de la feuille Fiangonana, dates différentes, enfin montants proches.
+const RB_DEBUT_DEFAUT='2026-07-01', RB_FENETRE_DATE=35, RB_FENETRE_GROUPE=5, RB_FENETRE_K45=7, RB_FENETRE_MONTANT=3, RB_ECART_MONTANT=1000;
+const RB_FEUILLES={fiang:'FIANGONANA',anj:'ANJARAKO'};
+const RB_NOMS={fiang:'📗 Fiangonana',anj:'📘 Anjarako'};
+let RB=null, RB_ETAT={};
+
+function rbNorm(s){ return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toUpperCase(); }
+function rbNombre(v){
+  if(typeof v==='number') return Math.round(v);
+  const t=String(v==null?'':v).replace(/[\s  ]/g,'');
+  return /^-?\d+$/.test(t)?parseInt(t,10):0;
+}
+function rbJours(a,b){ return Math.abs(Date.parse(a)-Date.parse(b))/86400000; }
+function rbDateIso(v){
+  if(typeof v==='number'&&v>20000&&v<80000) return new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000).toISOString().slice(0,10);
+  const m=/^(\d{1,2})[\/.-]?(\d{2})[\/.-]?(\d{4})$/.exec(String(v==null?'':v).trim());
+  if(!m) return '';
+  const iso=m[3]+'-'+m[2]+'-'+m[1].padStart(2,'0');
+  return isNaN(Date.parse(iso))?'':iso;
+}
+
+// Lit une feuille du brouillard : solde de l'en-tête et lignes qui ont un montant
+function rbLireFeuille(ws){
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:true});
+  const r0=XLSX.utils.decode_range(ws['!ref']).s.r;
+  let hdr=-1, col={};
+  for(let i=0;i<aoa.length&&hdr<0;i++){
+    const noms=(aoa[i]||[]).map(rbNorm);
+    if(noms.indexOf('DATY')>=0&&noms.indexOf('MIVOAKA')>=0){
+      hdr=i;
+      ['DATY','ANTONY','MIVOAKA','MIDITRA','SISA'].forEach(function(n){ col[n]=noms.indexOf(n); });
+    }
+  }
+  if(hdr<0||Object.keys(col).some(function(k){return col[k]<0;})) throw new Error('colonnes DATY, ANTONY, MIVOAKA, MIDITRA, SISA introuvables');
+  let solde=null;
+  for(let i=0;i<hdr&&solde===null;i++){
+    const l=aoa[i]||[];
+    for(let j=0;j<l.length&&solde===null;j++){
+      if(!/^SISA\b.*ESPECES/.test(rbNorm(l[j]))) continue;
+      for(let k=j+1;k<l.length;k++) if(typeof l[k]==='number'){ solde=Math.round(l[k]); break; }
+    }
+  }
+  const lignes=[]; let prec='';
+  for(let i=hdr+1;i<aoa.length;i++){
+    const l=aoa[i]||[], lib=String(l[col.ANTONY]==null?'':l[col.ANTONY]).trim();
+    if(!lib) continue;
+    const brut=l[col.DATY];
+    let date=rbDateIso(brut), defaut='';
+    if(!date&&prec){ date=prec; defaut='sans'; }
+    else if(date&&prec&&rbJours(date,prec)>180){
+      const corrigee=prec.slice(0,4)+date.slice(4);
+      if(rbJours(corrigee,prec)<=180){ date=corrigee; defaut='annee'; }
+    }
+    if(!defaut&&date&&typeof brut==='string') defaut='texte';
+    if(!date) continue;
+    prec=date;
+    const e=rbNombre(l[col.MIDITRA]), s=rbNombre(l[col.MIVOAKA]);
+    if(!e&&!s) continue;
+    const c=l[col.SISA];
+    lignes.push({ligne:r0+i+1,date:date,lib:lib,e:e,s:s,sisa:typeof c==='number'?Math.round(c):null,defaut:defaut,brut:brut});
+  }
+  return {solde:solde,lignes:lignes};
+}
+
+function rbNet(x){ return x.sens==='E'?x.montant:-x.montant; }
+function rbSomme(l){ return l.reduce(function(t,x){return t+x.montant;},0); }
+function rbSousEnsemble(items,cible){
+  const liste=items.slice(0,14);
+  let trouve=null;
+  (function chercher(i,reste,choix){
+    if(trouve||reste<0) return;
+    if(reste===0&&choix.length>=2){ trouve=choix.slice(); return; }
+    if(choix.length>=4) return;
+    for(let k=i;k<liste.length&&!trouve;k++){ choix.push(liste[k]); chercher(k+1,reste-liste[k].montant,choix); choix.pop(); }
+  })(0,cible,[]);
+  return trouve;
+}
+function rbParDate(l){
+  const g={}; l.forEach(function(x){ (g[x.date]=g[x.date]||[]).push(x); });
+  return Object.keys(g).map(function(k){return g[k];});
+}
+
+// Compare une feuille lue au Grand Livre. glK45 : facultatif (feuille Fiangonana seulement).
+function rbComparer(livre,lu,gl,glK45,init,debut,ecartRef){
+  const dates=lu.lignes.map(function(l){return l.date;}).filter(function(d){return d>=debut;}).sort();
+  const fin=dates.length?dates[dates.length-1]:debut;
+  const A=[];
+  lu.lignes.forEach(function(l){
+    if(l.date<debut) return;
+    const vb=/VERS?E?MENT|VERST/.test(rbNorm(l.lib));
+    if(l.e) A.push({ligne:l.ligne,date:l.date,lib:l.lib,sens:'E',montant:l.e,vb:vb});
+    if(l.s) A.push({ligne:l.ligne,date:l.date,lib:l.lib,sens:'S',montant:l.s,vb:vb});
+  });
+  const caisse=function(e){ return (e.source||'caisse')!=='banque'; };
+  const dansPeriode=function(e){ return caisse(e)&&(e.date||'')>=debut&&(e.date||'')<=fin; };
+  const versB=function(e){ return {date:e.date,lib:e.libelle||'',com:e.comment||'',rub:e.rubrique||'',sens:e.es,montant:Number(e.montant)||0,vb:e.rubrique==='VB',numOp:e.numOp||''}; };
+  const B=gl.filter(dansPeriode).map(versB), K=(glK45||[]).filter(dansPeriode).map(versB);
+  const apres=gl.filter(function(e){return caisse(e)&&(e.date||'')>fin;}).length;
+  const res=[];
+  const libres=function(l){ return l.filter(function(x){return !x.pris;}); };
+  const compatibles=function(a,b){ return a.sens===b.sens&&a.vb===b.vb; };
+  const lier=function(statut,as,bs){ as.concat(bs).forEach(function(x){x.pris=true;}); res.push({statut:statut,a:as,b:bs}); };
+  // 1. Même date, même montant
+  A.forEach(function(a){
+    const b=libres(B).find(function(x){return compatibles(a,x)&&x.montant===a.montant&&x.date===a.date;});
+    if(b) lier('ok',[a],[b]);
+  });
+  // 2. Versements regroupés d'un seul côté (ex. Rakitra + Raki-pisaorana déposés ensemble)
+  libres(B).filter(function(b){return b.vb;}).forEach(function(b){
+    for(const g of rbParDate(libres(A).filter(function(a){return compatibles(a,b)&&rbJours(a.date,b.date)<=RB_FENETRE_GROUPE;}))){
+      const s=rbSousEnsemble(g,b.montant);
+      if(s){ lier('groupe',s,[b]); break; }
+    }
+  });
+  libres(A).filter(function(a){return a.vb;}).forEach(function(a){
+    for(const g of rbParDate(libres(B).filter(function(b){return compatibles(a,b)&&rbJours(a.date,b.date)<=RB_FENETRE_GROUPE;}))){
+      const s=rbSousEnsemble(g,a.montant);
+      if(s){ lier('groupe',[a],s); break; }
+    }
+  });
+  // 3. Part K45 notée dans la feuille Fiangonana
+  libres(A).forEach(function(a){
+    const b=libres(K).find(function(x){return compatibles(a,x)&&x.montant===a.montant&&rbJours(a.date,x.date)<=RB_FENETRE_K45;});
+    if(b) lier('k45',[a],[b]);
+  });
+  // Appariements restants : du plus proche au moins proche
+  const apparier=function(statut,test,score){
+    const paires=[];
+    libres(A).forEach(function(a){ libres(B).forEach(function(b){ if(compatibles(a,b)&&test(a,b)) paires.push({a:a,b:b,s:score(a,b)}); }); });
+    paires.sort(function(p,q){return (p.s-q.s)||(p.a.ligne-q.a.ligne);});
+    paires.forEach(function(p){ if(!p.a.pris&&!p.b.pris) lier(statut,[p.a],[p.b]); });
+  };
+  // 4. Même montant, autre date
+  apparier('date',function(a,b){return a.montant===b.montant&&rbJours(a.date,b.date)<=RB_FENETRE_DATE;},function(a,b){return rbJours(a.date,b.date);});
+  // 5. Montant proche, même période
+  apparier('montant',function(a,b){return Math.abs(a.montant-b.montant)<=RB_ECART_MONTANT&&rbJours(a.date,b.date)<=RB_FENETRE_MONTANT;},function(a,b){return Math.abs(a.montant-b.montant);});
+  libres(A).forEach(function(a){ res.push({statut:'ando',a:[a],b:[]}); });
+  libres(B).forEach(function(b){ res.push({statut:'appli',a:[],b:[b]}); });
+  res.forEach(function(r){
+    const x=r.a[0]||r.b[0];
+    r.date=(r.a[0]||r.b[0]).date;
+    r.cle=[livre,r.statut,x.date,x.sens,rbSomme(r.a)||rbSomme(r.b)].join('|');
+    const nb=function(l){return l.reduce(function(t,y){return t+rbNet(y);},0);};
+    r.delta=r.statut==='k45'?nb(r.a):nb(r.a)-nb(r.b);
+  });
+  res.sort(function(p,q){return p.date.localeCompare(q.date);});
+  // Défauts du fichier, sur la période
+  const anomalies=[]; let run=null, dernier=null;
+  lu.lignes.forEach(function(l){
+    if(l.date<debut) return;
+    if(l.defaut==='annee') anomalies.push('Ligne '+l.ligne+' : année fausse ('+rbDateBrute(l.brut)+'), lue comme '+l.date.slice(0,4)+' — « '+l.lib+' ».');
+    if(l.defaut==='sans') anomalies.push('Ligne '+l.ligne+' : pas de date — « '+l.lib+' ».');
+    if(l.defaut==='texte') anomalies.push('Ligne '+l.ligne+' : date saisie comme du texte (« '+l.brut+' »).');
+    if(l.sisa===null){ anomalies.push('Ligne '+l.ligne+' : pas de solde dans la colonne SISA — « '+l.lib+' » (formule manquante ?).'); return; }
+    if(run!==null&&run+l.e-l.s!==l.sisa) anomalies.push('Ligne '+l.ligne+' : le solde ne suit pas la ligne précédente (attendu '+fmt(run+l.e-l.s)+', affiché '+fmt(l.sisa)+').');
+    run=l.sisa; dernier=l.sisa;
+  });
+  if(lu.solde!==null&&dernier!==null&&dernier!==lu.solde) anomalies.push('La dernière ligne de la colonne SISA affiche '+fmt(dernier)+' F, l\'en-tête « SISA ESPECES » '+fmt(lu.solde)+' F.');
+  let soldeAppli=init;
+  gl.forEach(function(e){ if(caisse(e)&&(e.date||'')<=fin) soldeAppli+=(e.es==='E'?1:-1)*(Number(e.montant)||0); });
+  const ecart=lu.solde===null?null:lu.solde-soldeAppli;
+  const explique=res.reduce(function(t,r){return t+r.delta;},0);
+  return {livre:livre,debut:debut,fin:fin,res:res,anomalies:anomalies,soldeAndo:lu.solde,soldeAppli:soldeAppli,ecart:ecart,explique:explique,
+    ref:ecartRef||0,reste:ecart===null?null:ecart-explique-(ecartRef||0),apres:apres};
+}
+function rbDateBrute(b){
+  if(typeof b!=='number') return String(b);
+  const d=rbDateIso(b); return d?fmtDateFr(d):String(b);
+}
+
+function rbJourSuivant(iso){ return new Date(Date.parse(iso)+86400000).toISOString().slice(0,10); }
+function rbDebutDe(livre){ const e=RB_ETAT[livre]; return e&&e.dateValidee?rbJourSuivant(e.dateValidee):RB_DEBUT_DEFAUT; }
+async function rbChargerEtat(){
+  if(!window._db||!window._fs) return;
+  try{
+    const snap=await window._fs.getDoc(window._fs.doc(window._db,'parametres','rapprochement'));
+    RB_ETAT=snap.exists()?snap.data():{};
+  }catch(e){ console.log('Rapprochement :',e.message); }
+  rbAfficherEtat();
+}
+async function rbEcrireEtat(){
+  await window._fs.setDoc(window._fs.doc(window._db,'parametres','rapprochement'),RB_ETAT);
+}
+function rbAfficherEtat(){
+  const el=document.getElementById('rb-etat'); if(!el) return;
+  el.innerHTML=['fiang','anj'].map(function(l){
+    const e=RB_ETAT[l];
+    return '<div>'+RB_NOMS[l]+' : '+(e&&e.dateValidee?'validé jusqu\'au <b>'+esc(fmtDateFr(e.dateValidee))+'</b> par '+esc(e.par||'')+' (écart reporté : '+fmt(e.ecartValide||0)+' F)':'<b>jamais validé</b>')+'</div>';
+  }).join('');
+}
+
+async function rbLireFichier(input){
+  const file=input.files&&input.files[0]; input.value='';
+  if(!file) return;
+  const zone=document.getElementById('rb-zone');
+  zone.innerHTML='<div class="bv-info">⏳ Lecture du fichier…</div>';
+  try{
+    if(typeof XLSX==='undefined') throw new Error('outil Excel non chargé, vérifie la connexion');
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+    const lu={};
+    Object.keys(RB_FEUILLES).forEach(function(l){
+      const nom=wb.SheetNames.find(function(n){return rbNorm(n)===RB_FEUILLES[l];});
+      if(!nom) throw new Error('onglet « '+RB_FEUILLES[l]+' » introuvable');
+      lu[l]=rbLireFeuille(wb.Sheets[nom]);
+    });
+    await rbChargerEtat();
+    await chargerTout();
+    RB={nom:file.name,lu:lu,debut:{fiang:rbDebutDe('fiang'),anj:rbDebutDe('anj')}};
+    rbCalculer();
+  }catch(e){ RB=null; zone.innerHTML='<div class="bv-alerte">❌ Fichier illisible : '+esc(e.message)+'</div>'; }
+}
+function rbCalculer(){
+  if(!RB) return;
+  RB.res={};
+  ['fiang','anj'].forEach(function(l){
+    const init=parseFloat(document.getElementById(l+'-init-caisse')?.value)||0;
+    const etat=RB_ETAT[l];
+    const ref=etat&&etat.dateValidee&&RB.debut[l]===rbJourSuivant(etat.dateValidee)?etat.ecartValide:0;
+    RB.res[l]=rbComparer(l,RB.lu[l],GL[l]||[],l==='fiang'?(GL.k45||[]):[],init,RB.debut[l],ref);
+  });
+  rbAfficher();
+}
+function rbChangerDebut(l,v){ if(!RB||!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; RB.debut[l]=v; rbCalculer(); }
+
+function rbMontantHtml(x){ return '<span class="m" style="color:'+(x.sens==='E'?'var(--vert)':'var(--rouge)')+'">'+(x.sens==='E'?'+':'−')+fmt(x.montant)+' F</span>'; }
+function rbTexteAppli(b){
+  const rub=b.rub&&b.rub!=='VB'&&b.rub!==b.lib?libelleRubrique(b.rub):'';
+  return (rub?rub+' · ':'')+b.lib+(b.com?' ('+b.com+')':'');
+}
+function rbCote(l,nom,txt){
+  return l.map(function(x){ return '<div class="bv-ligne"><span style="min-width:44px;color:var(--texte2)">'+nom+'</span>'+esc(fmtDateFr(x.date))+' · '+esc(txt(x))+rbMontantHtml(x)+'</div>'; }).join('');
+}
+function rbBloc(r,impression){
+  const connu=(RB_ETAT.connus||{})[r.cle];
+  return '<div style="padding:6px 0;border-bottom:2px solid var(--gris2)">'
+    +rbCote(r.a,'Ando',function(x){return x.lib;})
+    +rbCote(r.b,r.statut==='k45'?'K45':'Appli',rbTexteAppli)
+    +(r.delta?'<div class="note" style="margin-top:2px">Effet sur l\'écart : '+(r.delta>0?'+':'−')+fmt(Math.abs(r.delta))+' F</div>':'')
+    +(connu?'<div class="note" style="margin-top:2px">🔕 '+esc(connu.note||'Écart connu')+'</div>':'')
+    +(impression?'':'<div style="margin-top:4px">'+(connu
+      ?'<button type="button" class="btn btn-gris" style="width:auto;padding:3px 8px;font-size:11px" onclick="rbRetirerConnu('+jsArg(r.cle)+')">Remettre dans les écarts à traiter</button>'
+      :'<button type="button" class="btn btn-gris" style="width:auto;padding:3px 8px;font-size:11px" onclick="rbMarquerConnu('+jsArg(r.cle)+')">🔕 Écart connu…</button>')+'</div>')
+    +'</div>';
+}
+function rbHtmlLivre(l,impression){
+  const R=RB.res[l], connus=RB_ETAT.connus||{};
+  const voir=function(s){ return R.res.filter(function(r){return r.statut===s&&!connus[r.cle];}); };
+  const sect=function(titre,items,ouvert){
+    if(!items.length) return '';
+    const corps=items.map(function(r){return rbBloc(r,impression);}).join('');
+    if(impression) return '<h4>'+titre+' ('+items.length+')</h4>'+corps;
+    return '<details'+(ouvert?' open':'')+' style="margin-top:8px"><summary style="cursor:pointer;font-weight:600">'+titre+' ('+items.length+')</summary>'+corps+'</details>';
+  };
+  const ok=R.res.filter(function(r){return r.statut==='ok'||r.statut==='groupe'||r.statut==='k45';});
+  const known=R.res.filter(function(r){return r.statut!=='ok'&&connus[r.cle];});
+  const lig=function(t,v,g){ return '<div class="bv-ligne"'+(g?' style="font-weight:700"':'')+'>'+t+'<span class="m">'+v+'</span></div>'; };
+  let h='<div class="bv-bloc"><h4>'+RB_NOMS[l]+' — du '+esc(fmtDateFr(R.debut))+' au '+esc(fmtDateFr(R.fin))+'</h4>';
+  if(!impression) h+='<div class="ch"><label>📅 Comparer à partir du</label><input type="date" value="'+esc(R.debut)+'" onchange="rbChangerDebut('+jsArg(l)+',this.value)"></div>';
+  h+=lig('Solde caisse chez Ando',R.soldeAndo===null?'introuvable':fmt(R.soldeAndo)+' F')+lig('Solde caisse dans l\'appli au '+esc(fmtDateFr(R.fin)),fmt(R.soldeAppli)+' F');
+  if(R.ecart!==null){
+    h+=lig('Écart',fmt(R.ecart)+' F',true)+lig('Expliqué par les lignes de la période',fmt(R.explique)+' F');
+    if(R.ref) h+=lig('Écart reporté du dernier rapprochement validé',fmt(R.ref)+' F');
+    h+=lig(R.reste===0?'✅ Reste à expliquer':'⚠️ Reste à expliquer'+(R.ref?'':' (solde de départ ou période antérieure)'),fmt(R.reste)+' F',true);
+  }
+  if(R.apres) h+='<div class="note" style="margin-top:6px">'+R.apres+' ligne(s) de l\'appli datée(s) après le '+esc(fmtDateFr(R.fin))+' ne sont pas comparées (pas encore dans le fichier).</div>';
+  if(R.anomalies.length) h+='<div class="bv-attention">⚠️ <b>À corriger dans le fichier d\'Ando :</b><br>'+R.anomalies.map(esc).join('<br>')+'</div>';
+  h+=sect('💰 Montants différents',voir('montant'),true)
+    +sect('❓ Seulement chez Ando',voir('ando'),true)
+    +sect('❓ Seulement dans l\'appli',voir('appli'),true)
+    +sect('📅 Même montant, date différente',voir('date'),false)
+    +sect('🔕 Écarts connus',known,false)
+    +(impression?'':sect('✅ Concordantes',ok,false));
+  if(impression) h+='<p>✅ Concordantes : '+ok.length+'</p>';
+  return h+'</div>';
+}
+function rbAfficher(){
+  if(!RB) return;
+  const zone=document.getElementById('rb-zone'); if(!zone) return;
+  zone.innerHTML='<div class="note" style="margin-top:8px">Fichier : '+esc(RB.nom)+'</div>'
+    +rbHtmlLivre('fiang')+rbHtmlLivre('anj')
+    +'<div class="bv-actions"><button type="button" class="btn btn-gris" onclick="rbImprimer()">🖨️ Imprimer / PDF</button>'
+    +'<button type="button" class="btn bv" onclick="rbValider()">✅ Valider ce rapprochement</button></div>';
+}
+async function rbMarquerConnu(cle){
+  const note=prompt('Explication de cet écart (elle sera gardée) :');
+  if(note===null) return;
+  if(!note.trim()){ alert('L\'explication est obligatoire.'); return; }
+  const avant=RB_ETAT.connus;
+  RB_ETAT.connus=Object.assign({},avant||{},{[cle]:{note:note.trim(),par:emailConnecte(),at:new Date().toISOString()}});
+  try{ await rbEcrireEtat(); }catch(e){ RB_ETAT.connus=avant; alert('Non enregistré : '+e.message); return; }
+  rbAfficher();
+}
+async function rbRetirerConnu(cle){
+  const avant=RB_ETAT.connus, copie=Object.assign({},avant||{});
+  delete copie[cle]; RB_ETAT.connus=copie;
+  try{ await rbEcrireEtat(); }catch(e){ RB_ETAT.connus=avant; alert('Non enregistré : '+e.message); return; }
+  rbAfficher();
+}
+async function rbValider(){
+  if(!RB) return;
+  const connus=RB_ETAT.connus||{};
+  const resume=['fiang','anj'].map(function(l){
+    const R=RB.res[l], n=R.res.filter(function(r){return ['ando','appli','montant'].indexOf(r.statut)>=0&&!connus[r.cle];}).length;
+    return RB_NOMS[l]+' jusqu\'au '+fmtDateFr(R.fin)+' : écart '+fmt(R.ecart)+' F, '+n+' écart(s) non traité(s), reste à expliquer '+fmt(R.reste)+' F';
+  }).join('\n');
+  if(!confirm('Valider ce rapprochement ?\n\n'+resume+'\n\nLe prochain repartira après ces dates, avec cet écart reporté.')) return;
+  const avant=Object.assign({},RB_ETAT), nom=(ROLES_CONFIG[emailConnecte()]||{}).nom||emailConnecte();
+  ['fiang','anj'].forEach(function(l){
+    const R=RB.res[l];
+    if(R.ecart===null) return;
+    RB_ETAT[l]={dateValidee:R.fin,ecartValide:R.ecart,par:nom,at:new Date().toISOString()};
+  });
+  try{ await rbEcrireEtat(); }catch(e){ RB_ETAT=avant; alert('Non enregistré : '+e.message); return; }
+  rbAfficherEtat();
+  RB.debut={fiang:rbDebutDe('fiang'),anj:rbDebutDe('anj')};
+  rbCalculer();
+  alert('✅ Rapprochement validé.');
+}
+function rbImprimer(){
+  if(!RB) return;
+  const styles=getComputedStyle(document.documentElement);
+  const vars=['--bleu','--vert','--rouge','--gris1','--gris2','--texte2'].map(function(v){return v+':'+styles.getPropertyValue(v);}).join(';');
+  const html='<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapprochement caisse FKMA</title><style>:root{'+vars+'}'
+    +'body{font:12px Arial,sans-serif;color:#222}h1{font-size:16px}h4{font-size:12.5px;margin:12px 0 4px;color:var(--bleu)}'
+    +'.bv-bloc{margin-top:12px}.bv-ligne{display:flex;gap:8px;padding:2px 0}.bv-ligne .m{margin-left:auto;font-weight:600;white-space:nowrap}'
+    +'.note{color:#555;font-size:11px}.bv-attention{background:#fff5e6;padding:6px;margin-top:6px}</style></head><body>'
+    +'<h1>Rapprochement caisse : brouillard d\'Ando ↔ Grand Livre</h1><p>Fichier : '+esc(RB.nom)+' · Édité le '+esc(fmtDateFr(new Date().toISOString().slice(0,10)))+'</p>'
+    +rbHtmlLivre('fiang',true)+rbHtmlLivre('anj',true)+'</body></html>';
+  const f=document.createElement('iframe');
+  f.style.cssText='position:fixed;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  const d=f.contentWindow.document; d.open(); d.write(html); d.close();
+  setTimeout(function(){ f.contentWindow.focus(); f.contentWindow.print(); setTimeout(function(){f.remove();},60000); },300);
 }
 
 // ══════════════════════════════════════════════════════════════
