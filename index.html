@@ -1759,6 +1759,7 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
  <button id="suivi-toggle-valopy" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('valopy')">▾ Réduire</button>
  </div>
  <div id="suivi-liste-valopy"></div>
+ <button class="btn btn-excel btn-full" onclick="exporterExcelValopy()" style="margin-top:8px"><span>📊</span> Exporter Excel — rapport mois + année</button>
  </div>
 
  <div class="card">
@@ -4516,6 +4517,101 @@ function repartitionValopy(ym){
     return {date:h.date,total:h.total||0,nb:v.length,detail:detail,somme:somme};
   });
   return {parMontant:parMontant,nbTotal:nbTotal,montantValopy:montantValopy,totalBilletage:totalBilletage,jours:jours,joursSansComptage:joursSansComptage};
+}
+// Rapport Excel sur les montants des enveloppes : le mois choisi dans le Suivi + toute son année.
+// Les pourcentages et moyennes ne portent que sur les dimanches où le comptage a été fait.
+function formatColonnes(ws,formats,premiereLigne){
+  const plage=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=premiereLigne;R<=plage.e.r;R++){
+    Object.keys(formats).forEach(function(C){
+      const c=ws[XLSX.utils.encode_cell({r:R,c:Number(C)})];
+      if(c&&c.t==='n') c.z=formats[C];
+    });
+  }
+}
+function montantLePlusFrequent(parMontant){
+  let meilleur='', max=0;
+  Object.keys(parMontant).map(Number).sort(function(a,b){return b-a;}).forEach(function(m){
+    if(parMontant[m]>max){ max=parMontant[m]; meilleur=m; }
+  });
+  return meilleur;
+}
+async function exporterExcelValopy(){
+  if(!aAccesSuiviAnj()){ alert("Le suivi des paiements est réservé au secrétaire et aux diacres."); return; }
+  await chargerAnjarako(); // chiffres à jour (reste sur la copie de l'appareil si pas de connexion)
+  const ym=document.getElementById('suivi-mois')?.value||moisActuel();
+  const annee=ym.slice(0,4);
+  const mois=MOIS_FR.map(function(nom,i){
+    const y=annee+'-'+String(i+1).padStart(2,'0');
+    return {nom:nom,ym:y,r:repartitionValopy(y)};
+  });
+  const jours=[]; mois.forEach(function(x){ jours.push.apply(jours,x.r.jours); });
+  if(!jours.some(function(j){return j.nb>0;})){ alert('Aucun comptage des montants enregistré pour '+annee+'.'); return; }
+  const tousMontants={};
+  mois.forEach(function(x){ Object.keys(x.r.parMontant).forEach(function(m){ tousMontants[m]=(tousMontants[m]||0)+x.r.parMontant[m]; }); });
+  const montants=Object.keys(tousMontants).map(Number).sort(function(a,b){return b-a;});
+  const sommer=function(arr,f){return arr.reduce(function(a,x){return a+f(x);},0);};
+  const wb=XLSX.utils.book_new();
+  const F='#,##0', P='0.0%';
+
+  // ── Synthèse de l'année, mois par mois ──
+  const rowsSyn=[['RAPPORT DES MONTANTS D\'ENVELOPPES — ANJARAKO '+annee],[],
+    ['Mois','Dimanches saisis','Dimanches comptés','Enveloppes comptées','Total enveloppes (F)','Billetage des dimanches comptés (F)','Écart (F)','Montant moyen (F)','Montant le plus fréquent (F)']];
+  mois.forEach(function(x){
+    const comptes=x.r.jours.filter(function(j){return j.nb>0;});
+    const bil=sommer(comptes,function(j){return j.total;});
+    rowsSyn.push([x.nom,x.r.jours.length,comptes.length,x.r.nbTotal,x.r.montantValopy,bil,bil-x.r.montantValopy,
+      x.r.nbTotal?Math.round(x.r.montantValopy/x.r.nbTotal):'',montantLePlusFrequent(x.r.parMontant)]);
+  });
+  const comptesAn=jours.filter(function(j){return j.nb>0;});
+  const nbAn=sommer(comptesAn,function(j){return j.nb;}), sommeAn=sommer(comptesAn,function(j){return j.somme;}), bilAn=sommer(comptesAn,function(j){return j.total;});
+  rowsSyn.push(['TOTAL '+annee,jours.length,comptesAn.length,nbAn,sommeAn,bilAn,bilAn-sommeAn,nbAn?Math.round(sommeAn/nbAn):'',montantLePlusFrequent(tousMontants)]);
+  const wsSyn=XLSX.utils.aoa_to_sheet(rowsSyn);
+  wsSyn['!cols']=[{wch:14},{wch:10},{wch:10},{wch:12},{wch:16},{wch:18},{wch:12},{wch:14},{wch:16}];
+  formatColonnes(wsSyn,{4:F,5:F,6:F,7:F,8:F},3);
+  XLSX.utils.book_append_sheet(wb,wsSyn,'Synthèse '+annee);
+
+  // ── Nombre d'enveloppes par montant et par mois ──
+  const rowsAn=[['Montant (F)'].concat(MOIS_FR.map(function(m){return m.substring(0,3);}),['Total enveloppes','% enveloppes','Total (F)','% du montant'])];
+  montants.forEach(function(m){
+    const nb=tousMontants[m];
+    rowsAn.push([m].concat(mois.map(function(x){return x.r.parMontant[m]||'';}),[nb,nbAn?nb/nbAn:0,m*nb,sommeAn?m*nb/sommeAn:0]));
+  });
+  rowsAn.push(['TOTAL'].concat(mois.map(function(x){return x.r.nbTotal||'';}),[nbAn,1,sommeAn,1]));
+  const wsAn=XLSX.utils.aoa_to_sheet(rowsAn);
+  wsAn['!cols']=[{wch:12}].concat(MOIS_FR.map(function(){return{wch:6};}),[{wch:12},{wch:11},{wch:14},{wch:11}]);
+  formatColonnes(wsAn,{0:F,14:P,15:F,16:P},1);
+  XLSX.utils.book_append_sheet(wb,wsAn,'Par montant '+annee);
+
+  // ── Le mois choisi ──
+  const rm=repartitionValopy(ym);
+  const mMois=Object.keys(rm.parMontant).map(Number).sort(function(a,b){return b-a;});
+  const rowsMois=[['Montant (F)','Enveloppes','% enveloppes','Sous-total (F)','% du montant']];
+  mMois.forEach(function(m){
+    const nb=rm.parMontant[m];
+    rowsMois.push([m,nb,rm.nbTotal?nb/rm.nbTotal:0,m*nb,rm.montantValopy?m*nb/rm.montantValopy:0]);
+  });
+  rowsMois.push(['TOTAL',rm.nbTotal,1,rm.montantValopy,1]);
+  const wsMois=XLSX.utils.aoa_to_sheet(rowsMois);
+  wsMois['!cols']=[{wch:12},{wch:11},{wch:12},{wch:14},{wch:12}];
+  formatColonnes(wsMois,{0:F,2:P,3:F,4:P},1);
+  XLSX.utils.book_append_sheet(wb,wsMois,moisLabel(ym).replace(' ','_').substring(0,31));
+
+  // ── Détail par dimanche ──
+  const rowsDim=[['Date'].concat(montants,['Enveloppes','Total enveloppes (F)','Billetage (F)','Écart (F)','Comptage'])];
+  jours.forEach(function(j){
+    rowsDim.push([fmtDateFr(j.date)].concat(montants.map(function(m){return j.detail[m]||'';}),
+      [j.nb,j.somme,j.total,j.nb?j.total-j.somme:'',j.nb?'Oui':'Non fait']));
+  });
+  const wsDim=XLSX.utils.aoa_to_sheet(rowsDim);
+  wsDim['!cols']=[{wch:12}].concat(montants.map(function(){return{wch:8};}),[{wch:11},{wch:14},{wch:13},{wch:11},{wch:10}]);
+  const c0=montants.length+1, fDim={};
+  fDim[c0+1]=F; fDim[c0+2]=F; fDim[c0+3]=F;
+  formatColonnes(wsDim,fDim,1);
+  montants.forEach(function(m,i){ const c=wsDim[XLSX.utils.encode_cell({r:0,c:i+1})]; if(c) c.z=F; });
+  XLSX.utils.book_append_sheet(wb,wsDim,'Par dimanche '+annee);
+
+  XLSX.writeFile(wb,'rapport_enveloppes_anjarako_'+ym+'.xlsx');
 }
 function ligneMontants(detail){
   return Object.keys(detail).map(Number).sort(function(a,b){return b-a;})
