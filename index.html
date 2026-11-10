@@ -1336,6 +1336,18 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
   .op-item{transition:transform .2s var(--doux),box-shadow .2s;}
   .op-item:hover{transform:translateX(3px);box-shadow:var(--ombre1);}
 }
+
+/* ── Recherche et filtres des listes ── */
+.filtre-barre{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;padding:8px;background:var(--gris1);border-radius:8px;}
+.filtre-barre.actif{outline:1.5px solid var(--bleu);}
+.filtre-barre .f-txt{width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:8px 10px;font-size:14px;font-family:inherit;background:#fff;}
+.filtre-barre .f-ligne{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.filtre-barre select,.filtre-barre input[type=date]{border:1.5px solid var(--gris2);border-radius:7px;padding:5px 6px;font-size:12px;font-family:inherit;background:#fff;}
+.filtre-barre select{flex:1 1 160px;min-width:0;}
+.filtre-barre label{font-size:12px;color:var(--texte2);display:flex;align-items:center;gap:4px;}
+.filtre-barre .f-eff{border:1.5px solid var(--gris2);background:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;color:var(--rouge);font-size:13px;}
+.filtre-barre .f-resume{font-size:12px;color:var(--bleu);}
+@media print{.filtre-barre{display:none !important;}}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1785,6 +1797,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  </div>
  <div class="card">
  <div class="card-titre" style="color:var(--rouge)">📋 Historique — Fiangonana</div>
+ <div class="filtre-barre" id="filtre-vf"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('vf')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('vf')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('vf')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('vf')"></label><button type="button" class="f-eff" onclick="filtreEffacer('vf')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="vf-liste"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div></div>
  </div>
  <div class="btns">
@@ -1842,6 +1855,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  </div>
  <div class="card">
  <div class="card-titre" style="color:var(--orange)">📋 Historique — Anjarako</div>
+ <div class="filtre-barre" id="filtre-va"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('va')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('va')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('va')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('va')"></label><button type="button" class="f-eff" onclick="filtreEffacer('va')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="va-liste"><div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune sortie</div></div>
  </div>
  <div class="btns">
@@ -1873,17 +1887,17 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  <div class="card">
  <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
  <span>✅ Ont payé (<span id="suivi-cnt-payes">0</span>)</span>
- <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▾ Réduire</button>
+ <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▸ Afficher</button>
  </div>
- <div id="suivi-liste-payes"></div>
+ <div id="suivi-liste-payes" style="display:none"></div>
  </div>
 
  <div class="card">
  <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center;color:var(--rouge)">
  <span>❌ N'ont pas payé (<span id="suivi-cnt-nonpayes">0</span>)</span>
- <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▾ Réduire</button>
+ <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▸ Afficher</button>
  </div>
- <div id="suivi-liste-nonpayes"></div>
+ <div id="suivi-liste-nonpayes" style="display:none"></div>
  </div>
 
  <div class="btns">
@@ -1907,7 +1921,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  <div class="card">
  <div class="card-titre" style="display:flex;justify-content:space-between;align-items:center">
  <span>👥 Gestion des membres (<span id="suivi-cnt-total">0</span>)</span>
- <button id="suivi-toggle-membres" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('membres')">▾ Réduire</button>
+ <button id="suivi-toggle-membres" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('membres')">▸ Afficher</button>
  </div>
  <div class="grid2" style="margin-bottom:9px">
  <div class="champ"><label>🔢 N° carte</label><input type="number" id="mb-num" placeholder="Ex: 172" inputmode="numeric"></div>
@@ -1915,7 +1929,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  </div>
  <button class="btn btn-vert" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter un membre</button>
  <div class="note" style="margin-top:9px;margin-bottom:0">💡 Pour importer une liste complète depuis un fichier Excel, demandez à Claude — il préparera un fichier JSON prêt à coller ici.</div>
- <div style="margin-top:10px" id="suivi-liste-membres"></div>
+ <div style="margin-top:10px;display:none" id="suivi-liste-membres"></div>
  </div>
 
  </div><!-- /anj-view-suivi -->
@@ -2232,6 +2246,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  <!-- Historique -->
  <div class="card">
  <div class="ctit">📋 Livre de caisse — Fiangonana</div>
+ <div class="filtre-barre" id="filtre-fiang"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('fiang')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('fiang')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('fiang')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('fiang')"></label><button type="button" class="f-eff" onclick="filtreEffacer('fiang')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="fiang-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -2263,6 +2278,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 
  <div class="card">
  <div class="ctit">📋 Livre Anjarako</div>
+ <div class="filtre-barre" id="filtre-anj"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('anj')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('anj')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('anj')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('anj')"></label><button type="button" class="f-eff" onclick="filtreEffacer('anj')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="anj-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -2345,6 +2361,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 
  <div class="card">
  <div class="ctit">📋 Historique K45</div>
+ <div class="filtre-barre" id="filtre-k45"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('k45')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('k45')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('k45')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('k45')"></label><button type="button" class="f-eff" onclick="filtreEffacer('k45')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="k45-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -3092,7 +3109,7 @@ function dyAGroupe(l,g){
   const re=new RegExp('(^|[^A-Za-z.])'+g.replace(/\./g,'\\.')+'($|[^A-Za-z])');
   return re.test(l[1])||re.test(l[2]);
 }
-function dySansAccent(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,"'");}
+function dySansAccent(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,"'");}
 
 function dyOuvrir(){
   if(dyMois<0){
@@ -3467,13 +3484,15 @@ function urlSure(u){return esc(lienSur(u));}
 // Pris dans les listes du formulaire (dépenses Fiangonana, opérations bancaires) ; sinon le code tel quel.
 function libelleRubrique(code){
   if(!code) return '';
-  const sels=['vf-cat','ob-nature'];
+  const sels=['vf-cat','ob-nature','k45-rubrique'];
   for(let i=0;i<sels.length;i++){
     const sel=document.getElementById(sels[i]); if(!sel) continue;
     const o=Array.prototype.find.call(sel.options,function(x){return x.value===code;});
-    if(o&&o.value) return sels[i]==='ob-nature'?code+' — '+o.text:o.text;
+    if(o&&o.value) return sels[i]==='vf-cat'?o.text:code+' — '+o.text;
   }
-  return code;
+  // Rubriques des écritures automatiques (pas dans les listes du formulaire)
+  const AUTO={'B1.1':'Rakitra','B2':'Raki-pisaorana','ANJ-E1':'Anjarako voaray','VB':'Versement banque','K45-INFO':'Raki-pandraisana (ancien)'};
+  return AUTO[code]?code+' — '+AUTO[code]:code;
 }
 function fmt(n){return Number(n||0).toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0');}
 function moisLabel(ym){if(!ym)return'—';const p=ym.split('-');return MOIS_FR[parseInt(p[1])-1]+' '+p[0];}
@@ -4783,13 +4802,13 @@ async function lireFicheAnjPhoto(input){
 }
 
 // Comparaison souple d'un nom écrit à la main avec le nom enregistré pour la carte
-function normNom(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z]/g,''); }
+function normNom(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z]/g,''); }
 function nomsCompatibles(ecrit,enregistre){
   const a=normNom(ecrit), b=normNom(enregistre);
   if(!a||!b) return true;                       // rien à comparer
   if(b.indexOf(a.slice(0,5))>=0||a.indexOf(b.slice(0,5))>=0) return true;
   // mots de 4 lettres ou plus en commun (ex. le prénom)
-  const mots=String(ecrit||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').split(/[^A-Z]+/).filter(function(m){return m.length>=4;});
+  const mots=String(ecrit||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(/[^A-Z]+/).filter(function(m){return m.length>=4;});
   return mots.some(function(m){return b.indexOf(m.slice(0,4))>=0;});
 }
 
@@ -5028,7 +5047,7 @@ function montantTotalMois(ym){
   return tot;
 }
 
-let suiviCollapsed={payes:false,nonpayes:false};
+let suiviCollapsed={payes:true,nonpayes:true,membres:true}; // listes de noms repliées par défaut
 function toggleSuiviListe(which){
   suiviCollapsed[which]=!suiviCollapsed[which];
   const listEl=document.getElementById('suivi-liste-'+which);
@@ -5663,7 +5682,12 @@ function afficherDepenses(livre){
   if(tEl)tEl.innerHTML=`${fmt(total)} <span>FCFA</span>`;
   if(!lEl)return;
   if(!all.length){lEl.innerHTML='<div style="text-align:center;color:var(--texte2);padding:14px;font-size:13px">Aucune dépense</div>';return;}
-  lEl.innerHTML=all.map(d=>`<div class="depense-item${correctionDep&&correctionDep.id===d.id?' en-cours':''}">
+  const filtre=lireFiltre(p);
+  remplirRubriquesFiltre(p,all.map(d=>d.cat));
+  const aff=all.filter(d=>passeFiltre(filtre,[d.date,fmtDateFr(d.date),d.cat,libelleRubrique(d.cat),d.desc,d.piece,d.page,d.auteur,fmt(d.montant)],d.montant,d.cat,d.date));
+  afficherResumeFiltre(p,filtre.actif?('<b>'+aff.length+'</b> dépense(s) sur '+all.length+' · total <b>'+fmt(aff.reduce((a,d)=>a+(d.montant||0),0))+' F</b>'):'');
+  if(!aff.length){lEl.innerHTML='<div class="vide">Aucune dépense ne correspond à la recherche.</div>';return;}
+  lEl.innerHTML=aff.map(d=>`<div class="depense-item${correctionDep&&correctionDep.id===d.id?' en-cours':''}">
     <div class="depense-top">
       <span style="font-size:11px;color:var(--texte2)">${esc(d.date)}</span>
       <span class="depense-cat">${esc(libelleRubrique(d.cat)||'—')}</span>
@@ -6754,6 +6778,60 @@ async function chargerTout(){
 }
 
 // ── RENDU LISTE ───────────────────────────────────────────────
+// ── RECHERCHE ET FILTRES DES LISTES (Grand Livre, Vola mivoaka) ──
+// Un seul champ cherche partout (date, libellé, commentaire, n° pièce / OP, rubrique, auteur) et dans le
+// montant (« 600000 » ou « 600 000 »). Le filtre ne change que l'affichage : les soldes restent calculés
+// sur toutes les écritures, et les exports Excel restent complets.
+function sansAccent(s){ return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function lireFiltre(cle){
+  const b=document.getElementById('filtre-'+cle);
+  if(!b) return {actif:false};
+  const txt=sansAccent(b.querySelector('.f-txt').value.trim());
+  const f={txt:txt, chiffres:txt.replace(/[\s  .]/g,''), rub:b.querySelector('.f-rub').value,
+           du:b.querySelector('.f-du').value, au:b.querySelector('.f-au').value};
+  f.numerique=/^\d+$/.test(f.chiffres);
+  f.actif=!!(f.txt||f.rub||f.du||f.au);
+  return f;
+}
+// champs : textes où chercher ; montant : nombre ; rubrique : code ; date : AAAA-MM-JJ
+function passeFiltre(f,champs,montant,rubrique,date){
+  if(!f.actif) return true;
+  if(f.rub && (rubrique||'')!==f.rub) return false;
+  if(f.du && (date||'')<f.du) return false;
+  if(f.au && (date||'')>f.au) return false;
+  if(!f.txt) return true;
+  if(f.numerique && Number(montant)===Number(f.chiffres)) return true;
+  const texte=sansAccent(champs.join(' | '));
+  return texte.indexOf(f.txt)>=0 || (f.numerique && texte.replace(/[\s  ]/g,'').indexOf(f.chiffres)>=0);
+}
+// Remplit la liste des rubriques avec celles réellement utilisées, en gardant le choix en cours
+function remplirRubriquesFiltre(cle,codes){
+  const b=document.getElementById('filtre-'+cle); if(!b) return;
+  const sel=b.querySelector('.f-rub'), courant=sel.value;
+  const uniques=Array.from(new Set(codes.filter(Boolean))).sort();
+  sel.innerHTML='<option value="">Toutes les rubriques</option>'+uniques.map(function(c){
+    return '<option value="'+esc(c)+'">'+esc(libelleRubrique(c))+'</option>';
+  }).join('');
+  if(courant && uniques.indexOf(courant)>=0) sel.value=courant;
+}
+function afficherResumeFiltre(cle,texte){
+  const b=document.getElementById('filtre-'+cle); if(!b) return;
+  const r=b.querySelector('.f-resume');
+  r.innerHTML=texte||''; r.style.display=texte?'':'none';
+  b.classList.toggle('actif',!!texte);
+}
+function filtreChange(cle){
+  if(cle==='vf') afficherDepenses('fiang');
+  else if(cle==='va') afficherDepenses('anj');
+  else renderLivre(cle);
+}
+function filtreEffacer(cle){
+  const b=document.getElementById('filtre-'+cle); if(!b) return;
+  b.querySelectorAll('input').forEach(function(i){ i.value=''; });
+  b.querySelector('.f-rub').value='';
+  filtreChange(cle);
+}
+
 function renderLivre(livre){
   const el=document.getElementById(livre+'-liste');
   if(!el)return;
@@ -6773,13 +6851,19 @@ function renderLivre(livre){
   // Verser en banque : comptables pour Fiangonana / Anjarako ; secrétaire et président des diacres pour K45
   const peutVerser=livre==='k45'?canDelete:canModify;
   const vpr=versementsParRecette(livre);
-  el.innerHTML=list.map(function(e){
+  const filtre=lireFiltre(livre);
+  remplirRubriquesFiltre(livre,list.map(function(e){return e.rubrique;}));
+  let nbAff=0, totE=0, totS=0;
+  const html=list.map(function(e){
     const isE=e.es==='E';
     const src=e.source||'caisse';
     const mnt=e.montant||0;
     if(src==='caisse'||src===livre)soldeCaisse+=(isE?mnt:-mnt);
     else if(src==='banque')soldeBanque+=(isE?mnt:-mnt);
     const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
+    if(!passeFiltre(filtre,[e.date,fmtDateFr(e.date),e.page,e.lettrage,e.numOp,e.rubrique,libelleRubrique(e.rubrique),
+        e.libelle,e.comment,e.piece,e.createdByNom,e.modifiedByNom,fmt(mnt)],mnt,e.rubrique,e.date)) return '';
+    nbAff++; if(isE) totE+=mnt; else totS+=mnt;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
       +'<span class="edate">'+esc(e.date)+(e.page?' · P.'+esc(e.page):'')+(e.lettrage?' · '+esc(e.lettrage):'')+(e.numOp?' · <span style="color:var(--bleu);font-weight:600">'+esc(e.numOp)+'</span>':'')+'</span>'
@@ -6802,6 +6886,8 @@ function renderLivre(livre){
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).reverse().join('');
+  afficherResumeFiltre(livre,filtre.actif?('<b>'+nbAff+'</b> écriture(s) sur '+list.length+' · entrées <b>'+fmt(totE)+' F</b> · sorties <b>'+fmt(totS)+' F</b>'):'');
+  el.innerHTML=html||'<div class="vide">Aucune écriture ne correspond à la recherche.</div>';
 }
 
 
@@ -6886,7 +6972,7 @@ const RB_FEUILLES={fiang:'FIANGONANA',anj:'ANJARAKO'};
 const RB_NOMS={fiang:'📗 Fiangonana',anj:'📘 Anjarako'};
 let RB=null, RB_ETAT={};
 
-function rbNorm(s){ return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toUpperCase(); }
+function rbNorm(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(); }
 function rbNombre(v){
   if(typeof v==='number') return Math.round(v);
   const t=String(v==null?'':v).replace(/[\s  ]/g,'');
