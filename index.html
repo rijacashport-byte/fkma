@@ -1265,6 +1265,77 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
   .dy-g-e.dy-g-hebdo{font-weight:400;color:#888;font-size:11.5px;}
   .dy-grille .dy-p{font-size:9.5px;padding:1px 6px;}
 }
+
+/* ══ REVUE DU DESIGN (10/11/2026) : alignements, puis animations mesurées ══════
+   Uniquement de l'apparence, comme les blocs précédents. */
+/* 1) Boutons gris (photo, fichier, export JSON…) : leur bordure était effacée par une règle .btn
+      écrite plus bas dans la feuille ; ils ressemblaient à du texte simple. */
+.btn.btn-gris{background:#fff;border:1.5px solid var(--gris2);color:var(--texte2);}
+/* 2) Titre « pièce jointe » : même style que les autres titres de champ */
+.piece-champ > label{display:block;font-size:10px;font-weight:600;color:var(--texte2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+/* 3) Sous-onglets de Gestion : icônes sur une même ligne, même quand un libellé prend deux lignes */
+.nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;}
+.nav-btn br{display:none;}
+.nb-ico{font-size:15px;line-height:1.2;display:inline-block;}
+.nav-btn.actif .nb-ico{animation:fkPop .45s var(--ressort);}
+/* 4) Bandeaux de total : plus de trait isolé à droite quand une seule colonne est affichée */
+.subtotaux .st-col{border-right:none;}
+.subtotaux .st-col + .st-col{border-left:1px solid rgba(255,255,255,.2);}
+/* 5) Téléphone : les 6 onglets du Grand Livre étaient coupés (« Fiangonar », « Rapproch ») → 2 rangées */
+@media (max-width:560px){
+  #section-gl > .tabs{flex-wrap:wrap;}
+  #section-gl > .tabs > .tab-btn{flex:1 1 30%;}
+  /* « Prendre une photo » et « Choisir un fichier » côte à côte, à largeur égale */
+  .piece-champ .btn.btn-gris{flex:1 1 0;min-width:0;padding:7px 6px !important;font-size:12.5px;margin-bottom:0;}
+}
+/* 6) Ordinateur : répartition des cartes sur les 2 colonnes */
+@media (min-width:900px){
+  /* Anjarako : fiche papier en pleine largeur ; Collecte | Enveloppes ; Liste | Valopy ; Objectifs en pleine largeur */
+  #anj-view-saisie > #fiche-lecture-card,
+  #anj-view-saisie > .btns{grid-column:1/-1;}
+  #anj-view-saisie > .card:nth-of-type(6){grid-column:auto;}
+  #anj-view-saisie > .card:nth-of-type(7){grid-column:1/-1;}
+  /* Vola mivoaka : le formulaire à gauche sur toute la hauteur ; total, historique et exports à droite */
+  #vola-fiang,#vola-anj{grid-template-rows:auto auto 1fr;}
+  #vf-card,#va-card{grid-column:1;grid-row:1 / span 3;}
+  #vola-fiang > :not(#vf-card),#vola-anj > :not(#va-card){grid-column:2;}
+  /* Rakitra et Journal : les deux cartes d'une même rangée ont la même hauteur */
+  #tab-rakitra,#k45-tab-saisie{align-items:stretch;}
+  #tab-rakitra > .card,#k45-tab-saisie > .card{margin-bottom:0;}
+}
+/* 7) Animations ajoutées (toutes coupées par « réduire les animations » du téléphone, règle plus haut) */
+/* Calendrier : les lignes du mois arrivent en cascade, la grille en fondu — seulement au changement
+   de mois ou de groupe (classe dy-anim), pas à chaque lettre tapée dans la recherche */
+.dy-anim .dy-l{animation:fkMonte .34s var(--doux) backwards;}
+.dy-anim .dy-l:nth-child(2){animation-delay:.03s;}
+.dy-anim .dy-l:nth-child(3){animation-delay:.06s;}
+.dy-anim .dy-l:nth-child(4){animation-delay:.09s;}
+.dy-anim .dy-l:nth-child(5){animation-delay:.12s;}
+.dy-anim .dy-l:nth-child(n+6){animation-delay:.15s;}
+.dy-anim .dy-l:nth-child(n+13){animation:none;}
+.dy-anim .dy-grille{animation:fkMonte .32s var(--doux) backwards;}
+.dy-anim .dy-titre-mois{animation:fkFondu .3s ease backwards;}
+.dy-mois button,.dy-groupes button{transition:background-color .2s,color .2s,border-color .2s,transform .12s;}
+.dy-mois button:active,.dy-groupes button:active{transform:scale(.94);}
+.dy-mois button.actif,.dy-groupes button.actif{animation:fkActif .35s var(--ressort);}
+.dy-l,.dy-g-c,.dy-av{transition:transform .2s var(--doux),box-shadow .2s,background-color .2s;}
+.dy-g-auj .dy-g-n,.dy-l.dy-auj .dy-d{animation:fkClignote 2.5s ease-in-out infinite;}
+/* Bouton « Scanner les cartes », opérations et bordereaux */
+.scan-qr-icone{transition:transform .35s var(--ressort);}
+.btn-scan-qr:active .scan-qr-icone{transform:scale(.9);}
+.op-item,.bv-bloc,.bv-alerte,.bv-info,.bv-attention{animation:fkMonte .32s var(--doux) backwards;}
+.op-item:nth-child(n+13){animation:none;}
+.verse-form{animation:fkDeroule .2s var(--doux);transform-origin:top center;}
+.tab-btn.actif{animation:fkActif .35s var(--ressort);}
+@media (hover:hover) and (pointer:fine){
+  .dy-l:not(.dy-leger):hover{transform:translateX(3px);box-shadow:var(--ombre1);}
+  .dy-g-c:not(.dy-g-hors):hover{background:#fffdf5;}
+  .dy-av:hover{background:#f5f8fc;}
+  .dy-mois button:not(.actif):hover,.dy-groupes button:not(.actif):hover{border-color:var(--vert);color:var(--vert);}
+  .btn-scan-qr:hover .scan-qr-icone{transform:scale(1.08) rotate(-4deg);}
+  .op-item{transition:transform .2s var(--doux),box-shadow .2s;}
+  .op-item:hover{transform:translateX(3px);box-shadow:var(--ombre1);}
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -1326,11 +1397,11 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
  <span class="scan-qr-texte"><b>Scanner les cartes</b><small>QR code de la carte Anjarako</small></span>
 </button>
 <div class="nav-tabs">
- <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)">🙏<br>Rakitra</button>
- <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)">📨<br>Anjarako</button>
- <button class="nav-btn" id="gnav-vola" onclick="showGestTab('vola',this)">💸<br>Vola<br>mivaoka</button>
- <button class="nav-btn" id="gnav-suivi" onclick="showGestTab('suivi',this)" style="display:none">📋<br>Suivi</button>
- <button class="nav-btn" id="gnav-dashboard" onclick="showGestTab('dashboard',this)">📊<br>Dashboard</button>
+ <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)"><span class="nb-ico">🙏</span>Rakitra</button>
+ <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)"><span class="nb-ico">📨</span>Anjarako</button>
+ <button class="nav-btn" id="gnav-vola" onclick="showGestTab('vola',this)"><span class="nb-ico">💸</span>Vola mivoaka</button>
+ <button class="nav-btn" id="gnav-suivi" onclick="showGestTab('suivi',this)" style="display:none"><span class="nb-ico">📋</span>Suivi</button>
+ <button class="nav-btn" id="gnav-dashboard" onclick="showGestTab('dashboard',this)"><span class="nb-ico">📊</span>Dashboard</button>
 </div>
 <div id="tab-rakitra">
 
@@ -3028,14 +3099,14 @@ function dyOuvrir(){
     const n=new Date();
     dyMois=n.getFullYear()===DIARY_ANNEE?n.getMonth():(n.getFullYear()>DIARY_ANNEE?11:0);
   }
-  dyRendre();
+  dyRendre(true);
 }
 function dyChoisirMois(m){
   dyMois=m; dyGroupe='';
   const r=document.getElementById('dy-rech'); if(r) r.value='';
-  dyRendre();
+  dyRendre(true);
 }
-function dyChoisirGroupe(g){dyGroupe=(dyGroupe===g?'':g);dyRendre();}
+function dyChoisirGroupe(g){dyGroupe=(dyGroupe===g?'':g);dyRendre(true);}
 
 function dyLigneHtml(l,auj){
   const d=dyDate(l), js=d.getDay();
@@ -3083,7 +3154,7 @@ function dyNoteHebdo(m){
   return parts.length?'Chaque semaine ce mois-ci — '+parts.join(' · '):'Aucun rendez-vous de semaine (vondrom-bavaka, fianarana soratra masina) inscrit ce mois-ci.';
 }
 
-function dyRendre(){
+function dyRendre(anim){
   const auj=dyAujourdhui();
   // Prochains rendez-vous (hors rendez-vous de chaque semaine)
   const av=document.getElementById('dy-avenir');
@@ -3126,7 +3197,7 @@ function dyRendre(){
     if(!r.lignes.length) h+='<div class="dy-vide">Aucun rendez-vous particulier inscrit ce mois-ci.</div>';
     h+='</div>'+dyGrilleHtml(dyMois,auj);
   }
-  const li=document.getElementById('dy-liste'); if(li) li.innerHTML=h;
+  const li=document.getElementById('dy-liste'); if(li){li.classList.toggle('dy-anim',anim===true);li.innerHTML=h;}
   const bw=document.getElementById('dy-btn-wa'); if(bw) bw.style.display=r.filtre?'none':'';
 }
 
@@ -3372,6 +3443,8 @@ const BILLETS = [{"v": 10000, "color": "#e67e22"}, {"v": 5000, "color": "#8e44ad
 const PIECES  = [{"v": 500, "color": "#f39c12"}, {"v": 200, "color": "#7f8c8d"}, {"v": 100, "color": "#95a5a6"}, {"v": 50, "color": "#bdc3c7"}, {"v": 25, "color": "#aaa"}, {"v": 10, "color": "#ccc"}, {"v": 5, "color": "#ddd"}];
 const DIACRES_CONNUS = ["Ando", "Mahery", "Njato", "Lolona", "Mano", "Yvon Staël", "Pasitera", "Ramatoa", "Rivo", "Patricia", "Nivo", "Leiticia", "Ony", "Rija", "Nathalie"];
 const FAITS_TYPES    = [{"id": "fiarahabana", "label": "Fiarahabana izay vao tonga (accueil nouveaux membres)"}, {"id": "beloma", "label": "Fanaovam-beloma (au revoir / départ)"}, {"id": "fanoloran", "label": "Fanoloran-jaza (présentation enfant)"}, {"id": "batisa", "label": "Batisa (baptême)"}, {"id": "fanambadiana", "label": "Fanambadiana (mariage)"}, {"id": "fanokanana", "label": "Fanokanana (consécration)"}, {"id": "hetsika", "label": "Hetsika manokana (événement spécial)"}, {"id": "autre", "label": "Autre (texte libre)"}];
+// Mois abrégé pour les tableaux : « Juin » et « Juil » entiers (sinon deux fois « Jui »)
+function moisAbr(m){return (m===5||m===6)?MOIS_FR[m].substring(0,4):MOIS_FR[m].substring(0,3);}
 const MOIS_FR        = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
 // ── STOCKAGE ─────────────────────────────────────────────────
@@ -5303,7 +5376,7 @@ function renderChartAnnuel(){
     const nb=membres.filter(function(x){return cartesPayees.has(x.num);}).length;
     const pct=Math.round((nb/membres.length)*100);
     html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-      +'<span style="width:34px;font-size:11px;color:var(--texte2);flex-shrink:0">'+MOIS_FR[m].substring(0,3)+'</span>'
+      +'<span style="width:34px;font-size:11px;color:var(--texte2);flex-shrink:0">'+moisAbr(m)+'</span>'
       +'<div style="flex:1;height:16px;background:var(--gris1);border-radius:8px;overflow:hidden">'
       +'<div style="width:'+pct+'%;height:100%;background:'+(pct>=80?'var(--vert)':pct>=40?'var(--or)':'var(--rouge)')+';border-radius:8px"></div></div>'
       +'<span style="width:38px;font-size:11px;font-weight:600;text-align:right;flex-shrink:0">'+pct+'%</span>'
@@ -6109,7 +6182,7 @@ function renderDashFinances(){
     const r=Tm.rakitra,rp=Tm.rp,a=Tm.anjarako,d=Tm.depenses,solde=Tm.solde;tR+=r;tRP+=rp;tA+=a;tD+=d;
     const tr=document.createElement('tr');
     if(!r&&!a&&!d)tr.style.opacity='.35';
-    tr.innerHTML=`<td><strong>${MOIS_FR[m].substring(0,3)}</strong></td>
+    tr.innerHTML=`<td><strong>${moisAbr(m)}</strong></td>
       <td>${r>0?fmt(r)+' F':'—'}</td><td>${rp>0?fmt(rp)+' F':'—'}</td>
       <td>${a>0?fmt(a)+' F':'—'}</td>
       <td style="color:var(--rouge)">${d>0?'-'+fmt(d)+' F':'—'}</td>
@@ -6118,7 +6191,7 @@ function renderDashFinances(){
   }
   document.getElementById('dash-tfoot-fin').innerHTML=
     `<td>TOTAL</td><td>${fmt(tR)} F</td><td>${fmt(tRP)} F</td><td>${fmt(tA)} F</td>
-     <td style="color:var(--rouge)">-${fmt(tD)} F</td>
+     <td style="color:var(--rouge)">${tD>0?'-':''}${fmt(tD)} F</td>
      <td style="color:${(tR+tRP+tA-tD)>=0?'var(--vert)':'var(--rouge)'}">${fmt(tR+tRP+tA-tD)} F</td>`;
 }
 
@@ -6135,7 +6208,7 @@ function renderDashPresences(){
     const mpand=rows.reduce((a,h)=>a+(h.mpandray||0),0);
     tP+=pres;tC+=nb;tF+=fandr;tM+=mpand;
     const tr=document.createElement('tr');if(!nb)tr.style.opacity='.35';
-    tr.innerHTML=`<td><strong>${MOIS_FR[m].substring(0,3)}</strong>${fandr>0?' 🍷':''}</td>
+    tr.innerHTML=`<td><strong>${moisAbr(m)}</strong>${fandr>0?' 🍷':''}</td>
       <td>${nb||'—'}</td><td>${pres>0?fmt(pres):'—'}</td>
       <td>${nb>0?Math.round(pres/nb):'—'}</td><td>${fandr>0?fandr+'×':'—'}</td><td>${mpand>0?mpand:'—'}</td>`;
     tbody.appendChild(tr);
