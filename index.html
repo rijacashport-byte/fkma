@@ -1244,7 +1244,27 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 .dy-av{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed #dddcd5;font-size:13px;cursor:pointer;}
 .dy-av:last-child{border-bottom:none;}
 .dy-av b{flex:0 0 118px;color:var(--vert);font-size:12px;}
-@media(min-width:900px){#k45-tab-diary{max-width:760px;margin:0 auto;}}
+/* Grille du mois : écran large seulement (sur téléphone, la liste) */
+.dy-grille{display:none;}
+@media(min-width:900px){
+  .dy-liste-mois,.dy-note-mois,.dy-check{display:none;}
+  .dy-mois{grid-template-columns:repeat(12,1fr);}
+  .dy-grille{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#dddcd5;gap:1px;border:1px solid #dddcd5;border-radius:10px;overflow:hidden;margin-bottom:12px;}
+  .dy-g-tete{background:#eaf2f8;color:var(--vert);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;text-align:center;padding:7px 2px;}
+  .dy-g-tete.dy-g-dim{background:var(--vert);color:white;}
+  .dy-g-c{background:white;min-height:104px;padding:6px 7px 8px;}
+  .dy-g-c.dy-g-hors{background:#f4f3ee;}
+  .dy-g-c.dy-g-sam{background:#f7fafc;}
+  .dy-g-c.dy-g-dim{background:#eaf2f8;}
+  .dy-g-c.dy-g-passe>*{opacity:.55;}
+  .dy-g-c.dy-g-auj{box-shadow:inset 0 0 0 2px var(--or);}
+  .dy-g-n{font-size:13px;font-weight:800;color:#666;margin-bottom:4px;}
+  .dy-g-dim .dy-g-n{color:var(--vert);}
+  .dy-g-auj .dy-g-n{color:var(--or);}
+  .dy-g-e{font-size:12.5px;font-weight:600;color:#1e1e1e;line-height:1.3;overflow-wrap:anywhere;}
+  .dy-g-e.dy-g-hebdo{font-weight:400;color:#888;font-size:11.5px;}
+  .dy-grille .dy-p{font-size:9.5px;padding:1px 6px;}
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -3100,12 +3120,48 @@ function dyRendre(){
     if(!r.lignes.length) h+='<div class="dy-vide">Rien ne correspond.</div>';
   }else{
     h+='<div class="dy-titre-mois">'+MOIS_FR[dyMois]+' '+DIARY_ANNEE+'</div>';
-    h+='<div class="dy-hebdo-note">'+dyNoteHebdo(dyMois)+'</div>';
-    h+=r.lignes.map(function(l){return dyLigneHtml(l,auj);}).join('');
+    h+='<div class="dy-hebdo-note dy-note-mois">'+dyNoteHebdo(dyMois)+'</div>';
+    // Téléphone : liste. Ordinateur (écran large) : grille du mois, comme un agenda — le CSS choisit.
+    h+='<div class="dy-liste-mois">'+r.lignes.map(function(l){return dyLigneHtml(l,auj);}).join('');
     if(!r.lignes.length) h+='<div class="dy-vide">Aucun rendez-vous particulier inscrit ce mois-ci.</div>';
+    h+='</div>'+dyGrilleHtml(dyMois,auj);
   }
   const li=document.getElementById('dy-liste'); if(li) li.innerHTML=h;
   const bw=document.getElementById('dy-btn-wa'); if(bw) bw.style.display=r.filtre?'none':'';
+}
+
+// Grille du mois (lundi → dimanche), affichée sur écran large. Toutes les dates du mois y figurent,
+// les rendez-vous de chaque semaine en gris.
+function dyGrilleHtml(m,auj){
+  const parJour={};
+  DIARY_2027.forEach(function(l){if(parseInt(l[0].slice(0,2),10)-1===m) parJour[parseInt(l[0].slice(3),10)]=l;});
+  const nb=new Date(DIARY_ANNEE,m+1,0).getDate();
+  const dec=(new Date(DIARY_ANNEE,m,1).getDay()+6)%7;
+  let h='<div class="dy-grille">';
+  [1,2,3,4,5,6,0].forEach(function(j){h+='<div class="dy-g-tete'+(j===0?' dy-g-dim':'')+'">'+DY_JOURS[j]+'</div>';});
+  for(let i=0;i<dec;i++) h+='<div class="dy-g-c dy-g-hors"></div>';
+  for(let j=1;j<=nb;j++){
+    const d=new Date(DIARY_ANNEE,m,j), js=d.getDay(), l=parJour[j];
+    let cl='dy-g-c';
+    if(js===0) cl+=' dy-g-dim';
+    if(js===6) cl+=' dy-g-sam';
+    if(d<auj) cl+=' dy-g-passe';
+    if(d.getTime()===auj.getTime()) cl+=' dy-g-auj';
+    h+='<div class="'+cl+'"><div class="dy-g-n">'+j+'</div>';
+    if(l&&!dyEstVide(l)){
+      h+='<div class="dy-g-e'+(dyEstHebdo(l)?' dy-g-hebdo':'')+'">'+esc(l[1]||l[2])+'</div>';
+      let puces='';
+      if(l[1]&&l[2]) l[2].split('/').forEach(function(p){p=p.trim();if(p) puces+='<span class="dy-p">'+esc(p)+'</span>';});
+      if(l[3]){
+        const o=l[3].toLowerCase();
+        puces+='<span class="dy-p '+(o==='conflit'?'dy-conflit':(o==='libre'?'dy-libre':''))+'">'+(o==='conflit'?'⚠️ ':'')+esc(l[3])+'</span>';
+      }
+      if(puces) h+='<div class="dy-t">'+puces+'</div>';
+    }
+    h+='</div>';
+  }
+  for(let i=(dec+nb)%7;i>0&&i<7;i++) h+='<div class="dy-g-c dy-g-hors"></div>';
+  return h+'</div>';
 }
 
 function dyPartagerWA(){
