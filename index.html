@@ -3351,6 +3351,9 @@ function lireJSON(inp){
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
+      // Fichier des données privées : il a son propre import (vers Firebase), réservé au secrétaire
+      if(data && data.format==='fkma-donnees-privees'){ importerDonneesPrivees(inp); return; }
+      const NL = '\n';
       let msg = '📦 Fichier du ' + (data.exportedAt||'?').slice(0,10) + '\n\nDonnées trouvées :\n';
       if(data.rakitra)  msg += '  🙏 Rakitra  : ' + data.rakitra.length  + ' entrée(s)\n';
       if(data.anjarako) msg += '  📨 Anjarako : ' + data.anjarako.length + ' entrée(s)\n';
