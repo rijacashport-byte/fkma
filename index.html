@@ -525,10 +525,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── RÔLES ─────────────────────────────────────────────────── */
 /* Contrôleur : masquer Rakitra, Vola, Dashboard dans Gestion */
-body.role-controleur #gnav-rakitra,
-body.role-controleur #gnav-vola,
-body.role-controleur #gnav-dashboard,
-body.role-controleur #gnav-suivi,
 body.role-vomieran #gnav-rakitra,
 body.role-vomieran #gnav-vola,
 body.role-vomieran #gnav-dashboard,
@@ -1348,6 +1344,20 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 .filtre-barre .f-eff{border:1.5px solid var(--gris2);background:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;color:var(--rouge);font-size:13px;}
 .filtre-barre .f-resume{font-size:12px;color:var(--bleu);}
 @media print{.filtre-barre{display:none !important;}}
+
+/* ── Lecture seule (contrôleurs) : on consulte et on exporte, on ne saisit rien ── */
+body.lecture-seule #app-content::before{content:'👁️ Lecture seule : consultation et exports uniquement';display:block;margin-bottom:10px;
+  padding:8px 12px;border-radius:8px;background:#eaf2f8;color:var(--bleu);font-size:12.5px;font-weight:600;}
+body.lecture-seule #fiche-lecture-card, body.lecture-seule #bv-card, body.lecture-seule #vf-card, body.lecture-seule #va-card,
+body.lecture-seule #k45-form-zone, body.lecture-seule #tr-card, body.lecture-seule #ob-card, body.lecture-seule #btn-scan-accueil,
+body.lecture-seule [onclick*="enregistrer"], body.lecture-seule [onclick*="ajouter"], body.lecture-seule [onclick*="supprimer"],
+body.lecture-seule [onclick*="annuler"], body.lecture-seule [onclick*="modifier"], body.lecture-seule [onclick*="Correction"],
+body.lecture-seule [onclick*="verser"], body.lecture-seule [onclick*="faireTransfert"], body.lecture-seule [onclick*="importer"],
+body.lecture-seule [onclick*="valider"], body.lecture-seule [onclick*="rbValider"], body.lecture-seule [onclick*="rbMarquerConnu"],
+body.lecture-seule [onclick*="rbRetirerConnu"], body.lecture-seule [onclick*="recupererScans"], body.lecture-seule [onclick*="resetAnjarako"],
+body.lecture-seule [onclick*="retirer"], body.lecture-seule [onclick*="Bordereau"], body.lecture-seule [onclick*="bvJoindre"],
+body.lecture-seule [onclick*="bvMemoriser"], body.lecture-seule [onclick*="photo"], body.lecture-seule [onclick*=".remove()"],
+body.lecture-seule [onclick*="import-input"]{display:none !important;}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -2710,7 +2720,42 @@ function initAuth(){
   });
 }
 
+// ── LECTURE SEULE (contrôleurs) ─────────────────────────────────
+// Mêmes écrans que la trésorière : on consulte, on filtre, on exporte, mais on ne saisit rien. Les cartes de
+// saisie et les boutons qui écrivent sont masqués (CSS body.lecture-seule) et les champs sont grisés.
+// La vraie garantie reste côté serveur : les règles Firestore refusent toute écriture au rôle contrôleur.
+const LECTURE_AUTORISEE='.filtre-barre *, #dy-rech, .dy-rech, #hist-select-date, #ops-filtre-livre, #ops-filtre-type, '
+  +'#rb-fichier, #rp-livre, #rp-date, #rp-solde-reel, #suivi-mois, [id^="sd-"]';
+function griserChamps(racine){
+  racine.querySelectorAll('input,select,textarea').forEach(function(el){
+    if(el.matches(LECTURE_AUTORISEE)||el.disabled) return;
+    el.disabled=true; el.dataset.lsGrise='1';
+  });
+}
+function appliquerLectureSeule(on){
+  document.body.classList.toggle('lecture-seule',on);
+  const zone=document.getElementById('app-content'); if(!zone) return;
+  if(on){
+    griserChamps(zone);
+    if(!window._lsObs){
+      // Champs ajoutés plus tard (offrandes, enveloppes rechargées depuis l'historique…)
+      window._lsObs=new MutationObserver(function(muts){
+        if(!document.body.classList.contains('lecture-seule')) return;
+        muts.forEach(function(m){ m.addedNodes.forEach(function(n){
+          if(n.nodeType!==1) return;
+          if(n.matches('input,select,textarea')){ if(!n.matches(LECTURE_AUTORISEE)){ n.disabled=true; n.dataset.lsGrise='1'; } }
+          else griserChamps(n);
+        }); });
+      });
+      window._lsObs.observe(zone,{childList:true,subtree:true});
+    }
+  } else {
+    zone.querySelectorAll('[data-ls-grise]').forEach(function(el){ el.disabled=false; delete el.dataset.lsGrise; });
+  }
+}
+
 function appliquerRole(role){
+  appliquerLectureSeule(role==='controleur');
   const tabGest = document.getElementById('mnav-gest');
   const tabK45  = document.getElementById('mnav-k45');
   const tabGL   = document.getElementById('mnav-gl');
@@ -2736,9 +2781,9 @@ function appliquerRole(role){
   if(tabServices) tabServices.style.display='';
   const sdAdmin=document.getElementById('sd-admin-panel');
   if(sdAdmin) sdAdmin.style.display=(role==='secretaire')?'':'none';
-  // Calendrier de l'église (Diary) : visible par tous. Vomieran et contrôleur n'ont pas le Journal K45 :
+  // Calendrier de l'église (Diary) : visible par tous. Les vomieran n'ont pas le Journal K45 :
   // leur onglet Journal ne montre que le calendrier.
-  dyJournalCalendrierSeul(role==='vomieran'||role==='controleur');
+  dyJournalCalendrierSeul(role==='vomieran');
 
   // Listes déroulantes à valeurs partagées (types de culte, lieux, catégories, noms)
   if(window._db){ chargerChoix(); }
@@ -2786,18 +2831,9 @@ function appliquerRole(role){
     return;
   }
 
-  if(role==='controleur'){
-    // Herizo — Grand Livre uniquement
-    if(tabGest) tabGest.style.display='none';
-    if(tabK45)  tabK45.style.display=''; // calendrier seulement (dyJournalCalendrierSeul)
-    if(tabGL)   tabGL.style.display='';
-    showMain('gl', tabGL);
-    if(window._db) chargerTout();
-    return;
-  }
-
-  if(role==='secretaire'||role==='diacre'||role==='tresoriere'){
-    // Rija, PL, Ando — tout sauf diacre_journal
+  if(role==='secretaire'||role==='diacre'||role==='tresoriere'||role==='controleur'){
+    // Rija, PL, Ando — tout sauf diacre_journal. Contrôleurs (Mahefa, Tantely) : mêmes écrans que la
+    // trésorière, en lecture seule (appliquerLectureSeule ; les règles Firestore refusent toute écriture).
     if(tabGest) tabGest.style.display='';
     if(tabK45)  tabK45.style.display='';
     if(tabGL)   tabGL.style.display='';
@@ -3512,7 +3548,7 @@ function lireCache(cle,defaut){
 }
 function ecrireCache(cle,val){ try{ localStorage.setItem(cle,JSON.stringify(val)); }catch(e){} }
 const ROLE_LABELS={secretaire:'Secrétaire Comptable',tresoriere:'Trésorière',diacre:'Diacre',
-  diacre_journal:'Diacre — Journal K45',vomieran:"Vomieran'ny Vola",controleur:'Contrôleur'};
+  diacre_journal:'Diacre — Journal K45',vomieran:"Vomieran'ny Vola",controleur:'Contrôleur (lecture seule)'};
 function cfgUtilisateur(email,role){
   const c=ROLES_CONFIG[email]||{};
   const r=role||c.role||'inconnu';
@@ -7057,7 +7093,8 @@ function rbComparer(livre,lu,gl,glK45,init,debut,ecartRef){
     if(l.date<debut) return;
     const vb=/VERS?E?MENT|VERST/.test(rbNorm(l.lib));
     if(l.e) A.push({ligne:l.ligne,date:l.date,lib:l.lib,sens:'E',montant:l.e,vb:vb});
-    if(l.s) A.push({ligne:l.ligne,date:l.date,lib:l.lib,sens:'S',montant:l.s,vb:vb});
+    // Anjarako : toute sortie de caisse est un versement, même mal libellée (« ANJARAKO SEPT »)
+    if(l.s) A.push({ligne:l.ligne,date:l.date,lib:l.lib,sens:'S',montant:l.s,vb:vb||livre==='anj'});
   });
   const caisse=function(e){ return (e.source||'caisse')!=='banque'; };
   const dansPeriode=function(e){ return caisse(e)&&(e.date||'')>=debut&&(e.date||'')<=fin; };
@@ -7121,6 +7158,7 @@ function rbComparer(livre,lu,gl,glK45,init,debut,ecartRef){
     if(l.defaut==='texte') anomalies.push('Ligne '+l.ligne+' : date saisie comme du texte (« '+l.brut+' »).');
     if(l.sisa===null){ anomalies.push('Ligne '+l.ligne+' : pas de solde dans la colonne SISA — « '+l.lib+' » (formule manquante ?).'); return; }
     if(run!==null&&run+l.e-l.s!==l.sisa) anomalies.push('Ligne '+l.ligne+' : le solde ne suit pas la ligne précédente (attendu '+fmt(run+l.e-l.s)+', affiché '+fmt(l.sisa)+').');
+    if(l.sisa<0) anomalies.push('Ligne '+l.ligne+' : solde négatif ('+fmt(l.sisa)+' F) — une caisse ne peut pas être négative (« '+l.lib+' »).');
     run=l.sisa; dernier=l.sisa;
   });
   if(lu.solde!==null&&dernier!==null&&dernier!==lu.solde) anomalies.push('La dernière ligne de la colonne SISA affiche '+fmt(dernier)+' F, l\'en-tête « SISA ESPECES » '+fmt(lu.solde)+' F.');
