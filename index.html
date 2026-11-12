@@ -4851,6 +4851,14 @@ function nomsCompatibles(ecrit,enregistre){
   return mots.some(function(m){return b.indexOf(m.slice(0,4))>=0;});
 }
 
+// Année d'un mois payé (1-12) : entre 11 mois avant et 2 mois après la date du culte (AAAA-MM-JJ)
+function anneePourMoisFiche(mois,dateRef){
+  const y=parseInt(dateRef.slice(0,4),10), mr=parseInt(dateRef.slice(5,7),10);
+  // Si deux années conviennent (ex. décembre pour un culte de novembre), on prend la plus proche du culte
+  let meilleure=y, plusPetitEcart=99;
+  for(let a=y-1;a<=y+1;a++){ const ecart=(a-y)*12+(mois-mr); if(ecart>=-11&&ecart<=2&&Math.abs(ecart)<plusPetitEcart){ meilleure=a; plusPetitEcart=Math.abs(ecart); } }
+  return meilleure;
+}
 function appliquerFicheAnj(f,meta){
   const alertes=[];   // à vérifier absolument
   const infos=[];     // pour information
@@ -4870,11 +4878,30 @@ function appliquerFicheAnj(f,meta){
     }
   }
   // 1. Date
+  const dateEcranRef=(dateInp&&/^\d{4}-\d{2}-\d{2}$/.test(dateInp.value))?dateInp.value:'';
   if(estSuite){ /* même date que la page 001, déjà à l'écran */ }
   else if(/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')){
-    if(dateInp&&dateInp.value&&dateInp.value!==f.date) infos.push('Date de l\'écran remplacée par celle de la fiche : '+fmtDateFr(f.date)+'.');
+    // Date différente de celle de l'écran : point à vérifier (une date mal lue enregistrerait le dimanche à la mauvaise date)
+    if(dateInp&&dateInp.value&&dateInp.value!==f.date) alertes.push('Date lue sur la fiche : '+fmtDateFr(f.date)+', alors que l\'écran affichait le '+fmtDateFr(dateInp.value)+'. La date de la fiche a été reprise : vérifie-la avant d\'enregistrer.');
     if(dateInp) dateInp.value=f.date;
-  } else alertes.push('Date de la fiche illisible : vérifie la date avant d\'enregistrer.');
+  } else if(dateEcranRef) infos.push('Date de la fiche vide ou illisible : la date du culte de l\'écran est gardée ('+fmtDateFr(dateEcranRef)+').');
+  else alertes.push('Date de la fiche illisible : vérifie la date avant d\'enregistrer.');
+  // Sans date sur la fiche, la lecture devine l'année des mois : on la recale sur la date du culte de
+  // l'écran (même règle que la lecture : le mois payé est entre 11 mois avant et 2 mois après le culte).
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f.date||'')&&dateEcranRef){
+    let recalees=0;
+    (f.lignes||[]).forEach(function(l){
+      const m=/^(\d{4})-(0[1-9]|1[0-2])$/.exec(l.mois||''); if(!m) return;
+      const nv=anneePourMoisFiche(parseInt(m[2],10),dateEcranRef)+'-'+m[2];
+      if(nv!==l.mois){ l.mois=nv; recalees++; }
+      // La seule incertitude « année supposée » n'a plus lieu d'être
+      if(l.mois_douteux&&/ann[ée]e[^;]*suppos/i.test(l.remarque||'')){
+        l.remarque=String(l.remarque).split(';').filter(function(x){return !/ann[ée]e[^;]*suppos/i.test(x);}).join(';').trim();
+        if(!/mois/i.test(l.remarque)) l.mois_douteux=false;
+      }
+    });
+    if(recalees) infos.push('Année des mois recalée sur la date du culte de l\'écran pour '+recalees+' ligne(s).');
+  }
   // 2. On repart d'une saisie vide (sauf page SUITE)
   const nbCartesAvantLecture=enveloppesJour.length;
   // Les cartes déjà scannées restent : la fiche n'apporte que les personnes venues sans carte
