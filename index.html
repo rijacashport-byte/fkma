@@ -1550,6 +1550,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <input type="file" accept="image/*" capture="environment" id="fiche-photo" style="display:none" onchange="lireFicheAnjPhoto(this)">
  <button type="button" class="btn btn-vert" id="fiche-btn" onclick="document.getElementById('fiche-photo').click()">📷 Photographier / choisir la fiche</button>
  <div id="fiche-resultat"></div>
+ <div id="fiche-a-revoir"></div>
  </div>
 
  <div class="card">
@@ -1703,6 +1704,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  </div>
 
  <div class="btns">
+ <button class="btn btn-wa btn-full" onclick="partagerWAComplet()"><span>📲</span> WhatsApp — rapport complet (culte + Rakitra + Anjarako + évolution)</button>
  <button class="btn btn-wa"    onclick="partagerWAAnjarako()"><span>💬</span> WhatsApp</button>
  <button class="btn btn-excel" onclick="exporterExcelAnjarako()"><span>📊</span> Excel</button>
  <button class="btn btn-vert btn-full" onclick="enregistrerAnjarako()"><span>💾</span> Enregistrer</button>
@@ -4523,6 +4525,7 @@ function validerEditionEnveloppe(i){
   });
   envEnEdition=null; envEditionCarte=null;
   afficherEnveloppesJour();
+  if(rapportLectureAnj&&rapportLectureAnj.enregistre) afficherRapportConserve(); // nombre de lignes encore à revoir
 }
 // ── COMPTAGE DES ENVELOPPES ANJARAKO ──────────────────────────
 // Règle : le nombre retenu est celui des n° de carte saisis (ou du nombre saisi directement, en mode
@@ -4672,6 +4675,16 @@ function verifierValopy(){
 }
 function resetValopy(){ valopyListe=[]; renderValopy(); }
 function calculerAnjMoisCourant(){
+  const o=objectifsAnjMois();
+  const lm=document.getElementById('anj-pct-label');const bm=document.getElementById('anj-pct-bar');
+  const le=document.getElementById('anj-env-label');const be=document.getElementById('anj-env-bar');
+  if(lm)lm.textContent=o.pctM.toFixed(1)+'% ('+fmt(o.cumulM)+' / '+fmt(o.obj)+' FCFA)';
+  if(bm){bm.style.width=Math.min(o.pctM,100)+'%';bm.className='pct-fill'+(o.pctM>=100?' ok':'');}
+  if(le)le.textContent=o.pctE.toFixed(1)+'% ('+o.cumulE+' / '+o.objE+' env.)';
+  if(be){be.style.width=Math.min(o.pctE,100)+'%';be.className='pct-fill'+(o.pctE>=100?' ok':'');}
+}
+// Cumul du mois et % des objectifs Anjarako (carte « Objectifs mensuels ») — aussi pour le message WhatsApp
+function objectifsAnjMois(){
   const hist=load(SK_ANJ_H);
   const mc=moisActuel();
   const obj=parseInt(document.getElementById('anj-objectif')?.value)||1100000;
@@ -4695,12 +4708,7 @@ function calculerAnjMoisCourant(){
     +(ecranDuMois?envEcran:0);
   const pctM=obj>0?Math.min((cumulM/obj)*100,150):0;
   const pctE=objE>0?Math.min((cumulE/objE)*100,150):0;
-  const lm=document.getElementById('anj-pct-label');const bm=document.getElementById('anj-pct-bar');
-  const le=document.getElementById('anj-env-label');const be=document.getElementById('anj-env-bar');
-  if(lm)lm.textContent=pctM.toFixed(1)+'% ('+fmt(cumulM)+' / '+fmt(obj)+' FCFA)';
-  if(bm){bm.style.width=Math.min(pctM,100)+'%';bm.className='pct-fill'+(pctM>=100?' ok':'');}
-  if(le)le.textContent=pctE.toFixed(1)+'% ('+cumulE+' / '+objE+' env.)';
-  if(be){be.style.width=Math.min(pctE,100)+'%';be.className='pct-fill'+(pctE>=100?' ok':'');}
+  return {mois:mc7,obj,objE,cumulM,cumulE,pctM,pctE};
 }
 async function enregistrerAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
@@ -4721,9 +4729,16 @@ async function enregistrerAnjarako(){
   const rec={date,total,valopy:[...(valopyListe||[])],nbDirect:nbDirect2,moisDirect,anjMode,envMode,nbEnv:cEnv.officiel,nbCartes:cEnv.nbCartes,nbCompte:cEnv.nbCompte};
   // Lignes signalées par la lecture de la fiche et pas encore vérifiées (✏️)
   const nonVerifiees=enveloppesJour.filter(function(e){return e._alerte;}).length;
-  if(nonVerifiees&&!confirm('⚠️ '+nonVerifiees+' ligne(s) signalée(s) par la lecture de la fiche n\'ont pas été vérifiées (en orange dans la liste des enveloppes).\n\nEnregistrer quand même ?'))return;
-  // Seuls carte, nom et mois sont enregistrés (pas les marques de la lecture : _ligne, _alerte)
-  const enveloppes=enveloppesJour.map(function(e){return {carte:e.carte,nom:e.nom||'',mois:e.mois};});
+  if(nonVerifiees&&!confirm('⚠️ '+nonVerifiees+' ligne(s) signalée(s) par la lecture de la fiche n\'ont pas été vérifiées (en orange dans la liste des enveloppes).\n\nEnregistrer quand même ?\n(Elles resteront marquées « à revoir » avec le compte rendu : tu pourras les corriger plus tard.)'))return;
+  // Carte, nom et mois + la marque « à revoir » des lignes signalées et pas encore corrigées (16/11/2026)
+  const enveloppes=enveloppesJour.map(function(e){
+    const o={carte:e.carte,nom:e.nom||'',mois:e.mois};
+    if(e._alerte) o.aRevoir=texteBrut(e._alerte);
+    return o;
+  });
+  // Compte rendu déjà enregistré pour un AUTRE dimanche (saisie suivante faite sans vider l'écran) : on ne le recopie pas
+  if(rapportLectureAnj&&rapportLectureAnj.enregistre&&rapportLectureAnj.date!==date) rapportLectureAnj=null;
+  if(rapportLectureAnj){ rapportLectureAnj.date=date; rapportLectureAnj.enregistre=true; }
   if(!_db&&window._db){_db=window._db;_fs=window._fs;}
   if(!_db){alert('Firebase non connecté : RIEN n\'a été enregistré. Réessaie dans un instant.');return;}
   // Firebase d'abord (audit L2/L3) : l'Anjarako, le détail de ses cartes et sa ligne du Grand Livre
@@ -4738,15 +4753,17 @@ async function enregistrerAnjarako(){
     const docAnj=Object.assign({},rec);
     if(src.existe) docAnj.enveloppes=_fs.deleteField(); // anciens documents : le détail en sort
     const ops=[{ref:src.ref,data:docAnj,maj:src.existe}];
-    if(ecrireCartes) ops.push({ref:_fs.doc(_db,'anjarako_cartes',date),data:{date,enveloppes,
-      savedBy:emailConnecte(),savedAt:new Date().toISOString()}});
+    const docCartes={date,enveloppes,savedBy:emailConnecte(),savedAt:new Date().toISOString()};
+    if(rapportLectureAnj) docCartes.rapportLecture=rapportLectureAnj;   // compte rendu de la lecture de la fiche
+    if(ecrireCartes) ops.push({ref:_fs.doc(_db,'anjarako_cartes',date),data:docCartes});
     await ecrireGroupe(ops.concat(await opsGrandLivreAnj(rec)));
   }catch(e){alert(msgEchecEnregistrement(e));return;}
   // Copie sur l'appareil : le détail des cartes seulement pour ceux qui ont le droit de le lire
   const recCache=Object.assign({},rec);
-  if(peutLireCartesAnj()) recCache.enveloppes=enveloppes;
+  if(peutLireCartesAnj()){ recCache.enveloppes=enveloppes; if(rapportLectureAnj) recCache.rapportLecture=rapportLectureAnj; }
   majCacheParDate(SK_ANJ_H,recCache,function(h){return h.date===date;});
-  alert('✅ Anjarako du '+date+' enregistré !');
+  afficherDimanchesARevoir();
+  alert('✅ Anjarako du '+date+' enregistré !'+(nonVerifiees?'\n\n⚠️ '+nonVerifiees+' ligne(s) restent marquées « à revoir ».':''));
   calculerAnjMoisCourant();
   correctionAnjSource=null; cartesCacheesAnj=null; majBannerCorrectionAnj();
 }
@@ -4766,7 +4783,8 @@ function nbCartesCachees(){
 async function chargerCartesAnj(hist,docsAnj){
   if(!peutLireCartesAnj()) return hist;
   const snapC=await _fs.getDocs(_fs.collection(_db,'anjarako_cartes'));
-  const parDate={}; snapC.forEach(function(ds){parDate[ds.data().date]=ds.data().enveloppes||[];});
+  const parDate={}, parRapport={};
+  snapC.forEach(function(ds){ const c=ds.data(); parDate[c.date]=c.enveloppes||[]; if(c.rapportLecture) parRapport[c.date]=c.rapportLecture; });
   const ops=[];
   (docsAnj||[]).forEach(function(ds){
     const d=ds.data();
@@ -4781,7 +4799,12 @@ async function chargerCartesAnj(hist,docsAnj){
     try{ await ecrireGroupe(ops.slice(i,i+400)); }catch(e){ console.log('Migration cartes Anjarako :',e.message); break; }
   }
   if(ops.length) console.log('Cartes Anjarako : '+ops.length+' écriture(s) de migration');
-  return hist.map(function(h){ return (h.date in parDate)?Object.assign({},h,{enveloppes:parDate[h.date]}):h; });
+  return hist.map(function(h){
+    if(!(h.date in parDate)) return h;
+    const x=Object.assign({},h,{enveloppes:parDate[h.date]});
+    if(parRapport[h.date]) x.rapportLecture=parRapport[h.date];
+    return x;
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4792,6 +4815,48 @@ async function chargerCartesAnj(hist,docsAnj){
 // carte inconnue, nom écrit ≠ nom de la carte, totaux qui ne concordent pas, signatures manquantes.
 // RIEN n'est enregistré automatiquement : la personne vérifie, puis clique « Enregistrer ».
 function peutLireFiche(){ return ['secretaire','tresoriere','diacre','vomieran'].indexOf(roleConnecte())>=0; }
+
+// 16/11/2026 — Le compte rendu de la lecture est CONSERVÉ avec le dimanche, dans anjarako_cartes/{date}
+// (comme le détail des cartes : relu par le secrétaire et les diacres seulement). Les lignes signalées
+// gardent leur marque « à revoir » (champ aRevoir) jusqu'à ce qu'on les corrige avec ✏️ puis qu'on
+// réenregistre. On peut donc enregistrer tout de suite le soir et vérifier plus tard.
+let rapportLectureAnj=null; // {date, lectures:[{page, le, par, modele, resume, alertes:[], infos:[]}]}
+// Texte brut d'un morceau de HTML (les alertes sont déjà échappées) — DOMParser : rien ne s'exécute
+function texteBrut(html){ return new DOMParser().parseFromString(String(html||''),'text/html').body.textContent||''; }
+function afficherRapportConserve(){
+  const zone=document.getElementById('fiche-resultat'); if(!zone) return;
+  const r=rapportLectureAnj;
+  if(!r||!(r.lectures||[]).length){ zone.innerHTML=''; return; }
+  const nbRev=enveloppesJour.filter(function(e){return e._alerte;}).length;
+  const quand=function(iso){ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}); };
+  zone.innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:'+(nbRev?'#fff4e5':'#eef3fb')+';font-size:13px;line-height:1.45">'
+    +'<b>📋 Compte rendu de la lecture de la fiche (conservé)</b>'
+    +r.lectures.map(function(l){
+      const qui=l.par?((ROLES_CONFIG[l.par]||{}).nom||l.par):'';
+      return '<div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)"><b>Page '+esc(l.page||'')+'</b> — lue le '+esc(quand(l.le))+(qui?' par '+esc(qui):'')
+        +'<br>'+esc(l.resume||'')
+        +((l.alertes||[]).length?'<ul style="margin:6px 0 0 18px;padding:0">'+l.alertes.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>':'<br>✅ Tous les contrôles étaient bons.')
+        +((l.infos||[]).length?'<div style="margin-top:4px;color:var(--texte2)">'+l.infos.map(function(a){return 'ℹ️ '+esc(a);}).join('<br>')+'</div>':'')
+        +'</div>';
+    }).join('')
+    +'<div style="margin-top:8px;font-weight:600">'+(nbRev
+      ?'⚠️ '+nbRev+' ligne(s) encore à revoir (en orange dans la liste des enveloppes) : ✏️ pour les corriger, puis « Enregistrer ».'
+      :'✅ Toutes les lignes signalées ont été revues.')+'</div></div>';
+}
+// Dimanches enregistrés qui ont encore des lignes « à revoir » (copie de l'appareil, secrétaire et diacres)
+function afficherDimanchesARevoir(){
+  const el=document.getElementById('fiche-a-revoir'); if(!el) return;
+  if(!peutLireCartesAnj()){ el.innerHTML=''; return; }
+  const liste=load(SK_ANJ_H).map(function(h){
+    return {date:h.date,n:(h.enveloppes||[]).filter(function(e){return e&&e.aRevoir;}).length};
+  }).filter(function(x){return x.n>0&&/^\d{4}-\d{2}-\d{2}$/.test(x.date||'');})
+    .sort(function(a,b){return b.date.localeCompare(a.date);});
+  el.innerHTML=liste.length
+    ?'<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff4e5;font-size:12px">⚠️ <b>Dimanches avec des lignes à revoir</b> (lecture de fiche) :<br>'
+      +liste.map(function(x){return '<button type="button" class="btn btn-gris" style="width:auto;padding:4px 10px;margin:4px 6px 0 0;font-size:12px" onclick="corrigerAnjDepuisGL(\''+esc(x.date)+'\')">'+esc(fmtDateFr(x.date))+' ('+x.n+')</button>';}).join('')
+      +'</div>'
+    :'';
+}
 
 // Photo réduite à 2400 px de long (assez pour lire l'écriture), JPEG, moins de 2,5 Mo
 function preparerPhotoFiche(file){
@@ -4982,7 +5047,13 @@ function appliquerFicheAnj(f,meta){
     alertes.push('Signature manquante : '+[!s.vomieran1&&'vomieran 1',!s.vomieran2&&'vomieran 2',!s.tresoriere&&'trésorière'].filter(Boolean).join(', ')+'.');
   if(f.remarques) infos.push('Remarques de la lecture : '+esc(f.remarques));
   calculerAnjMoisCourant(); mettreAJourBannerAnj();
-  // 7. Compte rendu
+  // 7. Compte rendu — gardé en mémoire pour être enregistré avec le dimanche
+  const lecture={page:estSuite?'SUITE':String(f.page||'001'),le:new Date().toISOString(),par:emailConnecte(),
+    modele:(meta&&meta.modele)||'',
+    resume:(f.date?'Fiche du '+fmtDateFr(f.date)+' · ':'')+fmt(totalLu)+' F · '+enveloppesJour.length+' carte(s) · '+nbValopy+' enveloppe(s) comptée(s)',
+    alertes:alertes.map(texteBrut),infos:infos.map(texteBrut)};
+  if(estSuite&&rapportLectureAnj) rapportLectureAnj.lectures.push(lecture);
+  else rapportLectureAnj={date:(dateInp&&dateInp.value)||f.date||'',lectures:[lecture]};
   const u=(meta&&meta.usage)||{};
   const zone=document.getElementById('fiche-resultat');
   zone.innerHTML='<div style="margin-top:10px;padding:10px;border-radius:8px;background:'+(alertes.length?'#fff4e5':'#eafaf1')+';font-size:13px;line-height:1.45">'
@@ -4994,6 +5065,7 @@ function appliquerFicheAnj(f,meta){
     +(infos.length?'<div style="margin-top:6px;color:var(--texte2)">'+infos.map(function(a){return 'ℹ️ '+a;}).join('<br>')+'</div>':'')
     +'<div style="margin-top:8px;font-weight:600">Rien n\'est encore enregistré : vérifie la saisie ci-dessous puis clique « Enregistrer ».'
     +(enveloppesJour.some(function(e){return e._alerte;})?'<br>Les lignes signalées sont en orange dans la liste des enveloppes : ✏️ pour les corriger.':'')+'</div>'
+    +'<div style="margin-top:4px;font-size:12px">💾 Ce compte rendu et les lignes signalées sont conservés avec le dimanche : tu peux enregistrer maintenant et corriger plus tard (bouton du dimanche ci-dessous, ou « Modifier une saisie existante » → « Recharger cet Anjarako »).</div>'
     +'<div style="margin-top:4px;font-size:11px;color:var(--texte2)">Lu par '+esc((meta&&meta.modele)||'Claude')+' · '+fmt(u.entree||0)+' + '+fmt(u.sortie||0)+' tokens</div>'
     +'</div>';
   zone.scrollIntoView({behavior:'smooth',block:'start'});
@@ -5783,6 +5855,9 @@ function partagerWACulte(){
 }
 
 function partagerWARakitra(){
+  window.open('https://wa.me/?text='+encodeURIComponent(texteWARakitra()+`\n_FKMA Abidjan_`),'_blank');
+}
+function texteWARakitra(){
   const d=snapRakitra();
   let m=`🙏 *FKMA — RAKITRA DU ${d.date}*\n━━━━━━━━━━━━━━━━━\n`;
   d.lb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} F × ${l.q} = ${fmt(l.s)} F\n`;});
@@ -5801,12 +5876,14 @@ function partagerWARakitra(){
       }
     });
   }
-  if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}`;
-  m+=`\n_FKMA Abidjan_`;
-  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
+  if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}\n`;
+  return m;
 }
 
 function partagerWAAnjarako(){
+  window.open('https://wa.me/?text='+encodeURIComponent(texteWAAnjarako()+`\n_FKMA Abidjan_`),'_blank');
+}
+function texteWAAnjarako(){
   const date=document.getElementById('rak-date-input')?.value||'';
   const total=parseInt(document.getElementById('anj-total')?.value)||0;
   // Nombre retenu : n° de carte saisis (ou nombre saisi directement) ; à défaut, enveloppes comptées avec les montants
@@ -5815,8 +5892,34 @@ function partagerWAAnjarako(){
   const parMois={};
   enveloppesJour.forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
   Object.keys(parMois).sort().forEach(mo=>{m+=`  ${moisLabel(mo)} : cartes ${parMois[mo].sort((a,b)=>a-b).join(', ')}\n`;});
-  m+=`\n_FKMA Abidjan_`;
-  window.open('https://wa.me/?text='+encodeURIComponent(m),'_blank');
+  return m;
+}
+// Évolution Anjarako du mois (remplace la capture d'écran de la carte « Objectifs mensuels »)
+function texteWAObjectifsAnj(){
+  const o=objectifsAnjMois();
+  const barre=function(p){ const n=Math.max(0,Math.min(10,Math.round(p/10))); return '▓'.repeat(n)+'░'.repeat(10-n); };
+  return `📊 *ÉVOLUTION ANJARAKO — ${moisLabel(o.mois).toUpperCase()} (cumul)*\n`
+    +`🎯 Montant : *${o.pctM.toFixed(1)} %*\n  ${barre(o.pctM)}  ${fmt(o.cumulM)} / ${fmt(o.obj)} FCFA\n`
+    +`📩 Enveloppes : *${o.pctE.toFixed(1)} %*\n  ${barre(o.pctE)}  ${o.cumulE} / ${o.objE} env.\n`;
+}
+// 16/11/2026 — UN SEUL message WhatsApp : Journal du culte + Rakitra + Anjarako + évolution Anjarako du mois.
+// Chaque partie n'est mise que si elle est remplie à l'écran.
+function partagerWAComplet(){
+  const dateRak=document.getElementById('rak-date-input')?.value||'';
+  const dateJ=document.getElementById('f-date')?.value||'';
+  const totRak=snapRakitra().total||0;
+  const totAnj=parseInt(document.getElementById('anj-total')?.value)||0;
+  const parties=[], manque=[];
+  if(dateJ) parties.push(texteWAJournal()); else manque.push('Journal du culte (date vide)');
+  if(totRak>0) parties.push(texteWARakitra()); else manque.push('Rakitra (rien de saisi)');
+  if(totAnj>0) parties.push(texteWAAnjarako()); else manque.push('Anjarako (rien de saisi)');
+  parties.push(texteWAObjectifsAnj());
+  let avert='';
+  if(manque.length) avert+='Pas dans le message : '+manque.join(', ')+'.\n';
+  if(dateJ&&dateRak&&dateJ!==dateRak) avert+='⚠️ Le Journal est au '+fmtDateFr(dateJ)+', le Rakitra / Anjarako au '+fmtDateFr(dateRak)+'.\n';
+  if(avert&&!confirm(avert+'\nPréparer le message quand même ?')) return;
+  const SEP='\n━━━━━━━━━━━━━━━━━━━━\n\n';
+  window.open('https://wa.me/?text='+encodeURIComponent(parties.join(SEP)+'\n_FKMA Abidjan_'),'_blank');
 }
 
 function partagerWADepenses(livre){
@@ -6046,6 +6149,7 @@ async function chargerAnjarako(){
     hist=await chargerCartesAnj(hist,snap.docs);
     hist.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
     save(SK_ANJ_H,hist);
+    afficherDimanchesARevoir();
   }catch(e){console.log('Erreur chargement anjarako:',e.message);}
 }
 
@@ -6122,10 +6226,12 @@ async function peuplerHistSelect(){
   const allDates=[...new Set([...rakDates,...anjDates])].sort((a,b)=>b.localeCompare(a));
   sel.innerHTML='<option value="">— Choisir une date —</option>';
   if(!allDates.length){sel.innerHTML+='<option disabled>Aucune saisie trouvée</option>';return;}
+  // Dimanches dont des lignes de la lecture de fiche sont encore « à revoir » (copie de l'appareil)
+  const aRevoir=new Set(load(SK_ANJ_H).filter(function(h){return (h.enveloppes||[]).some(function(e){return e&&e.aRevoir;});}).map(function(h){return h.date;}));
   allDates.forEach(function(d){
     const hasR=rakDates.includes(d);
     const hasA=anjDates.includes(d);
-    const label=d+(hasR?' 🙏':'')+(hasA?' 📨':'');
+    const label=d+(hasR?' 🙏':'')+(hasA?' 📨':'')+(aRevoir.has(d)?' ⚠️ à revoir':'');
     sel.innerHTML+='<option value="'+esc(d)+'">'+esc(label)+'</option>';
   });
 }
@@ -6203,8 +6309,8 @@ async function chargerAnjHist(){
         delete anj.enveloppes;
         if(peutLireCartesAnj()){
           const c=await _fs.getDoc(_fs.doc(_db,'anjarako_cartes',_dateSelectionnee));
-          if(c.exists()) anj.enveloppes=c.data().enveloppes||[];
-          else{ const loc=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee); if(loc&&loc.enveloppes) anj.enveloppes=loc.enveloppes; }
+          if(c.exists()){ anj.enveloppes=c.data().enveloppes||[]; if(c.data().rapportLecture) anj.rapportLecture=c.data().rapportLecture; }
+          else{ const loc=load(SK_ANJ_H).find(h=>h.date===_dateSelectionnee); if(loc&&loc.enveloppes){ anj.enveloppes=loc.enveloppes; if(loc.rapportLecture) anj.rapportLecture=loc.rapportLecture; } }
         }
       }
     }catch(e){console.log('Anjarako :',e.message);}
@@ -6221,8 +6327,14 @@ async function chargerAnjHist(){
   const totDir=document.getElementById('anj-total-direct');
   if(totDir) totDir.value=anj.total||'';
   showAnjMode('total');
-  enveloppesJour=[...(anj.enveloppes||[])];
+  // Les lignes encore « à revoir » (lecture de fiche) repassent en orange, avec leur explication
+  enveloppesJour=(anj.enveloppes||[]).map(function(e){
+    const x={carte:e.carte,nom:e.nom||'',mois:e.mois};
+    if(e.aRevoir) x._alerte=esc(e.aRevoir);
+    return x;
+  });
   valopyListe=[...(anj.valopy||[])];
+  rapportLectureAnj=anj.rapportLecture?Object.assign({},anj.rapportLecture,{enregistre:true}):null;
   // Remettre le mode "Nombre direct" tel qu'il avait été enregistré
   const inpNb=document.getElementById('env-nb-direct');
   const inpMoisD=document.getElementById('env-mois-direct');
@@ -6231,8 +6343,10 @@ async function chargerAnjHist(){
   showEnvMode(anj.nbDirect>0?'nb':'carte');
   renderValopy();
   afficherEnveloppesJour();
+  afficherRapportConserve();
   correctionAnjSource=anj.date; majBannerCorrectionAnj();
-  alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.');
+  const nbRev=enveloppesJour.filter(function(e){return e._alerte;}).length;
+  alert('✅ Anjarako du '+anj.date+' rechargé — modifie et enregistre.'+(nbRev?'\n\n⚠️ '+nbRev+' ligne(s) à revoir (en orange) : le compte rendu de la lecture de la fiche est affiché en haut.':''));
 }
 // ── DASHBOARD ────────────────────────────────────────────────
 let dashAnnee=new Date().getFullYear();
@@ -6685,8 +6799,12 @@ async function chargerHistorique(){
 
 // ── WHATSAPP ──────────────────────────────────────────────────
 function envoyerWA(){
+  if(!document.getElementById('f-date').value){alert("Veuillez renseigner la date.");return;}
+  const NL=String.fromCharCode(10);
+  window.open('https://wa.me/?text='+encodeURIComponent(texteWAJournal()+NL+"━━━━━━━━━━━━━━━━━━━━"+NL+"_FKMA Abidjan — Journal K45_"),'_blank');
+}
+function texteWAJournal(){
   const d=snapData();
-  if(!d.date){alert("Veuillez renseigner la date.");return;}
   const dd=new Date(d.date+"T00:00:00");
   const dateStr=dd.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const NL=String.fromCharCode(10);
@@ -6720,8 +6838,7 @@ function envoyerWA(){
       if(f.note) msg+="    "+f.note+NL;
     });
   }
-  msg+=NL+SEP+NL+"_FKMA Abidjan — Journal K45_";
-  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  return msg;
 }
 
 
@@ -9462,7 +9579,7 @@ function remettreDateCorrectionAnj(){
 }
 // Remet réellement à zéro la saisie du jour : cartes, montants comptés, billetage, montant direct, total
 function viderSaisieAnj(){
-  enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null; envEnEdition=null;
+  enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null; envEnEdition=null; rapportLectureAnj=null;
   BILLETS.forEach(function(b){ const el=document.getElementById('anj_b_'+b.v); if(el) el.value=''; });
   ['anj-total-direct','env-nb-direct','env-mois-direct','env-carte','valopy-autre'].forEach(function(id){
     const el=document.getElementById(id); if(el) el.value='';
