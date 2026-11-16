@@ -1704,7 +1704,12 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  </div>
 
  <div class="btns">
- <button class="btn btn-wa btn-full" onclick="partagerWAComplet()"><span>📲</span> WhatsApp — rapport complet (culte + Rakitra + Anjarako + évolution)</button>
+ <button class="btn btn-wa btn-full" onclick="ouvrirWAComplet()"><span>📲</span> WhatsApp — rapport complet (culte + Rakitra + Anjarako + évolution)</button>
+ <div id="wa-complet-panel" class="btn-full" style="display:none;padding:10px;border:1.5px solid var(--gris2);border-radius:8px;background:white">
+  <div style="font-size:11px;font-weight:600;color:var(--texte2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">📅 Date du culte</div>
+  <select id="wa-complet-date" style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;background:white;margin-bottom:8px"></select>
+  <button type="button" class="btn btn-wa btn-full" id="wa-complet-go" onclick="partagerWAComplet()">💬 Préparer le message WhatsApp</button>
+ </div>
  <button class="btn btn-wa"    onclick="partagerWAAnjarako()"><span>💬</span> WhatsApp</button>
  <button class="btn btn-excel" onclick="exporterExcelAnjarako()"><span>📊</span> Excel</button>
  <button class="btn btn-vert btn-full" onclick="enregistrerAnjarako()"><span>💾</span> Enregistrer</button>
@@ -4684,11 +4689,20 @@ function calculerAnjMoisCourant(){
   if(be){be.style.width=Math.min(o.pctE,100)+'%';be.className='pct-fill'+(o.pctE>=100?' ok':'');}
 }
 // Cumul du mois et % des objectifs Anjarako (carte « Objectifs mensuels ») — aussi pour le message WhatsApp
-function objectifsAnjMois(){
-  const hist=load(SK_ANJ_H);
-  const mc=moisActuel();
+// dateRef (AAAA-MM-JJ) : cumul du mois de ce dimanche, jusqu'à ce dimanche inclus, d'après les enregistrements
+// seulement (pas l'écran) ; recJour = l'Anjarako enregistré de ce dimanche, s'il manque dans la copie de l'appareil.
+function objectifsAnjMois(dateRef,recJour){
   const obj=parseInt(document.getElementById('anj-objectif')?.value)||1100000;
   const objE=parseInt(document.getElementById('anj-obj-env')?.value)||90;
+  if(dateRef){
+    const m7=dateRef.slice(0,7);
+    const h=load(SK_ANJ_H).filter(x=>x.date&&x.date.startsWith(m7)&&x.date<=dateRef&&!(recJour&&x.date===dateRef));
+    if(recJour) h.push(recJour);
+    const cM=h.reduce((a,x)=>a+(x.total||0),0), cE=h.reduce((a,x)=>a+nbEnvelopesRec(x),0);
+    return {mois:m7,obj,objE,cumulM:cM,cumulE:cE,pctM:obj>0?Math.min(cM/obj*100,150):0,pctE:objE>0?Math.min(cE/objE*100,150):0};
+  }
+  const hist=load(SK_ANJ_H);
+  const mc=moisActuel();
   const mc7=mc.substring(0,7);
   // Le jour affiché à l'écran ne doit être compté qu'une fois : on exclut sa version déjà
   // enregistrée dans l'historique, et on ajoute la saisie en cours à la place (nouvelle ou en
@@ -5857,17 +5871,21 @@ function partagerWACulte(){
 function partagerWARakitra(){
   window.open('https://wa.me/?text='+encodeURIComponent(texteWARakitra()+`\n_FKMA Abidjan_`),'_blank');
 }
-function texteWARakitra(){
-  const d=snapRakitra();
+// d = un Rakitra enregistré (mêmes champs que snapRakitra), sinon la saisie à l'écran
+function texteWARakitra(d){
+  d=d||snapRakitra();
+  d=Object.assign({lb:[],lp:[],lrpb:[],lrpp:[],totalRP:0},d);
+  if(d.totalRakitra==null) d.totalRakitra=d.total||0;
+  const rakis=d.rakis||[], diacres=d.diacres||[];
   let m=`🙏 *FKMA — RAKITRA DU ${d.date}*\n━━━━━━━━━━━━━━━━━\n`;
   d.lb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} F × ${l.q} = ${fmt(l.s)} F\n`;});
   d.lp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});
   m+=`➜ *Rakitra : ${fmt(d.totalRakitra)} FCFA*\n`;
   if(d.rpOn){m+=`\n🍷 *Raki-pandraisana*\n`;d.lrpb.forEach(l=>{if(l.q>0)m+=`  ${l.v.toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0')} F × ${l.q} = ${fmt(l.s)} F\n`;});d.lrpp.forEach(l=>{if(l.q>0)m+=`  ${l.v} F × ${l.q} = ${fmt(l.s)} F\n`;});m+=`➜ *Raki-pandraisana : ${fmt(d.totalRP)} FCFA*\n`;}
   m+=`━━━━━━━━━━━━━━━━━\n🙌 *TOTAL : ${fmt(d.total)} FCFA*\n`;
-  if(d.rakis.length){
+  if(rakis.length){
     m+=`━━━━━━━━━━━━━━━━━\n🎁 *Raki-pisaorana (hors total ci-dessus)*\n`;
-    d.rakis.forEach(r=>{
+    rakis.forEach(r=>{
       m+=`  *${fmt(r.montant)} FCFA*${r.verset?' ('+r.verset+')':''}\n`;
       if(r.repartition&&r.repartition.length){
         r.repartition.forEach(rep=>{
@@ -5876,35 +5894,113 @@ function texteWARakitra(){
       }
     });
   }
-  if(d.diacres.length)m+=`\n🙏 Diacres : ${d.diacres.join(' · ')}\n`;
+  if(diacres.length)m+=`\n🙏 Diacres : ${diacres.join(' · ')}\n`;
   return m;
 }
 
 function partagerWAAnjarako(){
   window.open('https://wa.me/?text='+encodeURIComponent(texteWAAnjarako()+`\n_FKMA Abidjan_`),'_blank');
 }
-function texteWAAnjarako(){
-  const date=document.getElementById('rak-date-input')?.value||'';
-  const total=parseInt(document.getElementById('anj-total')?.value)||0;
+// rec = un Anjarako enregistré (avec .enveloppes si ce rôle peut lire les cartes), sinon la saisie à l'écran
+function texteWAAnjarako(rec){
+  const date=rec?rec.date:(document.getElementById('rak-date-input')?.value||'');
+  const total=rec?(rec.total||0):(parseInt(document.getElementById('anj-total')?.value)||0);
   // Nombre retenu : n° de carte saisis (ou nombre saisi directement) ; à défaut, enveloppes comptées avec les montants
-  const nb = compteEnveloppes().officiel;
+  const nb = rec?nbEnvelopesRec(rec):compteEnveloppes().officiel;
   let m=`📨 *ANJARAKO — ${date}*\n📩 ${nb} enveloppes | 💰 ${fmt(total)} FCFA\n`;
   const parMois={};
-  enveloppesJour.forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
+  (rec?(rec.enveloppes||[]):enveloppesJour).forEach(e=>{if(!parMois[e.mois])parMois[e.mois]=[];parMois[e.mois].push(e.carte);});
   Object.keys(parMois).sort().forEach(mo=>{m+=`  ${moisLabel(mo)} : cartes ${parMois[mo].sort((a,b)=>a-b).join(', ')}\n`;});
   return m;
 }
 // Évolution Anjarako du mois (remplace la capture d'écran de la carte « Objectifs mensuels »)
-function texteWAObjectifsAnj(){
-  const o=objectifsAnjMois();
+function texteWAObjectifsAnj(dateRef,recJour){
+  const o=objectifsAnjMois(dateRef,recJour);
   const barre=function(p){ const n=Math.max(0,Math.min(10,Math.round(p/10))); return '▓'.repeat(n)+'░'.repeat(10-n); };
   return `📊 *ÉVOLUTION ANJARAKO — ${moisLabel(o.mois).toUpperCase()} (cumul)*\n`
     +`🎯 Montant : *${o.pctM.toFixed(1)} %*\n  ${barre(o.pctM)}  ${fmt(o.cumulM)} / ${fmt(o.obj)} FCFA\n`
     +`📩 Enveloppes : *${o.pctE.toFixed(1)} %*\n  ${barre(o.pctE)}  ${o.cumulE} / ${o.objE} env.\n`;
 }
 // 16/11/2026 — UN SEUL message WhatsApp : Journal du culte + Rakitra + Anjarako + évolution Anjarako du mois.
-// Chaque partie n'est mise que si elle est remplie à l'écran.
-function partagerWAComplet(){
+// On choisit la date (par défaut la dernière date de culte enregistrée) : le message est fait à partir des
+// ENREGISTREMENTS de cette date. L'option « Saisie à l'écran » reprend ce qui est à l'écran (pas encore enregistré).
+function saisieEcranWA(){
+  const totRak=snapRakitra().total||0, totAnj=parseInt(document.getElementById('anj-total')?.value)||0;
+  return (totRak>0||totAnj>0)?(document.getElementById('rak-date-input')?.value||''):'';
+}
+async function datesRapportsWA(){
+  const m={};
+  const add=function(d,k){ if(!/^\d{4}-\d{2}-\d{2}$/.test(d||'')) return; (m[d]=m[d]||{date:d})[k]=true; };
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(_db){
+    for(const [col,k] of [['journal_k45','j'],['rakitra','r'],['anjarako','a']]){
+      try{ const s=await _fs.getDocs(_fs.collection(_db,col)); s.forEach(function(x){add(x.data().date,k);}); }
+      catch(e){ console.log('WhatsApp, dates '+col+' :',e.message); }
+    }
+  }
+  load(SK_RAKITRA).forEach(function(h){add(h.date,'r');});
+  load(SK_ANJ_H).forEach(function(h){add(h.date,'a');});
+  return Object.values(m).sort(function(a,b){return b.date.localeCompare(a.date);});
+}
+async function ouvrirWAComplet(){
+  const p=document.getElementById('wa-complet-panel'), sel=document.getElementById('wa-complet-date');
+  if(p.style.display!=='none'){ p.style.display='none'; return; }
+  p.style.display='block';
+  sel.innerHTML='<option value="">Chargement des dates…</option>';
+  const dates=await datesRapportsWA(), ecran=saisieEcranWA();
+  let h='';
+  dates.forEach(function(d){
+    h+='<option value="'+esc(d.date)+'">'+esc(fmtDateFr(d.date))+' — '+[d.j&&'Journal',d.r&&'Rakitra',d.a&&'Anjarako'].filter(Boolean).join(' + ')+'</option>';
+  });
+  if(ecran) h+='<option value="ecran">✏️ Saisie à l\'écran, pas encore enregistrée ('+esc(fmtDateFr(ecran))+')</option>';
+  sel.innerHTML=h||'<option value="">Aucune saisie enregistrée trouvée</option>';
+  if(dates.length) sel.value=dates[0].date;   // par défaut : la dernière date de culte enregistrée
+}
+async function donneesWADate(date){
+  let j=null,r=null,a=null,cartes=null;
+  if(!_db&&window._db){_db=window._db;_fs=window._fs;}
+  if(_db){
+    const parDate=async function(col){
+      try{ let x=null; const s=await _fs.getDocs(_fs.query(_fs.collection(_db,col),_fs.where('date','==',date))); s.forEach(function(ds){ if(!x) x=ds.data(); }); return x; }
+      catch(e){ console.log('WhatsApp, '+col+' :',e.message); return null; }
+    };
+    j=await parDate('journal_k45'); r=await parDate('rakitra'); a=await parDate('anjarako');
+    if(a&&peutLireCartesAnj()){
+      try{ const c=await _fs.getDoc(_fs.doc(_db,'anjarako_cartes',date)); if(c.exists()) cartes=c.data().enveloppes||[]; }catch(e){}
+    }
+  }
+  if(!r) r=load(SK_RAKITRA).find(function(h){return h.date===date;})||null;
+  const loc=load(SK_ANJ_H).find(function(h){return h.date===date;})||null;
+  if(!a) a=loc;
+  if(a){ a=Object.assign({},a); delete a.enveloppes; if(!cartes&&peutLireCartesAnj()&&loc&&loc.enveloppes) cartes=loc.enveloppes; if(cartes) a.enveloppes=cartes; }
+  return {j,r,a};
+}
+async function partagerWAComplet(){
+  const choix=document.getElementById('wa-complet-date')?.value||'';
+  if(choix==='ecran'){ partagerWAEcran(); return; }
+  if(!choix){ alert('Choisis une date.'); return; }
+  // Fenêtre ouverte tout de suite (pendant le clic) : sinon le téléphone bloque l'ouverture après la lecture des données
+  const fen=window.open('about:blank','_blank');
+  let url='';
+  const btn=document.getElementById('wa-complet-go'); if(btn){ btn.disabled=true; btn.textContent='⏳ Préparation…'; }
+  try{
+    const d=await donneesWADate(choix);
+    const parties=[], manque=[];
+    if(d.j) parties.push(texteWAJournal(d.j)); else manque.push('Journal du culte');
+    if(d.r) parties.push(texteWARakitra(d.r)); else manque.push('Rakitra');
+    if(d.a) parties.push(texteWAAnjarako(d.a)); else manque.push('Anjarako');
+    if(!parties.length){ alert('Rien d\'enregistré pour le '+fmtDateFr(choix)+'.'); return; }
+    parties.push(texteWAObjectifsAnj(choix,d.a));
+    if(manque.length&&!confirm('Pas enregistré pour le '+fmtDateFr(choix)+' : '+manque.join(', ')+'.\n\nPréparer le message sans ces parties ?')) return;
+    url='https://wa.me/?text='+encodeURIComponent(parties.join('\n━━━━━━━━━━━━━━━━━━━━\n\n')+'\n_FKMA Abidjan_');
+  } finally {
+    if(url){ if(fen) fen.location.href=url; else window.open(url,'_blank'); }
+    else if(fen) fen.close();
+    if(btn){ btn.disabled=false; btn.textContent='💬 Préparer le message WhatsApp'; }
+  }
+}
+// Message à partir de la saisie à l'écran (pas encore enregistrée)
+function partagerWAEcran(){
   const dateRak=document.getElementById('rak-date-input')?.value||'';
   const dateJ=document.getElementById('f-date')?.value||'';
   const totRak=snapRakitra().total||0;
@@ -6803,8 +6899,9 @@ function envoyerWA(){
   const NL=String.fromCharCode(10);
   window.open('https://wa.me/?text='+encodeURIComponent(texteWAJournal()+NL+"━━━━━━━━━━━━━━━━━━━━"+NL+"_FKMA Abidjan — Journal K45_"),'_blank');
 }
-function texteWAJournal(){
-  const d=snapData();
+// d = une page du Journal K45 enregistrée (mêmes champs que snapData), sinon la saisie à l'écran
+function texteWAJournal(d){
+  d=d||snapData();
   const dd=new Date(d.date+"T00:00:00");
   const dateStr=dd.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const NL=String.fromCharCode(10);
