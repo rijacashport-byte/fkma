@@ -540,7 +540,7 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 .src-toggle-btn.actif{background:#e8eefb;border-color:var(--bleu);color:var(--bleu);}
 
 /* ── SERVICES DIACRES (onglet planning) ────────────────────── */
-#section-services{--bg:var(--gris1);--s1:#ffffff;--s2:#f4f3ee;--s3:#eef1f5;--bd:var(--gris2);--bd2:#c9c7bd;--t1:var(--texte);--t2:var(--texte2);--t3:#8a8a8a;--acc:var(--bleu);--amber:var(--or);--amber2:#fdf3da;--green:var(--vert);--green2:#e8f5ee;--pink:#b8356f;--pink2:#fbe8f1;--blue:#2c6cc4;--blue2:#e7f0fc;--purple:var(--violet);--purple2:#f3ecf8;--teal:var(--cyan);--teal2:#e3f6f2;--r:12px;--rs:8px;--p1:#2c6cc4;--p1b:#e7f0fc;--p2:#1a8f5c;--p2b:#e6f7ee;--p3:#c49a2a;--p3b:#fdf3da;--p4:#b8356f;--p4b:#fbe8f1;font-family:'Inter',sans-serif;color:var(--t1);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06);margin-bottom:10px;}
+#section-services{--bg:var(--gris1);--s1:#ffffff;--s2:#f4f3ee;--s3:#eef1f5;--bd:var(--gris2);--bd2:#c9c7bd;--t1:var(--texte);--t2:var(--texte2);--t3:#8a8a8a;--acc:var(--bleu);--amber:var(--or);--amber2:#fdf3da;--green:var(--vert);--green2:#e8f5ee;--pink:#b8356f;--pink2:#fbe8f1;--blue:#2c6cc4;--blue2:#e7f0fc;--purple:var(--violet);--purple2:#f3ecf8;--teal:var(--cyan);--teal2:#e3f6f2;--r:12px;--rs:8px;--p1:#2c6cc4;--p1b:#e7f0fc;--p2:#1a8f5c;--p2b:#e6f7ee;--p3:#c49a2a;--p3b:#fdf3da;--p4:#b8356f;--p4b:#fbe8f1;--p5:#5b4bb3;--p5b:#ece9fa;font-family:'Inter',sans-serif;color:var(--t1);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06);margin-bottom:10px;}
 #section-services *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 #section-services{background:var(--bg);}
 #section-services .topbar{z-index:1;background:var(--s1);border-bottom:1px solid var(--bd);padding:10px 16px 0;}
@@ -591,6 +591,9 @@ body.role-vomieran #section-gl select { pointer-events: none; opacity: 0.7; }
 #section-services .pb2{background:var(--p2b);color:var(--p2);}
 #section-services .pb3{background:var(--p3b);color:var(--p3);}
 #section-services .pb4{background:var(--p4b);color:var(--p4);}
+#section-services .pb5{background:var(--p5b);color:var(--p5);}
+#section-services .fandr-role.mampandroso{background:rgba(91,75,179,.12);color:var(--p5);}
+#section-services .task.mampandroso{color:var(--p5);font-weight:600;}
 #section-services .poste-info{flex:1;}
 #section-services .poste-name{font-size:13px;font-weight:600;color:var(--t1);}
 #section-services .poste-tasks{margin-top:4px;display:flex;flex-direction:column;gap:2px;}
@@ -1358,6 +1361,25 @@ body.lecture-seule [onclick*="rbRetirerConnu"], body.lecture-seule [onclick*="re
 body.lecture-seule [onclick*="retirer"], body.lecture-seule [onclick*="Bordereau"], body.lecture-seule [onclick*="bvJoindre"],
 body.lecture-seule [onclick*="bvMemoriser"], body.lecture-seule [onclick*="photo"], body.lecture-seule [onclick*=".remove()"],
 body.lecture-seule [onclick*="import-input"]{display:none !important;}
+
+/* ── Contrôle des commissaires aux comptes ── */
+.ctl-ligne{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;font-size:11.5px}
+.ctl-badge{padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px}
+.ctl-ok{background:#e6f7ee;color:#1a8f5c}.ctl-q{background:#fdecea;color:#c0392b}.ctl-r{background:#eaf2f8;color:#2c6cc4}.ctl-mod{background:#fff3e0;color:#d35400}
+.ctl-btn{border:1px solid var(--gris2);background:white;border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-family:inherit;color:var(--texte)}
+.ctl-btn.prim{background:var(--bleu);border-color:var(--bleu);color:white}
+.ctl-fil{margin-top:5px;padding:6px 9px;background:var(--gris1);border-radius:6px;font-size:11.5px;line-height:1.45}
+.ctl-fil div{margin:2px 0}
+.ctl-avance{font-size:12px;padding:6px 10px;margin-bottom:8px;border-radius:7px;background:#f4f6fa;color:var(--texte2)}
+#ctl-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
+#ctl-modal .ctl-boite{background:white;border-radius:12px;max-width:460px;width:100%;padding:16px;max-height:90vh;overflow:auto;color:var(--texte)}
+#ctl-modal textarea,#ctl-modal select{width:100%;box-sizing:border-box;border:1.5px solid var(--gris2);border-radius:7px;padding:8px;font-family:inherit;font-size:13px;margin-top:4px}
+#ctl-modal label{display:block;font-size:11px;font-weight:600;color:var(--texte2);text-transform:uppercase;margin-top:10px}
+.ctl-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px}
+.ctl-table th,.ctl-table td{border-bottom:1px solid var(--gris2);padding:4px 6px;text-align:left}
+.ctl-table th{color:var(--texte2);font-weight:600}
+.ctl-groupe{border:1px solid var(--gris2);border-radius:9px;padding:10px;margin-bottom:10px}
+.ctl-item{border-top:1px dashed var(--gris2);padding:8px 0}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -2230,6 +2252,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <button class="tab-btn" id="gltab-btn-ops" onclick="showGLTab('ops',this)" style="display:none">🏦<br>Opérations</button>
  <button class="tab-btn" onclick="showGLTab('synth',this)">📊<br>Synthèse</button>
  <button class="tab-btn" id="gltab-btn-rappro" onclick="showGLTab('rappro',this)" style="display:none">🔎<br>Rapprochement</button>
+ <button class="tab-btn" id="gltab-btn-ctl" onclick="showGLTab('ctl',this)">☑️<br>Contrôle</button>
 </div>
 
 <!-- ══ FIANGONANA ══ -->
@@ -2263,7 +2286,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <!-- Historique -->
  <div class="card">
  <div class="ctit">📋 Livre de caisse — Fiangonana</div>
- <div class="filtre-barre" id="filtre-fiang"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('fiang')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('fiang')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('fiang')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('fiang')"></label><button type="button" class="f-eff" onclick="filtreEffacer('fiang')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
+ <div class="filtre-barre" id="filtre-fiang"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('fiang')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('fiang')"><option value="">Toutes les rubriques</option></select><select class="f-ctl" onchange="filtreChange('fiang')"><option value="">Contrôle : tout</option><option value="non">⬜ Non contrôlés</option><option value="question">❓ Explication demandée</option><option value="repondu">💬 Répondus</option><option value="ok">✅ Contrôlés</option><option value="modifie">⚠️ Modifiés après contrôle</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('fiang')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('fiang')"></label><button type="button" class="f-eff" onclick="filtreEffacer('fiang')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="fiang-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -2295,7 +2318,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 
  <div class="card">
  <div class="ctit">📋 Livre Anjarako</div>
- <div class="filtre-barre" id="filtre-anj"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('anj')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('anj')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('anj')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('anj')"></label><button type="button" class="f-eff" onclick="filtreEffacer('anj')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
+ <div class="filtre-barre" id="filtre-anj"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('anj')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('anj')"><option value="">Toutes les rubriques</option></select><select class="f-ctl" onchange="filtreChange('anj')"><option value="">Contrôle : tout</option><option value="non">⬜ Non contrôlés</option><option value="question">❓ Explication demandée</option><option value="repondu">💬 Répondus</option><option value="ok">✅ Contrôlés</option><option value="modifie">⚠️ Modifiés après contrôle</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('anj')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('anj')"></label><button type="button" class="f-eff" onclick="filtreEffacer('anj')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="anj-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -2378,7 +2401,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 
  <div class="card">
  <div class="ctit">📋 Historique K45</div>
- <div class="filtre-barre" id="filtre-k45"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('k45')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('k45')"><option value="">Toutes les rubriques</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('k45')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('k45')"></label><button type="button" class="f-eff" onclick="filtreEffacer('k45')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
+ <div class="filtre-barre" id="filtre-k45"><input type="search" class="f-txt" placeholder="🔎 Chercher : libellé, montant, n° pièce, n° OP…" oninput="filtreChange('k45')" autocomplete="off"><div class="f-ligne"><select class="f-rub" onchange="filtreChange('k45')"><option value="">Toutes les rubriques</option></select><select class="f-ctl" onchange="filtreChange('k45')"><option value="">Contrôle : tout</option><option value="non">⬜ Non contrôlés</option><option value="question">❓ Explication demandée</option><option value="repondu">💬 Répondus</option><option value="ok">✅ Contrôlés</option><option value="modifie">⚠️ Modifiés après contrôle</option></select><label>Du <input type="date" class="f-du" onchange="filtreChange('k45')"></label><label>au <input type="date" class="f-au" onchange="filtreChange('k45')"></label><button type="button" class="f-eff" onclick="filtreEffacer('k45')" title="Effacer le filtre">✕</button></div><div class="f-resume"></div></div>
  <div id="k45-liste"><div class="vide">Chargement…</div></div>
  </div>
 </div>
@@ -2543,6 +2566,15 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 
 </div><!-- /gl-tab-ops -->
 <!-- Rapprochement avec le brouillard Excel de la trésorière (09/11/2026) -->
+<div id="gl-tab-ctl" style="display:none">
+ <div class="card">
+ <div class="ctit">☑️ Contrôle des commissaires aux comptes</div>
+ <div style="font-size:12px;color:var(--texte2);margin-bottom:8px">Les commissaires cochent chaque mouvement dans les livres (Fiangonana, Anjarako, K45) ou demandent une explication au responsable. Les réponses se donnent ici, ou par WhatsApp et le commissaire les note.</div>
+ <div id="ctl-contenu"><div class="vide">Chargement…</div></div>
+ <button class="btn bv" onclick="exporterControlesExcel()" style="margin-top:8px">📊 Exporter Excel — état du contrôle</button>
+ </div>
+</div>
+
 <div id="gl-tab-rappro" style="display:none">
  <div class="card">
  <div class="ctit">🔎 Rapprochement avec le brouillard d'Ando</div>
@@ -2732,7 +2764,7 @@ function initAuth(){
 // saisie et les boutons qui écrivent sont masqués (CSS body.lecture-seule) et les champs sont grisés.
 // La vraie garantie reste côté serveur : les règles Firestore refusent toute écriture au rôle contrôleur.
 const LECTURE_AUTORISEE='.filtre-barre *, #dy-rech, .dy-rech, #hist-select-date, #ops-filtre-livre, #ops-filtre-type, '
-  +'#rb-fichier, #rp-livre, #rp-date, #rp-solde-reel, #suivi-mois, [id^="sd-"]';
+  +'#rb-fichier, #rp-livre, #rp-date, #rp-solde-reel, #suivi-mois, [id^="sd-"], #ctl-modal *';
 function griserChamps(racine){
   racine.querySelectorAll('input,select,textarea').forEach(function(el){
     if(el.matches(LECTURE_AUTORISEE)||el.disabled) return;
@@ -7028,7 +7060,7 @@ let obES='S';
 function showGLTab(tab,btn){
   document.querySelectorAll('#section-gl .tab-btn').forEach(b=>b.classList.remove('actif'));
   if(btn) btn.classList.add('actif');
-  ['fiang','anj','k45','ops','synth','rappro'].forEach(function(t){
+  ['fiang','anj','k45','ops','synth','rappro','ctl'].forEach(function(t){
     const el=document.getElementById('gl-tab-'+t);
     if(el) el.style.display=t===tab?'':'none';
   });
@@ -7036,6 +7068,7 @@ function showGLTab(tab,btn){
   if(tab==='fiang'||tab==='anj'||tab==='k45') chargerTout();
   if(tab==='ops') chargerTout();
   if(tab==='rappro') rbChargerEtat();
+  if(tab==='ctl'){ ctlRenderOnglet(); chargerTout(); }
 }
 
 // ── CHARGEMENT FIREBASE ───────────────────────────────────────
@@ -7055,6 +7088,7 @@ async function chargerTout(){
   }
   renderSynth();
   renderOpsListe();
+  ctlEcouter(); ctlRenderOnglet();
 }
 
 // ── RENDU LISTE ───────────────────────────────────────────────
@@ -7069,8 +7103,9 @@ function lireFiltre(cle){
   const txt=sansAccent(b.querySelector('.f-txt').value.trim());
   const f={txt:txt, chiffres:txt.replace(/[\s  .]/g,''), rub:b.querySelector('.f-rub').value,
            du:b.querySelector('.f-du').value, au:b.querySelector('.f-au').value};
+  const sc=b.querySelector('.f-ctl'); f.ctl=sc?sc.value:'';
   f.numerique=/^\d+$/.test(f.chiffres);
-  f.actif=!!(f.txt||f.rub||f.du||f.au);
+  f.actif=!!(f.txt||f.rub||f.du||f.au||f.ctl);
   return f;
 }
 // champs : textes où chercher ; montant : nombre ; rubrique : code ; date : AAAA-MM-JJ
@@ -7108,7 +7143,7 @@ function filtreChange(cle){
 function filtreEffacer(cle){
   const b=document.getElementById('filtre-'+cle); if(!b) return;
   b.querySelectorAll('input').forEach(function(i){ i.value=''; });
-  b.querySelector('.f-rub').value='';
+  b.querySelectorAll('select').forEach(function(s){ s.value=''; });
   filtreChange(cle);
 }
 
@@ -7143,6 +7178,7 @@ function renderLivre(livre){
     const soldeAff=src==='banque'?soldeBanque:soldeCaisse;
     if(!passeFiltre(filtre,[e.date,fmtDateFr(e.date),e.page,e.lettrage,e.numOp,e.rubrique,libelleRubrique(e.rubrique),
         e.libelle,e.comment,e.piece,e.createdByNom,e.modifiedByNom,fmt(mnt)],mnt,e.rubrique,e.date)) return '';
+    if(filtre.ctl && !ctlPasseFiltre(filtre.ctl,ctlEtat(livre,e))) return '';
     nbAff++; if(isE) totE+=mnt; else totS+=mnt;
     return '<div class="eitem'+(isE?'':' s')+'">'
       +'<div class="etop">'
@@ -7163,13 +7199,295 @@ function renderLivre(livre){
       +htmlVersement(livre,e,vpr,peutVerser)
       +(e.nonRattache?'<div class="verse-nr">⚠️ Non rattaché au Grand Livre'+(e.motifNonRattache?' — '+esc(e.motifNonRattache):'')+'</div>':'')
       +((e.depenseId||e.transfert||e.opbancaire)?'<div style="margin-top:6px">'+badgePieces(e.bordereauId||e.depenseId||e.opId,e.nbPieces)+'</div>':'')
+      +htmlControle(livre,e)
       +(canDelete?'<div style="display:flex;gap:8px;margin-top:6px">'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="modifierEcritureGL(this)" style="background:none;border:1px solid var(--bleu);border-radius:5px;color:var(--bleu);font-size:11px;cursor:pointer;padding:2px 8px">✏️ Modifier</button>'+'<button data-id="'+esc(e._id||'')+'" data-livre="'+livre+'" onclick="supprimerEcritureGL(this)" style="background:none;border:1px solid var(--rouge);border-radius:5px;color:var(--rouge);font-size:11px;cursor:pointer;padding:2px 8px">✕ Supprimer</button>'+'</div>':'')
       +'</div>';
   }).reverse().join('');
   afficherResumeFiltre(livre,filtre.actif?('<b>'+nbAff+'</b> écriture(s) sur '+list.length+' · entrées <b>'+fmt(totE)+' F</b> · sorties <b>'+fmt(totS)+' F</b>'):'');
-  el.innerHTML=html||'<div class="vide">Aucune écriture ne correspond à la recherche.</div>';
+  el.innerHTML=ctlAvancementLivre(livre,list)+(html||'<div class="vide">Aucune écriture ne correspond à la recherche.</div>');
 }
 
+
+// ── CONTRÔLE DES COMMISSAIRES AUX COMPTES (22/11/2026) ─────────
+// Une fiche par écriture du Grand Livre dans la collection « controles » (ID = livre_idEcriture). Le Grand
+// Livre lui-même n'est jamais modifié : les contrôleurs restent en lecture seule sur les comptes.
+// statut : 'ok' (contrôlé), 'question' (explication demandée), 'repondu' (réponse reçue, à revoir).
+// fil : questions, réponses (dans l'appli ou notées par le contrôleur) et relances, dans l'ordre.
+// empreinte : date|E/S|montant|rubrique|caisse-banque au moment de la coche → si l'écriture change ensuite,
+// la coche ne compte plus (« modifié après contrôle »).
+let CTL={}, _ctlEcoute=null;
+const CTL_LIVRES={fiang:'Fiangonana',anj:'Anjarako',k45:'K45'};
+function ctlEmpreinte(e){ return [e.date||'',e.es||'',Number(e.montant)||0,e.rubrique||'',e.source||'caisse'].join('|'); }
+function ctlMoi(){
+  const em=(window._auth&&window._auth.currentUser&&window._auth.currentUser.email)||'';
+  return {email:em, nom:(ROLES_CONFIG[em]||{}).nom||em};
+}
+function ctlEstControleur(){ return roleConnecte()==='controleur'; }
+function ctlEstComptable(){ return ['secretaire','tresoriere','diacre'].indexOf(roleConnecte())>=0; }
+function ctlEtat(livre,e){
+  const c=CTL[livre+'_'+e._id]; if(!c) return '';
+  if(c.statut==='ok') return c.empreinte===ctlEmpreinte(e)?'ok':'modifie';
+  return c.statut||'';
+}
+function ctlPasseFiltre(f,etat){
+  if(f==='non') return etat===''||etat==='modifie';
+  return etat===f;
+}
+function ctlEcriture(livre,id){ return (GL[livre]||[]).find(function(x){return x._id===id;}); }
+function ctlEcouter(){
+  if(_ctlEcoute||!window._db||!window._fs) return;
+  _ctlEcoute=window._fs.onSnapshot(window._fs.collection(window._db,'controles'),function(snap){
+    CTL={}; snap.forEach(function(d){ CTL[d.id]=d.data(); });
+    ['fiang','anj','k45'].forEach(function(l){ if(GL[l]&&GL[l].length) renderLivre(l); });
+    ctlRenderOnglet();
+  },function(err){ console.log('Contrôles :',err.message); _ctlEcoute=null; });
+}
+function ctlDateFr(iso){ return iso?String(iso).slice(8,10)+'/'+String(iso).slice(5,7)+'/'+String(iso).slice(0,4):''; }
+function ctlLigneFil(m){
+  const ic={question:'❓',reponse:'💬',relance:'🔁'}[m.t]||'•';
+  const via=m.t==='reponse'&&m.via&&m.via!=='appli'?' <i>(reçue par '+esc(m.via)+', notée par '+esc(m.nom)+')</i>':'';
+  const qui=m.t==='reponse'&&m.via&&m.via!=='appli'?esc(m.auteur||'Réponse'):esc(m.nom||'');
+  return '<div>'+ic+' <b>'+qui+'</b> · '+esc(ctlDateFr(m.le))+via+' : '+esc(m.texte)+'</div>';
+}
+function htmlControle(livre,e){
+  const c=CTL[livre+'_'+e._id], etat=ctlEtat(livre,e), ctl=ctlEstControleur(), moi=ctlMoi();
+  const a=jsArg(livre)+','+jsArg(e._id||'');
+  let h='';
+  if(etat==='ok') h+='<span class="ctl-badge ctl-ok">✅ Contrôlé'+(c.controleParNom?' · '+esc(c.controleParNom):'')+'</span>';
+  else if(etat==='modifie') h+='<span class="ctl-badge ctl-mod">⚠️ Modifié après contrôle</span>';
+  else if(etat==='question') h+='<span class="ctl-badge ctl-q">❓ Explication demandée'+(c.destinataireNom?' à '+esc(c.destinataireNom):'')+'</span>';
+  else if(etat==='repondu') h+='<span class="ctl-badge ctl-r">💬 Répondu — à revoir</span>';
+  if(ctl){
+    if(etat!=='ok') h+='<button class="ctl-btn" onclick="ctlCocher('+a+')">✅ Contrôlé</button>';
+    else h+='<button class="ctl-btn" onclick="ctlDecocher('+a+')">↩️ Décocher</button>';
+    h+='<button class="ctl-btn" onclick="ctlQuestion('+a+')">❓ '+(etat==='question'||etat==='repondu'?'Relancer':'Demander une explication')+'</button>';
+    if(etat==='question') h+='<button class="ctl-btn" onclick="ctlNoterReponse('+a+')">📝 Noter la réponse reçue</button>';
+  } else if(c&&(c.statut==='question'||c.statut==='repondu')&&(c.destinataire===moi.email||ctlEstComptable())){
+    h+='<button class="ctl-btn" onclick="ctlRepondre('+a+')">💬 Répondre</button>';
+  }
+  if(!h) return '';
+  const fil=(c&&c.fil&&c.fil.length&&etat!=='ok')?'<div class="ctl-fil">'+c.fil.map(ctlLigneFil).join('')+'</div>':'';
+  return '<div class="ctl-ligne">'+h+'</div>'+fil;
+}
+function ctlCompter(livre,list){
+  const n={total:list.length,ok:0,question:0,repondu:0,modifie:0};
+  list.forEach(function(e){ const s=ctlEtat(livre,e); if(s) n[s]++; });
+  return n;
+}
+function ctlAvancementLivre(livre,list){
+  if(!ctlEstControleur()&&!Object.keys(CTL).length) return '';
+  const n=ctlCompter(livre,list);
+  return '<div class="ctl-avance">☑️ Contrôle : <b>'+n.ok+' / '+n.total+'</b> écritures contrôlées'
+    +(n.question?' · ❓ '+n.question+' en attente':'')+(n.repondu?' · 💬 '+n.repondu+' répondues':'')
+    +(n.modifie?' · ⚠️ '+n.modifie+' modifiées après contrôle':'')+'</div>';
+}
+function ctlInstantane(livre,e){
+  return {livre:livre, ecritureId:e._id, date:e.date||'', montant:Number(e.montant)||0, es:e.es||'',
+    libelle:e.libelle||'', rubrique:e.rubrique||'', piece:e.piece||'', empreinte:ctlEmpreinte(e)};
+}
+function ctlRef(livre,id){ return window._fs.doc(window._db,'controles',livre+'_'+id); }
+async function ctlEcrire(livre,id,data){
+  try{ await window._fs.setDoc(ctlRef(livre,id),data); return true; }
+  catch(err){ alert('Enregistrement du contrôle impossible : '+err.message+'\n\nLes règles Firestore du 22/11/2026 sont-elles publiées ?'); return false; }
+}
+function ctlResumeEcriture(livre,e){
+  return '<div style="font-size:12.5px;background:var(--gris1);border-radius:7px;padding:8px 10px">'
+    +'<b>'+esc(CTL_LIVRES[livre])+'</b> · '+esc(fmtDateFr(e.date))+' · <b>'+(e.es==='E'?'+':'-')+fmt(e.montant||0)+' F</b><br>'
+    +esc(libelleRubrique(e.rubrique))+(e.libelle?' — '+esc(e.libelle):'')+(e.piece?' · 🔢 '+esc(e.piece):'')+'</div>';
+}
+function ctlModal(titre,corps,libOk,onOk){
+  ctlFermer();
+  const d=document.createElement('div'); d.id='ctl-modal';
+  d.innerHTML='<div class="ctl-boite"><div style="font-weight:700;font-size:15px;margin-bottom:10px">'+titre+'</div>'+corps
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="ctl-btn" onclick="ctlFermer()">Fermer</button>'
+    +(libOk?'<button class="ctl-btn prim" id="ctl-ok">'+libOk+'</button>':'')+'</div></div>';
+  document.body.appendChild(d);
+  if(libOk) document.getElementById('ctl-ok').onclick=onOk;
+  d.addEventListener('click',function(ev){ if(ev.target===d) ctlFermer(); });
+  const ta=d.querySelector('textarea'); if(ta) ta.focus();
+}
+function ctlFermer(){ const d=document.getElementById('ctl-modal'); if(d) d.parentNode.removeChild(d); }
+
+async function ctlCocher(livre,id){
+  const e=ctlEcriture(livre,id); if(!e) return;
+  const moi=ctlMoi(), c=CTL[livre+'_'+id]||{}, now=new Date().toISOString();
+  await ctlEcrire(livre,id,Object.assign({fil:[]},c,ctlInstantane(livre,e),
+    {statut:'ok',controlePar:moi.email,controleParNom:moi.nom,controleLe:now,majLe:now,majPar:moi.email}));
+}
+async function ctlDecocher(livre,id){
+  const c=CTL[livre+'_'+id]; if(!c) return;
+  if(!(c.fil||[]).length){
+    try{ await window._fs.deleteDoc(ctlRef(livre,id)); }catch(err){ alert('Impossible : '+err.message); }
+    return;
+  }
+  const dern=c.fil[c.fil.length-1];
+  await ctlEcrire(livre,id,Object.assign({},c,{statut:dern.t==='reponse'?'repondu':'question',majLe:new Date().toISOString(),majPar:ctlMoi().email}));
+}
+// Personnes à qui on peut poser une question : l'équipe, sauf les contrôleurs ; le secrétaire comptable d'abord
+function ctlDestinataires(){
+  return Object.keys(ROLES_CONFIG).filter(function(em){ return (ROLES_CONFIG[em]||{}).role!=='controleur'; })
+    .sort(function(a,b){
+      const sa=ROLES_CONFIG[a].role==='secretaire'?0:1, sb=ROLES_CONFIG[b].role==='secretaire'?0:1;
+      return sa-sb||String(ROLES_CONFIG[a].nom||a).localeCompare(String(ROLES_CONFIG[b].nom||b));
+    });
+}
+function ctlQuestion(livre,id){
+  const e=ctlEcriture(livre,id); if(!e) return;
+  const c=CTL[livre+'_'+id]||{}, relance=c.statut==='question'||c.statut==='repondu';
+  const dest=c.destinataire||ctlDestinataires()[0]||'';
+  const opts=ctlDestinataires().map(function(em){
+    const r=ROLES_CONFIG[em]||{};
+    return '<option value="'+esc(em)+'"'+(em===dest?' selected':'')+'>'+esc(r.nom||em)+(r.label?' — '+esc(r.label):'')+'</option>';
+  }).join('');
+  ctlModal(relance?'🔁 Relancer / nouvelle question':'❓ Demande d\'explication',
+    ctlResumeEcriture(livre,e)
+    +((c.fil||[]).length?'<div class="ctl-fil">'+c.fil.map(ctlLigneFil).join('')+'</div>':'')
+    +'<label>Responsable qui doit répondre</label><select id="ctl-dest">'+opts+'</select>'
+    +'<label>Observation / question</label><textarea id="ctl-texte" rows="4" placeholder="Ex. : pièce justificative manquante, merci de la fournir."></textarea>',
+    'Enregistrer la question', async function(){
+      const texte=document.getElementById('ctl-texte').value.trim(), em=document.getElementById('ctl-dest').value;
+      if(!texte){ alert('Écris l\'observation.'); return; }
+      const moi=ctlMoi(), now=new Date().toISOString();
+      const fil=(c.fil||[]).concat([{t:relance?'relance':'question',texte:texte,par:moi.email,nom:moi.nom,le:now}]);
+      const ok=await ctlEcrire(livre,id,Object.assign({},c,ctlInstantane(livre,e),{statut:'question',fil:fil,
+        destinataire:em,destinataireNom:(ROLES_CONFIG[em]||{}).nom||em,controlePar:moi.email,controleParNom:moi.nom,
+        controleLe:now,majLe:now,majPar:moi.email}));
+      if(ok) ctlFermer();
+    });
+}
+function ctlNoterReponse(livre,id){
+  const e=ctlEcriture(livre,id), c=CTL[livre+'_'+id]; if(!e||!c) return;
+  ctlModal('📝 Noter une réponse reçue',
+    ctlResumeEcriture(livre,e)+'<div class="ctl-fil">'+(c.fil||[]).map(ctlLigneFil).join('')+'</div>'
+    +'<label>Reçue par</label><select id="ctl-via"><option>WhatsApp</option><option>oral</option><option>mail</option><option>pièce remise</option></select>'
+    +'<label>Réponse de '+esc(c.destinataireNom||'')+'</label><textarea id="ctl-texte" rows="4"></textarea>',
+    'Enregistrer la réponse', async function(){
+      const texte=document.getElementById('ctl-texte').value.trim();
+      if(!texte){ alert('Écris la réponse reçue.'); return; }
+      const moi=ctlMoi(), now=new Date().toISOString();
+      const fil=(c.fil||[]).concat([{t:'reponse',via:document.getElementById('ctl-via').value,auteur:c.destinataireNom||'',
+        texte:texte,par:moi.email,nom:moi.nom,le:now}]);
+      const ok=await ctlEcrire(livre,id,Object.assign({},c,{statut:'repondu',fil:fil,majLe:now,majPar:moi.email}));
+      if(ok) ctlFermer();
+    });
+}
+function ctlRepondre(livre,id){
+  const e=ctlEcriture(livre,id), c=CTL[livre+'_'+id]; if(!e||!c) return;
+  ctlModal('💬 Répondre aux commissaires',
+    ctlResumeEcriture(livre,e)+'<div class="ctl-fil">'+(c.fil||[]).map(ctlLigneFil).join('')+'</div>'
+    +'<label>Ta réponse</label><textarea id="ctl-texte" rows="4"></textarea>',
+    'Envoyer la réponse', async function(){
+      const texte=document.getElementById('ctl-texte').value.trim();
+      if(!texte){ alert('Écris ta réponse.'); return; }
+      const moi=ctlMoi(), now=new Date().toISOString();
+      const fil=(c.fil||[]).concat([{t:'reponse',via:'appli',texte:texte,par:moi.email,nom:moi.nom,le:now}]);
+      try{
+        await window._fs.updateDoc(ctlRef(livre,id),{statut:'repondu',fil:fil,majLe:now,majPar:moi.email});
+        ctlFermer();
+      }catch(err){ alert('Réponse non enregistrée : '+err.message); }
+    });
+}
+
+// ── Onglet « Contrôle » : avancement par mois, questions par responsable, messages à envoyer ──
+function ctlQuestionsOuvertes(){
+  const res=[];
+  Object.keys(CTL).forEach(function(id){
+    const c=CTL[id]; if(c.statut!=='question'&&c.statut!=='repondu') return;
+    res.push({id:id,c:c,e:ctlEcriture(c.livre,c.ecritureId)});
+  });
+  return res.sort(function(a,b){ return String(a.c.date).localeCompare(String(b.c.date)); });
+}
+function ctlMessage(email){
+  const qs=ctlQuestionsOuvertes().filter(function(q){ return q.c.destinataire===email&&q.c.statut==='question'; });
+  const nom=(ROLES_CONFIG[email]||{}).nom||email, moi=ctlMoi();
+  const l=['Bonjour '+nom+',','','Dans le cadre du contrôle des comptes FKMA, merci de nous donner une explication sur '
+    +(qs.length>1?'les '+qs.length+' mouvements suivants':'le mouvement suivant')+' :',''];
+  qs.forEach(function(q,i){
+    const c=q.c, dern=(c.fil||[]).filter(function(m){return m.t!=='reponse';}).pop();
+    l.push((i+1)+'. '+CTL_LIVRES[c.livre]+' — '+ctlDateFr(c.date)+' — '+libelleRubrique(c.rubrique)+(c.libelle?' ('+c.libelle+')':'')
+      +' — '+(c.es==='E'?'entrée ':'sortie ')+fmt(c.montant)+' F'+(c.piece?' — pièce '+c.piece:''));
+    if(dern) l.push('   ❓ '+dern.texte);
+  });
+  l.push('','Tu peux répondre directement dans l\'appli (Grand Livre → ☑️ Contrôle) ou en réponse à ce message.','','Merci 🙏','— '+moi.nom+', commissaire aux comptes');
+  return l.join('\n');
+}
+function ctlCopierMessage(email){
+  const t=ctlMessage(email);
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(t).then(function(){ alert('Message copié ✅ — colle-le dans WhatsApp.'); },function(){ prompt('Copie ce message :',t); });
+  else prompt('Copie ce message :',t);
+}
+function ctlMail(email){
+  location.href='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('FKMA — demande d\'explication (contrôle des comptes)')
+    +'&body='+encodeURIComponent(ctlMessage(email));
+}
+function ctlRenderOnglet(){
+  const el=document.getElementById('ctl-contenu'); if(!el) return;
+  const ctl=ctlEstControleur(), moi=ctlMoi();
+  let h='';
+  // Avancement par livre et par mois (12 derniers mois avec des écritures)
+  ['fiang','anj','k45'].forEach(function(livre){
+    const list=GL[livre]||[]; if(!list.length) return;
+    const parMois={};
+    list.forEach(function(e){ const m=(e.date||'').slice(0,7); (parMois[m]=parMois[m]||[]).push(e); });
+    const mois=Object.keys(parMois).sort().reverse().slice(0,12);
+    const tot=ctlCompter(livre,list);
+    h+='<div style="font-weight:700;margin:6px 0 4px">'+esc(CTL_LIVRES[livre])+' — '+tot.ok+' / '+tot.total+' contrôlées</div>'
+      +'<table class="ctl-table"><tr><th>Mois</th><th>Contrôlées</th><th>❓</th><th>💬</th><th>⚠️</th></tr>'
+      +mois.map(function(m){
+        const n=ctlCompter(livre,parMois[m]);
+        return '<tr><td>'+esc(m.slice(5,7)+'/'+m.slice(0,4))+'</td><td><b>'+n.ok+'</b> / '+n.total+(n.ok===n.total?' ✅':'')+'</td><td>'+(n.question||'')+'</td><td>'+(n.repondu||'')+'</td><td>'+(n.modifie||'')+'</td></tr>';
+      }).join('')+'</table>';
+  });
+  // Questions ouvertes, groupées par responsable
+  let qs=ctlQuestionsOuvertes();
+  if(!ctl&&!ctlEstComptable()) qs=qs.filter(function(q){ return q.c.destinataire===moi.email; });
+  const groupes={};
+  qs.forEach(function(q){ (groupes[q.c.destinataire||'']=groupes[q.c.destinataire||'']||[]).push(q); });
+  h+='<div style="font-weight:700;margin:12px 0 6px">Demandes d\'explication en cours ('+qs.length+')</div>';
+  if(!qs.length) h+='<div class="vide">Aucune demande en cours.</div>';
+  Object.keys(groupes).forEach(function(em){
+    const g=groupes[em], nbQ=g.filter(function(q){return q.c.statut==='question';}).length;
+    h+='<div class="ctl-groupe"><div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'
+      +'<b style="flex:1">👤 '+esc((ROLES_CONFIG[em]||{}).nom||g[0].c.destinataireNom||em)+'</b>'
+      +'<span class="ctl-badge ctl-q">❓ '+nbQ+'</span><span class="ctl-badge ctl-r">💬 '+(g.length-nbQ)+'</span>';
+    if(ctl&&nbQ) h+='<button class="ctl-btn" onclick="ctlCopierMessage('+jsArg(em)+')">📋 Copier le message WhatsApp</button>'
+      +'<button class="ctl-btn" onclick="ctlMail('+jsArg(em)+')">📧 Mail</button>';
+    h+='</div>';
+    g.forEach(function(q){
+      const c=q.c;
+      h+='<div class="ctl-item"><div style="font-size:12.5px"><b>'+esc(CTL_LIVRES[c.livre]||c.livre)+'</b> · '+esc(ctlDateFr(c.date))
+        +' · <b>'+(c.es==='E'?'+':'-')+fmt(c.montant)+' F</b> · '+esc(libelleRubrique(c.rubrique))+(c.libelle?' — '+esc(c.libelle):'')+'</div>'
+        +(q.e?htmlControle(c.livre,q.e)
+             :'<div class="ctl-fil">'+(c.fil||[]).map(ctlLigneFil).join('')+'<div>⚠️ Écriture supprimée du Grand Livre depuis la question.</div></div>'
+              +(ctl?'<div class="ctl-ligne"><button class="ctl-btn" onclick="ctlOublier('+jsArg(q.id)+')">🗑️ Retirer cette fiche</button></div>':''))
+        +'</div>';
+    });
+    h+='</div>';
+  });
+  el.innerHTML=h;
+}
+async function ctlOublier(id){
+  if(!confirm('Retirer la fiche de contrôle de cette écriture supprimée ?')) return;
+  try{ await window._fs.deleteDoc(window._fs.doc(window._db,'controles',id)); }catch(err){ alert('Impossible : '+err.message); }
+}
+// Export complet : toutes les écritures des 3 livres avec leur état de contrôle
+function exporterControlesExcel(){
+  const lignes=[['Livre','Date','N° pièce','Rubrique','Libellé','E/S','Montant','Caisse/Banque','État du contrôle','Contrôlé / demandé par','Le','Responsable interrogé','Questions et réponses']];
+  const LIB={'':'Non contrôlé',ok:'Contrôlé',question:'Explication demandée',repondu:'Répondu — à revoir',modifie:'Modifié après contrôle'};
+  ['fiang','anj','k45'].forEach(function(livre){
+    (GL[livre]||[]).slice().sort(cmpChrono).forEach(function(e){
+      const c=CTL[livre+'_'+e._id]||{}, s=ctlEtat(livre,e);
+      lignes.push([CTL_LIVRES[livre],e.date||'',e.piece||'',libelleRubrique(e.rubrique),e.libelle||'',e.es==='E'?'Entrée':'Sortie',
+        Number(e.montant)||0,(e.source||'caisse')==='banque'?'Banque':'Caisse',LIB[s]||s,c.controleParNom||'',ctlDateFr(c.controleLe),
+        c.destinataireNom||'',(c.fil||[]).map(function(m){ return ctlDateFr(m.le)+' '+(m.t==='reponse'?'Réponse':'Question')+' ('+(m.t==='reponse'&&m.via!=='appli'?(m.auteur||'')+', '+m.via:m.nom)+') : '+m.texte; }).join('\n')]);
+    });
+  });
+  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet(lignes);
+  ws['!cols']=[{wch:11},{wch:11},{wch:10},{wch:30},{wch:30},{wch:7},{wch:11},{wch:9},{wch:20},{wch:18},{wch:11},{wch:18},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws,'Contrôle');
+  XLSX.writeFile(wb,'FKMA_Controle_comptes_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
 
 // ── VERSEMENT EN BANQUE D'UNE RECETTE ─────────────────────────
 // Dans chaque livre, une recette encaissée en caisse (Rakitra, Anjarako voaray, Raki-pandraisana K45)
@@ -8725,14 +9043,14 @@ setTimeout(function(){
 // ══════════════════════════════════════════════════════════════
 // ── SERVICES DIACRES (onglet "Diacres" — planning des services) ─
 // ══════════════════════════════════════════════════════════════
-const SD_DISPATCH={"1":{"t":["Sonorisation","Tableau hira (1)","Mitaty rakitra (1)"]},"2":{"t":["Tableau hira (2)","Mandray vaovao","Mitaty rakitra (2)"]},"3":{"t":["Mampandroso olona","Manisa rakitra (1)","Ventilateur"]},"4":{"t":["Lamba litorjika","Manisa rakitra (2)","Manoratra journal"]}};
+const SD_DISPATCH={"1":{"t":["Sonorisation","Tableau hira (1)","Mitaty rakitra (1)"]},"2":{"t":["Tableau hira (2)","Mandray vaovao","Mitaty rakitra (2)"]},"3":{"t":["Mampandroso olona","Manisa rakitra (1)","Ventilateur"]},"4":{"t":["Lamba litorjika","Manisa rakitra (2)","Manoratra journal"]},"5":{"t":["Milaza raharaha"]}};
 const SD_TYPE_CONFIG={diacre:{icon:"👤",cls:"type-diacre"},couple:{icon:"👫",cls:"type-couple"},pasteur:{icon:"⛪",cls:"type-pasteur"},pl:{icon:"🌟",cls:"type-pl"},sortie:{icon:"🚌",cls:"type-sortie"}};
-const SD_PC_COLOR=["var(--p1)","var(--p2)","var(--p3)","var(--p4)"];
-const SD_PC_BG=["var(--p1b)","var(--p2b)","var(--p3b)","var(--p4b)"];
+const SD_PC_COLOR=["var(--p1)","var(--p2)","var(--p3)","var(--p4)","var(--p5)"];
+const SD_PC_BG=["var(--p1b)","var(--p2b)","var(--p3b)","var(--p4b)","var(--p5b)"];
 
 // Planning par défaut, utilisé seulement si Firebase n'a pas encore le planning. Les numéros WhatsApp
 // et emails des diacres ne sont plus dans la page : ils viennent de Firebase (services_diacres/data).
-const SD_DEFAULT = {"contacts":{"Rado":{"nom":"Rado","genre":"H"},"Nathalie Lolona":{"nom":"Nathalie Lolona","genre":"F"},"Rija":{"nom":"Rija","genre":"H"},"Nathalie Rija":{"nom":"Nathalie Rija","genre":"F"},"Mahery":{"nom":"Mahery","genre":"H"},"Ando":{"nom":"Ando","genre":"F"},"Rivo":{"nom":"Rivo","genre":"H"},"Patricia":{"nom":"Patricia","genre":"F"},"Yvon Staël":{"nom":"Yvon Staël","genre":"H"},"Nivo":{"nom":"Nivo","genre":"F"},"Manovosoa":{"nom":"Manovosoa","genre":"H"},"Laeticia":{"nom":"Laeticia","genre":"F"}},"planning":[{"m":"Septembre","a":2026,"mn":9,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"06/09/2026","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}},{"d":"13/09/2026","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1}},{"d":"20/09/2026","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2}},{"d":"27/09/2026","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Octobre","a":2026,"mn":10,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"04/10/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rija":3,"Nathalie Rija":4}},{"d":"11/10/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rija":4,"Nathalie Rija":1}},{"d":"18/10/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rija":1,"Nathalie Rija":2}},{"d":"25/10/2026","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Novembre","a":2026,"mn":11,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"01/11/2026","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}},{"d":"08/11/2026","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1}},{"d":"15/11/2026","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2}},{"d":"22/11/2026","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3}},{"d":"29/11/2026","f":false,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}}]},{"m":"Décembre","a":2026,"mn":12,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"06/12/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"13/12/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"20/12/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"25/12/2026","f":true,"fe":"Noël","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}},{"d":"27/12/2026","f":false,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}}]},{"m":"Janvier","a":2027,"mn":1,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"03/01/2027","f":true,"fe":"","p":{"Rado":1,"Rivo":2,"Patricia":3,"Nathalie Lolona":4}},{"d":"10/01/2027","f":false,"fe":"","p":{"Rado":2,"Rivo":3,"Patricia":4,"Nathalie Lolona":1}},{"d":"17/01/2027","f":false,"fe":"","p":{"Rado":3,"Rivo":4,"Patricia":1,"Nathalie Lolona":2}},{"d":"24/01/2027","f":false,"fe":"","p":{"Rado":4,"Rivo":1,"Patricia":2,"Nathalie Lolona":3}},{"d":"31/01/2027","f":false,"fe":"","p":{"Rado":1,"Rivo":2,"Patricia":3,"Nathalie Lolona":4}}]},{"m":"Février","a":2027,"mn":2,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"07/02/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4}},{"d":"14/02/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1}},{"d":"21/02/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2}},{"d":"28/02/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3}}]},{"m":"Mars","a":2027,"mn":3,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"07/03/2027","f":true,"fe":"","p":{"Manovosoa":1,"Patricia":2,"Laeticia":3,"Rivo":4}},{"d":"14/03/2027","f":false,"fe":"","p":{"Manovosoa":2,"Patricia":3,"Laeticia":4,"Rivo":1}},{"d":"21/03/2027","f":false,"fe":"","p":{"Manovosoa":3,"Patricia":4,"Laeticia":1,"Rivo":2}},{"d":"25/03/2027","f":true,"fe":"Jeudi Saint","p":{"Manovosoa":4,"Patricia":1,"Laeticia":2,"Rivo":3}},{"d":"28/03/2027","f":true,"fe":"Pâques","p":{"Manovosoa":1,"Patricia":2,"Laeticia":3,"Rivo":4}}]},{"m":"Avril","a":2027,"mn":4,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"04/04/2027","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Mahery":3,"Ando":4}},{"d":"11/04/2027","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Mahery":4,"Ando":1}},{"d":"18/04/2027","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Mahery":1,"Ando":2}},{"d":"25/04/2027","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Mahery":2,"Ando":3}}]},{"m":"Mai","a":2027,"mn":5,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"02/05/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Lolona":2,"Rado":3,"Nathalie Rija":4}},{"d":"06/05/2027","f":true,"fe":"Ascension","p":{"Rija":2,"Nathalie Lolona":3,"Rado":4,"Nathalie Rija":1}},{"d":"09/05/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Lolona":4,"Rado":1,"Nathalie Rija":2}},{"d":"16/05/2027","f":true,"fe":"Pentecôte","p":{"Rija":4,"Nathalie Lolona":1,"Rado":2,"Nathalie Rija":3}},{"d":"23/05/2027","f":false,"fe":"","p":{"Rija":1,"Nathalie Lolona":2,"Rado":3,"Nathalie Rija":4}},{"d":"30/05/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Lolona":3,"Rado":4,"Nathalie Rija":1}}]},{"m":"Juin","a":2027,"mn":6,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"06/06/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Mahery":3,"Ando":4}},{"d":"13/06/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Mahery":4,"Ando":1}},{"d":"20/06/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Mahery":1,"Ando":2}},{"d":"27/06/2027","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Mahery":2,"Ando":3}}]},{"m":"Juillet","a":2027,"mn":7,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"04/07/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":3,"Patricia":4}},{"d":"11/07/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":4,"Patricia":1}},{"d":"18/07/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":1,"Patricia":2}},{"d":"25/07/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":2,"Patricia":3}}]},{"m":"Août","a":2027,"mn":8,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"01/08/2027","f":true,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Yvon Staël":3,"Nivo":4}},{"d":"08/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":2,"Rado":3,"Yvon Staël":4,"Nivo":1}},{"d":"15/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":3,"Rado":4,"Yvon Staël":1,"Nivo":2}},{"d":"22/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":4,"Rado":1,"Yvon Staël":2,"Nivo":3}},{"d":"29/08/2027","f":false,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Yvon Staël":3,"Nivo":4}}]},{"m":"Septembre","a":2027,"mn":9,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"05/09/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rija":3,"Nathalie Rija":4}},{"d":"12/09/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rija":4,"Nathalie Rija":1}},{"d":"19/09/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rija":1,"Nathalie Rija":2}},{"d":"26/09/2027","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Octobre","a":2027,"mn":10,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"03/10/2027","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}},{"d":"10/10/2027","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Mahery":4,"Ando":1}},{"d":"17/10/2027","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Mahery":1,"Ando":2}},{"d":"24/10/2027","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Mahery":2,"Ando":3}},{"d":"31/10/2027","f":false,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}}]},{"m":"Novembre","a":2027,"mn":11,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"07/11/2027","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rivo":3,"Patricia":4}},{"d":"14/11/2027","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rivo":4,"Patricia":1}},{"d":"21/11/2027","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rivo":1,"Patricia":2}},{"d":"28/11/2027","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rivo":2,"Patricia":3}}]},{"m":"Décembre","a":2027,"mn":12,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"05/12/2027","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}},{"d":"12/12/2027","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1}},{"d":"19/12/2027","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2}},{"d":"25/12/2027","f":true,"fe":"Noël","p":{"Manovosoa":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3}},{"d":"26/12/2027","f":false,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}}]},{"m":"Janvier","a":2028,"mn":1,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"02/01/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nathalie Rija":2,"Nivo":3,"Rija":4}},{"d":"09/01/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nathalie Rija":3,"Nivo":4,"Rija":1}},{"d":"16/01/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nathalie Rija":4,"Nivo":1,"Rija":2}},{"d":"23/01/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nathalie Rija":1,"Nivo":2,"Rija":3}},{"d":"30/01/2028","f":false,"fe":"","p":{"Yvon Staël":1,"Nathalie Rija":2,"Nivo":3,"Rija":4}}]},{"m":"Février","a":2028,"mn":2,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"06/02/2028","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}},{"d":"13/02/2028","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1}},{"d":"20/02/2028","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2}},{"d":"27/02/2028","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3}}]},{"m":"Mars","a":2028,"mn":3,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"05/03/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"12/03/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"19/03/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"26/03/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}}]},{"m":"Avril","a":2028,"mn":4,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"02/04/2028","f":true,"fe":"","p":{"Rivo":1,"Rado":2,"Nathalie Lolona":3,"Patricia":4}},{"d":"09/04/2028","f":false,"fe":"","p":{"Rivo":2,"Rado":3,"Nathalie Lolona":4,"Patricia":1}},{"d":"13/04/2028","f":true,"fe":"Jeudi Saint","p":{"Rivo":3,"Rado":4,"Nathalie Lolona":1,"Patricia":2}},{"d":"16/04/2028","f":true,"fe":"Pâques","p":{"Rivo":4,"Rado":1,"Nathalie Lolona":2,"Patricia":3}},{"d":"23/04/2028","f":false,"fe":"","p":{"Rivo":1,"Rado":2,"Nathalie Lolona":3,"Patricia":4}},{"d":"30/04/2028","f":false,"fe":"","p":{"Rivo":2,"Rado":3,"Nathalie Lolona":4,"Patricia":1}}]},{"m":"Mai","a":2028,"mn":5,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"07/05/2028","f":true,"fe":"","p":{"Rija":1,"Mahery":2,"Nathalie Rija":3,"Ando":4}},{"d":"14/05/2028","f":false,"fe":"","p":{"Rija":2,"Mahery":3,"Nathalie Rija":4,"Ando":1}},{"d":"21/05/2028","f":false,"fe":"","p":{"Rija":3,"Mahery":4,"Nathalie Rija":1,"Ando":2}},{"d":"25/05/2028","f":true,"fe":"Ascension","p":{"Rija":4,"Mahery":1,"Nathalie Rija":2,"Ando":3}},{"d":"28/05/2028","f":false,"fe":"","p":{"Rija":1,"Mahery":2,"Nathalie Rija":3,"Ando":4}}]},{"m":"Juin","a":2028,"mn":6,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"04/06/2028","f":true,"fe":"Pentecôte","p":{"Manovosoa":1,"Laeticia":2,"Rivo":3,"Patricia":4}},{"d":"11/06/2028","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rivo":4,"Patricia":1}},{"d":"18/06/2028","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rivo":1,"Patricia":2}},{"d":"25/06/2028","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rivo":2,"Patricia":3}}]},{"m":"Juillet","a":2028,"mn":7,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"02/07/2028","f":true,"fe":"","p":{"Mahery":1,"Yvon Staël":2,"Ando":3,"Nivo":4}},{"d":"09/07/2028","f":false,"fe":"","p":{"Mahery":2,"Yvon Staël":3,"Ando":4,"Nivo":1}},{"d":"16/07/2028","f":false,"fe":"","p":{"Mahery":3,"Yvon Staël":4,"Ando":1,"Nivo":2}},{"d":"23/07/2028","f":false,"fe":"","p":{"Mahery":4,"Yvon Staël":1,"Ando":2,"Nivo":3}},{"d":"30/07/2028","f":false,"fe":"","p":{"Mahery":1,"Yvon Staël":2,"Ando":3,"Nivo":4}}]},{"m":"Août","a":2028,"mn":8,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"06/08/2028","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4}},{"d":"13/08/2028","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1}},{"d":"20/08/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2}},{"d":"27/08/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Septembre","a":2028,"mn":9,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"03/09/2028","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Mahery":3,"Ando":4}},{"d":"10/09/2028","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Mahery":4,"Ando":1}},{"d":"17/09/2028","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Mahery":1,"Ando":2}},{"d":"24/09/2028","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Mahery":2,"Ando":3}}]},{"m":"Octobre","a":2028,"mn":10,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"01/10/2028","f":true,"fe":"","p":{"Rivo":1,"Patricia":2,"Rija":3,"Nathalie Rija":4}},{"d":"08/10/2028","f":false,"fe":"","p":{"Rivo":2,"Patricia":3,"Rija":4,"Nathalie Rija":1}},{"d":"15/10/2028","f":false,"fe":"","p":{"Rivo":3,"Patricia":4,"Rija":1,"Nathalie Rija":2}},{"d":"22/10/2028","f":false,"fe":"","p":{"Rivo":4,"Patricia":1,"Rija":2,"Nathalie Rija":3}},{"d":"29/10/2028","f":false,"fe":"","p":{"Rivo":1,"Patricia":2,"Rija":3,"Nathalie Rija":4}}]},{"m":"Novembre","a":2028,"mn":11,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"05/11/2028","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rado":3,"Nathalie Lolona":4}},{"d":"12/11/2028","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rado":4,"Nathalie Lolona":1}},{"d":"19/11/2028","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rado":1,"Nathalie Lolona":2}},{"d":"26/11/2028","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Décembre","a":2028,"mn":12,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"03/12/2028","f":true,"fe":"","p":{"Manovosoa":1,"Nathalie Rija":2,"Rija":3,"Laeticia":4}},{"d":"10/12/2028","f":false,"fe":"","p":{"Manovosoa":2,"Nathalie Rija":3,"Rija":4,"Laeticia":1}},{"d":"17/12/2028","f":false,"fe":"","p":{"Manovosoa":3,"Nathalie Rija":4,"Rija":1,"Laeticia":2}},{"d":"24/12/2028","f":false,"fe":"","p":{"Manovosoa":4,"Nathalie Rija":1,"Rija":2,"Laeticia":3}},{"d":"25/12/2028","f":true,"fe":"Noël","p":{"Manovosoa":1,"Nathalie Rija":2,"Rija":3,"Laeticia":4}},{"d":"31/12/2028","f":false,"fe":"","p":{"Manovosoa":2,"Nathalie Rija":3,"Rija":4,"Laeticia":1}}]},{"m":"Janvier","a":2029,"mn":1,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"07/01/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4}},{"d":"14/01/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Mahery":4,"Ando":1}},{"d":"21/01/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Mahery":1,"Ando":2}},{"d":"28/01/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Mahery":2,"Ando":3}}]},{"m":"Février","a":2029,"mn":2,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"04/02/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rivo":3,"Patricia":4}},{"d":"11/02/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rivo":4,"Patricia":1}},{"d":"18/02/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rivo":1,"Patricia":2}},{"d":"25/02/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rivo":2,"Patricia":3}}]},{"m":"Mars","a":2029,"mn":3,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"04/03/2029","f":true,"fe":"","p":{"Rado":1,"Laeticia":2,"Nathalie Lolona":3,"Manovosoa":4}},{"d":"11/03/2029","f":false,"fe":"","p":{"Rado":2,"Laeticia":3,"Nathalie Lolona":4,"Manovosoa":1}},{"d":"18/03/2029","f":false,"fe":"","p":{"Rado":3,"Laeticia":4,"Nathalie Lolona":1,"Manovosoa":2}},{"d":"25/03/2029","f":false,"fe":"","p":{"Rado":4,"Laeticia":1,"Nathalie Lolona":2,"Manovosoa":3}},{"d":"29/03/2029","f":true,"fe":"Jeudi Saint","p":{"Rado":1,"Laeticia":2,"Nathalie Lolona":3,"Manovosoa":4}}]},{"m":"Avril","a":2029,"mn":4,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"01/04/2029","f":true,"fe":"Pâques","p":{"Nivo":1,"Rija":2,"Yvon Staël":3,"Nathalie Rija":4}},{"d":"08/04/2029","f":false,"fe":"","p":{"Nivo":2,"Rija":3,"Yvon Staël":4,"Nathalie Rija":1}},{"d":"15/04/2029","f":false,"fe":"","p":{"Nivo":3,"Rija":4,"Yvon Staël":1,"Nathalie Rija":2}},{"d":"22/04/2029","f":false,"fe":"","p":{"Nivo":4,"Rija":1,"Yvon Staël":2,"Nathalie Rija":3}},{"d":"29/04/2029","f":false,"fe":"","p":{"Nivo":1,"Rija":2,"Yvon Staël":3,"Nathalie Rija":4}}]},{"m":"Mai","a":2029,"mn":5,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"06/05/2029","f":true,"fe":"","p":{"Rivo":1,"Ando":2,"Patricia":3,"Mahery":4}},{"d":"10/05/2029","f":true,"fe":"Ascension","p":{"Rivo":2,"Ando":3,"Patricia":4,"Mahery":1}},{"d":"13/05/2029","f":false,"fe":"","p":{"Rivo":3,"Ando":4,"Patricia":1,"Mahery":2}},{"d":"20/05/2029","f":true,"fe":"Pentecôte","p":{"Rivo":4,"Ando":1,"Patricia":2,"Mahery":3}},{"d":"27/05/2029","f":false,"fe":"","p":{"Rivo":1,"Ando":2,"Patricia":3,"Mahery":4}}]},{"m":"Juin","a":2029,"mn":6,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"03/06/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"10/06/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"17/06/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"24/06/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}}]},{"m":"Juillet","a":2029,"mn":7,"g":["Rado","Nathalie Lolona","Rivo","Patricia"],"opt":"A","combo":["C1","C4"],"j":[{"d":"01/07/2029","f":true,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Rivo":3,"Patricia":4}},{"d":"08/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":2,"Rado":3,"Rivo":4,"Patricia":1}},{"d":"15/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":3,"Rado":4,"Rivo":1,"Patricia":2}},{"d":"22/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":4,"Rado":1,"Rivo":2,"Patricia":3}},{"d":"29/07/2029","f":false,"fe":"","p":{"Nathalie Lolona":1,"Rado":2,"Rivo":3,"Patricia":4}}]},{"m":"Août","a":2029,"mn":8,"g":["Rija","Nathalie Rija","Mahery","Ando"],"opt":"A","combo":["C2","C3"],"j":[{"d":"05/08/2029","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4}},{"d":"12/08/2029","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1}},{"d":"19/08/2029","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2}},{"d":"26/08/2029","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3}}]},{"m":"Septembre","a":2029,"mn":9,"g":["Manovosoa","Laeticia","Rivo","Patricia"],"opt":"A","combo":["B2","C4"],"j":[{"d":"02/09/2029","f":true,"fe":"","p":{"Patricia":1,"Manovosoa":2,"Laeticia":3,"Rivo":4}},{"d":"09/09/2029","f":false,"fe":"","p":{"Patricia":2,"Manovosoa":3,"Laeticia":4,"Rivo":1}},{"d":"16/09/2029","f":false,"fe":"","p":{"Patricia":3,"Manovosoa":4,"Laeticia":1,"Rivo":2}},{"d":"23/09/2029","f":false,"fe":"","p":{"Patricia":4,"Manovosoa":1,"Laeticia":2,"Rivo":3}},{"d":"30/09/2029","f":false,"fe":"","p":{"Patricia":1,"Manovosoa":2,"Laeticia":3,"Rivo":4}}]},{"m":"Octobre","a":2029,"mn":10,"g":["Nivo","Yvon Staël","Mahery","Ando"],"opt":"A","combo":["B1","C3"],"j":[{"d":"07/10/2029","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Mahery":3,"Ando":4}},{"d":"14/10/2029","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Mahery":4,"Ando":1}},{"d":"21/10/2029","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Mahery":1,"Ando":2}},{"d":"28/10/2029","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Mahery":2,"Ando":3}}]},{"m":"Novembre","a":2029,"mn":11,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija"],"opt":"A","combo":["C1","C2"],"j":[{"d":"04/11/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4}},{"d":"11/11/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1}},{"d":"18/11/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2}},{"d":"25/11/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Décembre","a":2029,"mn":12,"g":["Manovosoa","Laeticia","Mahery","Ando"],"opt":"A","combo":["B2","C3"],"j":[{"d":"02/12/2029","f":true,"fe":"","p":{"Laeticia":1,"Mahery":2,"Manovosoa":3,"Ando":4}},{"d":"09/12/2029","f":false,"fe":"","p":{"Laeticia":2,"Mahery":3,"Manovosoa":4,"Ando":1}},{"d":"16/12/2029","f":false,"fe":"","p":{"Laeticia":3,"Mahery":4,"Manovosoa":1,"Ando":2}},{"d":"23/12/2029","f":false,"fe":"","p":{"Laeticia":4,"Mahery":1,"Manovosoa":2,"Ando":3}},{"d":"25/12/2029","f":true,"fe":"Noël","p":{"Laeticia":1,"Mahery":2,"Manovosoa":3,"Ando":4}},{"d":"30/12/2029","f":false,"fe":"","p":{"Laeticia":2,"Mahery":3,"Manovosoa":4,"Ando":1}}]},{"m":"Janvier","a":2030,"mn":1,"g":["Rija","Nathalie Rija","Rivo","Patricia"],"opt":"A","combo":["C2","C4"],"j":[{"d":"06/01/2030","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":3,"Patricia":4}},{"d":"13/01/2030","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":4,"Patricia":1}},{"d":"20/01/2030","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":1,"Patricia":2}},{"d":"27/01/2030","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":2,"Patricia":3}}]},{"m":"Février","a":2030,"mn":2,"g":["Nivo","Yvon Staël","Rado","Nathalie Lolona"],"opt":"A","combo":["B1","C1"],"j":[{"d":"03/02/2030","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rado":3,"Nathalie Lolona":4}},{"d":"10/02/2030","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rado":4,"Nathalie Lolona":1}},{"d":"17/02/2030","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rado":1,"Nathalie Lolona":2}},{"d":"24/02/2030","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Mars","a":2030,"mn":3,"g":["Manovosoa","Laeticia","Rija","Nathalie Rija"],"opt":"A","combo":["B2","C2"],"j":[{"d":"03/03/2030","f":true,"fe":"","p":{"Rija":1,"Manovosoa":2,"Nathalie Rija":3,"Laeticia":4}},{"d":"10/03/2030","f":false,"fe":"","p":{"Rija":2,"Manovosoa":3,"Nathalie Rija":4,"Laeticia":1}},{"d":"17/03/2030","f":false,"fe":"","p":{"Rija":3,"Manovosoa":4,"Nathalie Rija":1,"Laeticia":2}},{"d":"24/03/2030","f":false,"fe":"","p":{"Rija":4,"Manovosoa":1,"Nathalie Rija":2,"Laeticia":3}},{"d":"31/03/2030","f":false,"fe":"","p":{"Rija":1,"Manovosoa":2,"Nathalie Rija":3,"Laeticia":4}}]},{"m":"Avril","a":2030,"mn":4,"g":["Rado","Nathalie Lolona","Mahery","Ando"],"opt":"A","combo":["C1","C3"],"j":[{"d":"07/04/2030","f":true,"fe":"","p":{"Mahery":1,"Nathalie Lolona":2,"Ando":3,"Rado":4}},{"d":"14/04/2030","f":false,"fe":"","p":{"Mahery":2,"Nathalie Lolona":3,"Ando":4,"Rado":1}},{"d":"18/04/2030","f":true,"fe":"Jeudi Saint","p":{"Mahery":3,"Nathalie Lolona":4,"Ando":1,"Rado":2}},{"d":"21/04/2030","f":true,"fe":"Pâques","p":{"Mahery":4,"Nathalie Lolona":1,"Ando":2,"Rado":3}},{"d":"28/04/2030","f":false,"fe":"","p":{"Mahery":1,"Nathalie Lolona":2,"Ando":3,"Rado":4}}]},{"m":"Mai","a":2030,"mn":5,"g":["Nivo","Yvon Staël","Rivo","Patricia"],"opt":"A","combo":["B1","C4"],"j":[{"d":"05/05/2030","f":true,"fe":"","p":{"Rivo":1,"Nivo":2,"Patricia":3,"Yvon Staël":4}},{"d":"12/05/2030","f":false,"fe":"","p":{"Rivo":2,"Nivo":3,"Patricia":4,"Yvon Staël":1}},{"d":"19/05/2030","f":false,"fe":"","p":{"Rivo":3,"Nivo":4,"Patricia":1,"Yvon Staël":2}},{"d":"26/05/2030","f":false,"fe":"","p":{"Rivo":4,"Nivo":1,"Patricia":2,"Yvon Staël":3}},{"d":"30/05/2030","f":true,"fe":"Ascension","p":{"Rivo":1,"Nivo":2,"Patricia":3,"Yvon Staël":4}}]}],"fitaovana":[{"date":"06/09/2026","fete":"","fitaovana":"Ando","mois_num":9,"annee":2026,"label":"1er dim. Septembre 2026"},{"date":"04/10/2026","fete":"","fitaovana":"Patricia","mois_num":10,"annee":2026,"label":"1er dim. Octobre 2026"},{"date":"01/11/2026","fete":"","fitaovana":"Nivo","mois_num":11,"annee":2026,"label":"1er dim. Novembre 2026"},{"date":"06/12/2026","fete":"","fitaovana":"Laeticia","mois_num":12,"annee":2026,"label":"1er dim. Décembre 2026"},{"date":"25/12/2026","fete":"Noël","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2026,"label":"Noël 2026"},{"date":"03/01/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":1,"annee":2027,"label":"1er dim. Janvier 2027"},{"date":"07/02/2027","fete":"","fitaovana":"Laeticia","mois_num":2,"annee":2027,"label":"1er dim. Février 2027"},{"date":"07/03/2027","fete":"","fitaovana":"Patricia","mois_num":3,"annee":2027,"label":"1er dim. Mars 2027"},{"date":"25/03/2027","fete":"Pâques","fitaovana":"Patricia","mois_num":3,"annee":2027,"label":"Pâques 2027"},{"date":"28/03/2027","fete":"Jeudi Saint","fitaovana":"Nivo","mois_num":3,"annee":2027,"label":"Jeudi Saint 2027"},{"date":"04/04/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":4,"annee":2027,"label":"1er dim. Avril 2027"},{"date":"02/05/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":5,"annee":2027,"label":"1er dim. Mai 2027"},{"date":"06/05/2027","fete":"Ascension","fitaovana":"Nathalie Rija","mois_num":5,"annee":2027,"label":"Ascension 2027"},{"date":"16/05/2027","fete":"Pentecôte","fitaovana":"Ando","mois_num":5,"annee":2027,"label":"Pentecôte 2027"},{"date":"06/06/2027","fete":"","fitaovana":"Ando","mois_num":6,"annee":2027,"label":"1er dim. Juin 2027"},{"date":"04/07/2027","fete":"","fitaovana":"Nivo","mois_num":7,"annee":2027,"label":"1er dim. Juillet 2027"},{"date":"01/08/2027","fete":"","fitaovana":"Laeticia","mois_num":8,"annee":2027,"label":"1er dim. Août 2027"},{"date":"05/09/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":9,"annee":2027,"label":"1er dim. Septembre 2027"}],"fivoriana":[{"annee":2026,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2026,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2026,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2026,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2027,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2027,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2027,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2027,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2027,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2027,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2027,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2027,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2027,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2027,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2028,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2028,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2028,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2028,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2028,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2028,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2028,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2028,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2028,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2028,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2029,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2029,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2029,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2029,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2029,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2029,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2029,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2029,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2029,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2029,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2030,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2030,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2030,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2030,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2030,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"}]};
+const SD_DEFAULT = {"contacts":{"Rado":{"nom":"Rado","genre":"H"},"Nathalie Lolona":{"nom":"Nathalie Lolona","genre":"F"},"Rija":{"nom":"Rija","genre":"H"},"Nathalie Rija":{"nom":"Nathalie Rija","genre":"F"},"Mahery":{"nom":"Mahery","genre":"H"},"Ando":{"nom":"Ando","genre":"F"},"Rivo":{"nom":"Rivo","genre":"H"},"Patricia":{"nom":"Patricia","genre":"F"},"Yvon Staël":{"nom":"Yvon Staël","genre":"H"},"Nivo":{"nom":"Nivo","genre":"F"},"Manovosoa":{"nom":"Manovosoa","genre":"H"},"Laeticia":{"nom":"Laeticia","genre":"F"}},"planning":[{"m":"Septembre","a":2026,"mn":9,"g":["Manovosoa","Laeticia","Rado","Nathalie Lolona"],"opt":"A","combo":["B2","C1"],"j":[{"d":"06/09/2026","f":true,"fe":"","p":{"Manovosoa":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4}},{"d":"13/09/2026","f":false,"fe":"","p":{"Manovosoa":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1}},{"d":"20/09/2026","f":false,"fe":"","p":{"Manovosoa":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2}},{"d":"27/09/2026","f":false,"fe":"","p":{"Manovosoa":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3}}]},{"m":"Octobre","a":2026,"mn":10,"g":["Nivo","Yvon Staël","Rija","Nathalie Rija"],"opt":"A","combo":["B1","C2"],"j":[{"d":"04/10/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Rija":3,"Nathalie Rija":4}},{"d":"11/10/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Rija":4,"Nathalie Rija":1}},{"d":"18/10/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Rija":1,"Nathalie Rija":2}},{"d":"25/10/2026","f":false,"fe":"","p":{"Yvon Staël":4,"Nivo":1,"Rija":2,"Nathalie Rija":3}}]},{"m":"Novembre","a":2026,"mn":11,"g":["Mahery","Ando","Rivo","Patricia"],"opt":"A","combo":["C3","C4"],"j":[{"d":"01/11/2026","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}},{"d":"08/11/2026","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1}},{"d":"15/11/2026","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2}},{"d":"22/11/2026","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3}},{"d":"29/11/2026","f":false,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4}}]},{"m":"Décembre","a":2026,"mn":12,"g":["Nivo","Yvon Staël","Manovosoa","Laeticia"],"opt":"A","combo":["B1","B2"],"j":[{"d":"06/12/2026","f":true,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}},{"d":"13/12/2026","f":false,"fe":"","p":{"Yvon Staël":2,"Nivo":3,"Manovosoa":4,"Laeticia":1}},{"d":"20/12/2026","f":false,"fe":"","p":{"Yvon Staël":3,"Nivo":4,"Manovosoa":1,"Laeticia":2}},{"d":"25/12/2026","f":true,"fe":"Noël","p":{"Yvon Staël":4,"Nivo":1,"Manovosoa":2,"Laeticia":3}},{"d":"27/12/2026","f":false,"fe":"","p":{"Yvon Staël":1,"Nivo":2,"Manovosoa":3,"Laeticia":4}}]},{"m":"Janvier","a":2027,"mn":1,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C2"],"j":[{"d":"03/01/2027","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4,"Manovosoa":5}},{"d":"10/01/2027","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1,"Manovosoa":5}},{"d":"17/01/2027","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2,"Manovosoa":5}},{"d":"24/01/2027","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3,"Manovosoa":5}},{"d":"31/01/2027","f":false,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4,"Manovosoa":5}}]},{"m":"Février","a":2027,"mn":2,"g":["Nivo","Laeticia","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C3"],"j":[{"d":"07/02/2027","f":true,"fe":"","p":{"Nivo":1,"Laeticia":2,"Mahery":3,"Ando":4,"Yvon Staël":5}},{"d":"14/02/2027","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Mahery":4,"Ando":1,"Yvon Staël":5}},{"d":"21/02/2027","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Mahery":1,"Ando":2,"Yvon Staël":5}},{"d":"28/02/2027","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Mahery":2,"Ando":3,"Yvon Staël":5}}]},{"m":"Mars","a":2027,"mn":3,"g":["Rado","Nathalie Lolona","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C4"],"j":[{"d":"07/03/2027","f":true,"fe":"","p":{"Rado":2,"Nathalie Lolona":4,"Rivo":1,"Patricia":3,"Manovosoa":5}},{"d":"14/03/2027","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":1,"Rivo":2,"Patricia":4,"Manovosoa":5}},{"d":"21/03/2027","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":2,"Rivo":3,"Patricia":1,"Manovosoa":5}},{"d":"25/03/2027","f":true,"fe":"Jeudi Saint","p":{"Rado":1,"Nathalie Lolona":3,"Rivo":4,"Patricia":2,"Manovosoa":5}},{"d":"28/03/2027","f":true,"fe":"Pâques","p":{"Rado":2,"Nathalie Lolona":4,"Rivo":1,"Patricia":3,"Manovosoa":5}}]},{"m":"Avril","a":2027,"mn":4,"g":["Nivo","Laeticia","Rija","Nathalie Rija","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C2"],"j":[{"d":"04/04/2027","f":true,"fe":"","p":{"Nivo":2,"Laeticia":1,"Rija":3,"Nathalie Rija":4,"Yvon Staël":5}},{"d":"11/04/2027","f":false,"fe":"","p":{"Nivo":3,"Laeticia":2,"Rija":4,"Nathalie Rija":1,"Yvon Staël":5}},{"d":"18/04/2027","f":false,"fe":"","p":{"Nivo":4,"Laeticia":3,"Rija":1,"Nathalie Rija":2,"Yvon Staël":5}},{"d":"25/04/2027","f":false,"fe":"","p":{"Nivo":1,"Laeticia":4,"Rija":2,"Nathalie Rija":3,"Yvon Staël":5}}]},{"m":"Mai","a":2027,"mn":5,"g":["Mahery","Ando","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C3","C4"],"j":[{"d":"02/05/2027","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"06/05/2027","f":true,"fe":"Ascension","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1,"Manovosoa":5}},{"d":"09/05/2027","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2,"Manovosoa":5}},{"d":"16/05/2027","f":true,"fe":"Pentecôte","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3,"Manovosoa":5}},{"d":"23/05/2027","f":false,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"30/05/2027","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1,"Manovosoa":5}}]},{"m":"Juin","a":2027,"mn":6,"g":["Nivo","Laeticia","Rado","Nathalie Lolona","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C1"],"j":[{"d":"06/06/2027","f":true,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1,"Yvon Staël":5}},{"d":"13/06/2027","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2,"Yvon Staël":5}},{"d":"20/06/2027","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3,"Yvon Staël":5}},{"d":"27/06/2027","f":false,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4,"Yvon Staël":5}}]},{"m":"Juillet","a":2027,"mn":7,"g":["Rija","Nathalie Rija","Mahery","Ando","Manovosoa"],"opt":"5e : Manovosoa","combo":["C2","C3"],"j":[{"d":"04/07/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4,"Manovosoa":5}},{"d":"11/07/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1,"Manovosoa":5}},{"d":"18/07/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2,"Manovosoa":5}},{"d":"25/07/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3,"Manovosoa":5}}]},{"m":"Août","a":2027,"mn":8,"g":["Nivo","Laeticia","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C4"],"j":[{"d":"01/08/2027","f":true,"fe":"","p":{"Nivo":3,"Laeticia":1,"Rivo":4,"Patricia":2,"Yvon Staël":5}},{"d":"08/08/2027","f":false,"fe":"","p":{"Nivo":4,"Laeticia":2,"Rivo":1,"Patricia":3,"Yvon Staël":5}},{"d":"15/08/2027","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Rivo":2,"Patricia":4,"Yvon Staël":5}},{"d":"22/08/2027","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Rivo":3,"Patricia":1,"Yvon Staël":5}},{"d":"29/08/2027","f":false,"fe":"","p":{"Nivo":3,"Laeticia":1,"Rivo":4,"Patricia":2,"Yvon Staël":5}}]},{"m":"Septembre","a":2027,"mn":9,"g":["Rado","Nathalie Lolona","Mahery","Ando","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C3"],"j":[{"d":"05/09/2027","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Mahery":3,"Ando":4,"Manovosoa":5}},{"d":"12/09/2027","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Mahery":4,"Ando":1,"Manovosoa":5}},{"d":"19/09/2027","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Mahery":1,"Ando":2,"Manovosoa":5}},{"d":"26/09/2027","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Mahery":2,"Ando":3,"Manovosoa":5}}]},{"m":"Octobre","a":2027,"mn":10,"g":["Rija","Nathalie Rija","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C2","C4"],"j":[{"d":"03/10/2027","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":3,"Rivo":2,"Patricia":4,"Yvon Staël":5}},{"d":"10/10/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":4,"Rivo":3,"Patricia":1,"Yvon Staël":5}},{"d":"17/10/2027","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":1,"Rivo":4,"Patricia":2,"Yvon Staël":5}},{"d":"24/10/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":2,"Rivo":1,"Patricia":3,"Yvon Staël":5}},{"d":"31/10/2027","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":3,"Rivo":2,"Patricia":4,"Yvon Staël":5}}]},{"m":"Novembre","a":2027,"mn":11,"g":["Nivo","Laeticia","Rado","Nathalie Lolona","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C1"],"j":[{"d":"07/11/2027","f":true,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rado":3,"Nathalie Lolona":4,"Manovosoa":5}},{"d":"14/11/2027","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rado":4,"Nathalie Lolona":1,"Manovosoa":5}},{"d":"21/11/2027","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rado":1,"Nathalie Lolona":2,"Manovosoa":5}},{"d":"28/11/2027","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rado":2,"Nathalie Lolona":3,"Manovosoa":5}}]},{"m":"Décembre","a":2027,"mn":12,"g":["Rija","Nathalie Rija","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C2","C3"],"j":[{"d":"05/12/2027","f":true,"fe":"","p":{"Rija":4,"Nathalie Rija":2,"Mahery":3,"Ando":1,"Yvon Staël":5}},{"d":"12/12/2027","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":3,"Mahery":4,"Ando":2,"Yvon Staël":5}},{"d":"19/12/2027","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":4,"Mahery":1,"Ando":3,"Yvon Staël":5}},{"d":"25/12/2027","f":true,"fe":"Noël","p":{"Rija":3,"Nathalie Rija":1,"Mahery":2,"Ando":4,"Yvon Staël":5}},{"d":"26/12/2027","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":2,"Mahery":3,"Ando":1,"Yvon Staël":5}}]},{"m":"Janvier","a":2028,"mn":1,"g":["Nivo","Laeticia","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C4"],"j":[{"d":"02/01/2028","f":true,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"09/01/2028","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rivo":4,"Patricia":1,"Manovosoa":5}},{"d":"16/01/2028","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rivo":1,"Patricia":2,"Manovosoa":5}},{"d":"23/01/2028","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rivo":2,"Patricia":3,"Manovosoa":5}},{"d":"30/01/2028","f":false,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rivo":3,"Patricia":4,"Manovosoa":5}}]},{"m":"Février","a":2028,"mn":2,"g":["Rado","Nathalie Lolona","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C3"],"j":[{"d":"06/02/2028","f":true,"fe":"","p":{"Rado":2,"Nathalie Lolona":4,"Mahery":1,"Ando":3,"Yvon Staël":5}},{"d":"13/02/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":1,"Mahery":2,"Ando":4,"Yvon Staël":5}},{"d":"20/02/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":2,"Mahery":3,"Ando":1,"Yvon Staël":5}},{"d":"27/02/2028","f":false,"fe":"","p":{"Rado":1,"Nathalie Lolona":3,"Mahery":4,"Ando":2,"Yvon Staël":5}}]},{"m":"Mars","a":2028,"mn":3,"g":["Nivo","Laeticia","Rija","Nathalie Rija","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C2"],"j":[{"d":"05/03/2028","f":true,"fe":"","p":{"Nivo":2,"Laeticia":1,"Rija":3,"Nathalie Rija":4,"Manovosoa":5}},{"d":"12/03/2028","f":false,"fe":"","p":{"Nivo":3,"Laeticia":2,"Rija":4,"Nathalie Rija":1,"Manovosoa":5}},{"d":"19/03/2028","f":false,"fe":"","p":{"Nivo":4,"Laeticia":3,"Rija":1,"Nathalie Rija":2,"Manovosoa":5}},{"d":"26/03/2028","f":false,"fe":"","p":{"Nivo":1,"Laeticia":4,"Rija":2,"Nathalie Rija":3,"Manovosoa":5}}]},{"m":"Avril","a":2028,"mn":4,"g":["Rado","Nathalie Lolona","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C4"],"j":[{"d":"02/04/2028","f":true,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rivo":2,"Patricia":1,"Yvon Staël":5}},{"d":"09/04/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rivo":3,"Patricia":2,"Yvon Staël":5}},{"d":"13/04/2028","f":true,"fe":"Jeudi Saint","p":{"Rado":1,"Nathalie Lolona":2,"Rivo":4,"Patricia":3,"Yvon Staël":5}},{"d":"16/04/2028","f":true,"fe":"Pâques","p":{"Rado":2,"Nathalie Lolona":3,"Rivo":1,"Patricia":4,"Yvon Staël":5}},{"d":"23/04/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rivo":2,"Patricia":1,"Yvon Staël":5}},{"d":"30/04/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rivo":3,"Patricia":2,"Yvon Staël":5}}]},{"m":"Mai","a":2028,"mn":5,"g":["Nivo","Laeticia","Mahery","Ando","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C3"],"j":[{"d":"07/05/2028","f":true,"fe":"","p":{"Nivo":1,"Laeticia":3,"Mahery":4,"Ando":2,"Manovosoa":5}},{"d":"14/05/2028","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Mahery":1,"Ando":3,"Manovosoa":5}},{"d":"21/05/2028","f":false,"fe":"","p":{"Nivo":3,"Laeticia":1,"Mahery":2,"Ando":4,"Manovosoa":5}},{"d":"25/05/2028","f":true,"fe":"Ascension","p":{"Nivo":4,"Laeticia":2,"Mahery":3,"Ando":1,"Manovosoa":5}},{"d":"28/05/2028","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Mahery":4,"Ando":2,"Manovosoa":5}}]},{"m":"Juin","a":2028,"mn":6,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C2"],"j":[{"d":"04/06/2028","f":true,"fe":"Pentecôte","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4,"Yvon Staël":5}},{"d":"11/06/2028","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1,"Yvon Staël":5}},{"d":"18/06/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2,"Yvon Staël":5}},{"d":"25/06/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3,"Yvon Staël":5}}]},{"m":"Juillet","a":2028,"mn":7,"g":["Mahery","Ando","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C3","C4"],"j":[{"d":"02/07/2028","f":true,"fe":"","p":{"Mahery":2,"Ando":4,"Rivo":1,"Patricia":3,"Manovosoa":5}},{"d":"09/07/2028","f":false,"fe":"","p":{"Mahery":3,"Ando":1,"Rivo":2,"Patricia":4,"Manovosoa":5}},{"d":"16/07/2028","f":false,"fe":"","p":{"Mahery":4,"Ando":2,"Rivo":3,"Patricia":1,"Manovosoa":5}},{"d":"23/07/2028","f":false,"fe":"","p":{"Mahery":1,"Ando":3,"Rivo":4,"Patricia":2,"Manovosoa":5}},{"d":"30/07/2028","f":false,"fe":"","p":{"Mahery":2,"Ando":4,"Rivo":1,"Patricia":3,"Manovosoa":5}}]},{"m":"Août","a":2028,"mn":8,"g":["Nivo","Laeticia","Rado","Nathalie Lolona","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C1"],"j":[{"d":"06/08/2028","f":true,"fe":"","p":{"Nivo":2,"Laeticia":1,"Rado":3,"Nathalie Lolona":4,"Yvon Staël":5}},{"d":"13/08/2028","f":false,"fe":"","p":{"Nivo":3,"Laeticia":2,"Rado":4,"Nathalie Lolona":1,"Yvon Staël":5}},{"d":"20/08/2028","f":false,"fe":"","p":{"Nivo":4,"Laeticia":3,"Rado":1,"Nathalie Lolona":2,"Yvon Staël":5}},{"d":"27/08/2028","f":false,"fe":"","p":{"Nivo":1,"Laeticia":4,"Rado":2,"Nathalie Lolona":3,"Yvon Staël":5}}]},{"m":"Septembre","a":2028,"mn":9,"g":["Rija","Nathalie Rija","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C2","C4"],"j":[{"d":"03/09/2028","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"10/09/2028","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":4,"Patricia":1,"Manovosoa":5}},{"d":"17/09/2028","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":1,"Patricia":2,"Manovosoa":5}},{"d":"24/09/2028","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":2,"Patricia":3,"Manovosoa":5}}]},{"m":"Octobre","a":2028,"mn":10,"g":["Nivo","Laeticia","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C3"],"j":[{"d":"01/10/2028","f":true,"fe":"","p":{"Nivo":2,"Laeticia":4,"Mahery":3,"Ando":1,"Yvon Staël":5}},{"d":"08/10/2028","f":false,"fe":"","p":{"Nivo":3,"Laeticia":1,"Mahery":4,"Ando":2,"Yvon Staël":5}},{"d":"15/10/2028","f":false,"fe":"","p":{"Nivo":4,"Laeticia":2,"Mahery":1,"Ando":3,"Yvon Staël":5}},{"d":"22/10/2028","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Mahery":2,"Ando":4,"Yvon Staël":5}},{"d":"29/10/2028","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Mahery":3,"Ando":1,"Yvon Staël":5}}]},{"m":"Novembre","a":2028,"mn":11,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C2"],"j":[{"d":"05/11/2028","f":true,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":1,"Nathalie Rija":4,"Manovosoa":5}},{"d":"12/11/2028","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":2,"Nathalie Rija":1,"Manovosoa":5}},{"d":"19/11/2028","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":3,"Nathalie Rija":2,"Manovosoa":5}},{"d":"26/11/2028","f":false,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":4,"Nathalie Rija":3,"Manovosoa":5}}]},{"m":"Décembre","a":2028,"mn":12,"g":["Mahery","Ando","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C3","C4"],"j":[{"d":"03/12/2028","f":true,"fe":"","p":{"Mahery":4,"Ando":3,"Rivo":1,"Patricia":2,"Yvon Staël":5}},{"d":"10/12/2028","f":false,"fe":"","p":{"Mahery":1,"Ando":4,"Rivo":2,"Patricia":3,"Yvon Staël":5}},{"d":"17/12/2028","f":false,"fe":"","p":{"Mahery":2,"Ando":1,"Rivo":3,"Patricia":4,"Yvon Staël":5}},{"d":"24/12/2028","f":false,"fe":"","p":{"Mahery":3,"Ando":2,"Rivo":4,"Patricia":1,"Yvon Staël":5}},{"d":"25/12/2028","f":true,"fe":"Noël","p":{"Mahery":4,"Ando":3,"Rivo":1,"Patricia":2,"Yvon Staël":5}},{"d":"31/12/2028","f":false,"fe":"","p":{"Mahery":1,"Ando":4,"Rivo":2,"Patricia":3,"Yvon Staël":5}}]},{"m":"Janvier","a":2029,"mn":1,"g":["Nivo","Laeticia","Rija","Nathalie Rija","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C2"],"j":[{"d":"07/01/2029","f":true,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rija":3,"Nathalie Rija":4,"Manovosoa":5}},{"d":"14/01/2029","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rija":4,"Nathalie Rija":1,"Manovosoa":5}},{"d":"21/01/2029","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rija":1,"Nathalie Rija":2,"Manovosoa":5}},{"d":"28/01/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rija":2,"Nathalie Rija":3,"Manovosoa":5}}]},{"m":"Février","a":2029,"mn":2,"g":["Rado","Nathalie Lolona","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C4"],"j":[{"d":"04/02/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":3,"Rivo":4,"Patricia":2,"Yvon Staël":5}},{"d":"11/02/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":4,"Rivo":1,"Patricia":3,"Yvon Staël":5}},{"d":"18/02/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":1,"Rivo":2,"Patricia":4,"Yvon Staël":5}},{"d":"25/02/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":2,"Rivo":3,"Patricia":1,"Yvon Staël":5}}]},{"m":"Mars","a":2029,"mn":3,"g":["Rija","Nathalie Rija","Mahery","Ando","Manovosoa"],"opt":"5e : Manovosoa","combo":["C2","C3"],"j":[{"d":"04/03/2029","f":true,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1,"Manovosoa":5}},{"d":"11/03/2029","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":1,"Ando":2,"Manovosoa":5}},{"d":"18/03/2029","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":2,"Ando":3,"Manovosoa":5}},{"d":"25/03/2029","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":3,"Ando":4,"Manovosoa":5}},{"d":"29/03/2029","f":true,"fe":"Jeudi Saint","p":{"Rija":2,"Nathalie Rija":3,"Mahery":4,"Ando":1,"Manovosoa":5}}]},{"m":"Avril","a":2029,"mn":4,"g":["Nivo","Laeticia","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C4"],"j":[{"d":"01/04/2029","f":true,"fe":"Pâques","p":{"Nivo":3,"Laeticia":1,"Rivo":4,"Patricia":2,"Yvon Staël":5}},{"d":"08/04/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":2,"Rivo":1,"Patricia":3,"Yvon Staël":5}},{"d":"15/04/2029","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Rivo":2,"Patricia":4,"Yvon Staël":5}},{"d":"22/04/2029","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Rivo":3,"Patricia":1,"Yvon Staël":5}},{"d":"29/04/2029","f":false,"fe":"","p":{"Nivo":3,"Laeticia":1,"Rivo":4,"Patricia":2,"Yvon Staël":5}}]},{"m":"Mai","a":2029,"mn":5,"g":["Rado","Nathalie Lolona","Mahery","Ando","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C3"],"j":[{"d":"06/05/2029","f":true,"fe":"","p":{"Rado":4,"Nathalie Lolona":3,"Mahery":2,"Ando":1,"Manovosoa":5}},{"d":"10/05/2029","f":true,"fe":"Ascension","p":{"Rado":1,"Nathalie Lolona":4,"Mahery":3,"Ando":2,"Manovosoa":5}},{"d":"13/05/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":1,"Mahery":4,"Ando":3,"Manovosoa":5}},{"d":"20/05/2029","f":true,"fe":"Pentecôte","p":{"Rado":3,"Nathalie Lolona":2,"Mahery":1,"Ando":4,"Manovosoa":5}},{"d":"27/05/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":3,"Mahery":2,"Ando":1,"Manovosoa":5}}]},{"m":"Juin","a":2029,"mn":6,"g":["Rija","Nathalie Rija","Rivo","Patricia","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C2","C4"],"j":[{"d":"03/06/2029","f":true,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Rivo":1,"Patricia":4,"Yvon Staël":5}},{"d":"10/06/2029","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Rivo":2,"Patricia":1,"Yvon Staël":5}},{"d":"17/06/2029","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Rivo":3,"Patricia":2,"Yvon Staël":5}},{"d":"24/06/2029","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Rivo":4,"Patricia":3,"Yvon Staël":5}}]},{"m":"Juillet","a":2029,"mn":7,"g":["Nivo","Laeticia","Rado","Nathalie Lolona","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C1"],"j":[{"d":"01/07/2029","f":true,"fe":"","p":{"Nivo":4,"Laeticia":2,"Rado":1,"Nathalie Lolona":3,"Manovosoa":5}},{"d":"08/07/2029","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Rado":2,"Nathalie Lolona":4,"Manovosoa":5}},{"d":"15/07/2029","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Rado":3,"Nathalie Lolona":1,"Manovosoa":5}},{"d":"22/07/2029","f":false,"fe":"","p":{"Nivo":3,"Laeticia":1,"Rado":4,"Nathalie Lolona":2,"Manovosoa":5}},{"d":"29/07/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":2,"Rado":1,"Nathalie Lolona":3,"Manovosoa":5}}]},{"m":"Août","a":2029,"mn":8,"g":["Rija","Nathalie Rija","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C2","C3"],"j":[{"d":"05/08/2029","f":true,"fe":"","p":{"Rija":2,"Nathalie Rija":3,"Mahery":1,"Ando":4,"Yvon Staël":5}},{"d":"12/08/2029","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":4,"Mahery":2,"Ando":1,"Yvon Staël":5}},{"d":"19/08/2029","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":1,"Mahery":3,"Ando":2,"Yvon Staël":5}},{"d":"26/08/2029","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":2,"Mahery":4,"Ando":3,"Yvon Staël":5}}]},{"m":"Septembre","a":2029,"mn":9,"g":["Nivo","Laeticia","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C4"],"j":[{"d":"02/09/2029","f":true,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rivo":1,"Patricia":4,"Manovosoa":5}},{"d":"09/09/2029","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rivo":2,"Patricia":1,"Manovosoa":5}},{"d":"16/09/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rivo":3,"Patricia":2,"Manovosoa":5}},{"d":"23/09/2029","f":false,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rivo":4,"Patricia":3,"Manovosoa":5}},{"d":"30/09/2029","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rivo":1,"Patricia":4,"Manovosoa":5}}]},{"m":"Octobre","a":2029,"mn":10,"g":["Rado","Nathalie Lolona","Rija","Nathalie Rija","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C2"],"j":[{"d":"07/10/2029","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":2,"Rija":3,"Nathalie Rija":4,"Yvon Staël":5}},{"d":"14/10/2029","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":3,"Rija":4,"Nathalie Rija":1,"Yvon Staël":5}},{"d":"21/10/2029","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":4,"Rija":1,"Nathalie Rija":2,"Yvon Staël":5}},{"d":"28/10/2029","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":1,"Rija":2,"Nathalie Rija":3,"Yvon Staël":5}}]},{"m":"Novembre","a":2029,"mn":11,"g":["Mahery","Ando","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C3","C4"],"j":[{"d":"04/11/2029","f":true,"fe":"","p":{"Mahery":1,"Ando":2,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"11/11/2029","f":false,"fe":"","p":{"Mahery":2,"Ando":3,"Rivo":4,"Patricia":1,"Manovosoa":5}},{"d":"18/11/2029","f":false,"fe":"","p":{"Mahery":3,"Ando":4,"Rivo":1,"Patricia":2,"Manovosoa":5}},{"d":"25/11/2029","f":false,"fe":"","p":{"Mahery":4,"Ando":1,"Rivo":2,"Patricia":3,"Manovosoa":5}}]},{"m":"Décembre","a":2029,"mn":12,"g":["Nivo","Laeticia","Rija","Nathalie Rija","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C2"],"j":[{"d":"02/12/2029","f":true,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rija":2,"Nathalie Rija":1,"Yvon Staël":5}},{"d":"09/12/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rija":3,"Nathalie Rija":2,"Yvon Staël":5}},{"d":"16/12/2029","f":false,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rija":4,"Nathalie Rija":3,"Yvon Staël":5}},{"d":"23/12/2029","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rija":1,"Nathalie Rija":4,"Yvon Staël":5}},{"d":"25/12/2029","f":true,"fe":"Noël","p":{"Nivo":3,"Laeticia":4,"Rija":2,"Nathalie Rija":1,"Yvon Staël":5}},{"d":"30/12/2029","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rija":3,"Nathalie Rija":2,"Yvon Staël":5}}]},{"m":"Janvier","a":2030,"mn":1,"g":["Rado","Nathalie Lolona","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C1","C4"],"j":[{"d":"06/01/2030","f":true,"fe":"","p":{"Rado":1,"Nathalie Lolona":3,"Rivo":4,"Patricia":2,"Manovosoa":5}},{"d":"13/01/2030","f":false,"fe":"","p":{"Rado":2,"Nathalie Lolona":4,"Rivo":1,"Patricia":3,"Manovosoa":5}},{"d":"20/01/2030","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":1,"Rivo":2,"Patricia":4,"Manovosoa":5}},{"d":"27/01/2030","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":2,"Rivo":3,"Patricia":1,"Manovosoa":5}}]},{"m":"Février","a":2030,"mn":2,"g":["Nivo","Laeticia","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["B","C3"],"j":[{"d":"03/02/2030","f":true,"fe":"","p":{"Nivo":3,"Laeticia":1,"Mahery":4,"Ando":2,"Yvon Staël":5}},{"d":"10/02/2030","f":false,"fe":"","p":{"Nivo":4,"Laeticia":2,"Mahery":1,"Ando":3,"Yvon Staël":5}},{"d":"17/02/2030","f":false,"fe":"","p":{"Nivo":1,"Laeticia":3,"Mahery":2,"Ando":4,"Yvon Staël":5}},{"d":"24/02/2030","f":false,"fe":"","p":{"Nivo":2,"Laeticia":4,"Mahery":3,"Ando":1,"Yvon Staël":5}}]},{"m":"Mars","a":2030,"mn":3,"g":["Rija","Nathalie Rija","Rivo","Patricia","Manovosoa"],"opt":"5e : Manovosoa","combo":["C2","C4"],"j":[{"d":"03/03/2030","f":true,"fe":"","p":{"Rija":1,"Nathalie Rija":4,"Rivo":2,"Patricia":3,"Manovosoa":5}},{"d":"10/03/2030","f":false,"fe":"","p":{"Rija":2,"Nathalie Rija":1,"Rivo":3,"Patricia":4,"Manovosoa":5}},{"d":"17/03/2030","f":false,"fe":"","p":{"Rija":3,"Nathalie Rija":2,"Rivo":4,"Patricia":1,"Manovosoa":5}},{"d":"24/03/2030","f":false,"fe":"","p":{"Rija":4,"Nathalie Rija":3,"Rivo":1,"Patricia":2,"Manovosoa":5}},{"d":"31/03/2030","f":false,"fe":"","p":{"Rija":1,"Nathalie Rija":4,"Rivo":2,"Patricia":3,"Manovosoa":5}}]},{"m":"Avril","a":2030,"mn":4,"g":["Rado","Nathalie Lolona","Mahery","Ando","Yvon Staël"],"opt":"5e : Yvon Staël","combo":["C1","C3"],"j":[{"d":"07/04/2030","f":true,"fe":"","p":{"Rado":3,"Nathalie Lolona":2,"Mahery":1,"Ando":4,"Yvon Staël":5}},{"d":"14/04/2030","f":false,"fe":"","p":{"Rado":4,"Nathalie Lolona":3,"Mahery":2,"Ando":1,"Yvon Staël":5}},{"d":"18/04/2030","f":true,"fe":"Jeudi Saint","p":{"Rado":1,"Nathalie Lolona":4,"Mahery":3,"Ando":2,"Yvon Staël":5}},{"d":"21/04/2030","f":true,"fe":"Pâques","p":{"Rado":2,"Nathalie Lolona":1,"Mahery":4,"Ando":3,"Yvon Staël":5}},{"d":"28/04/2030","f":false,"fe":"","p":{"Rado":3,"Nathalie Lolona":2,"Mahery":1,"Ando":4,"Yvon Staël":5}}]},{"m":"Mai","a":2030,"mn":5,"g":["Nivo","Laeticia","Rija","Nathalie Rija","Manovosoa"],"opt":"5e : Manovosoa","combo":["B","C2"],"j":[{"d":"05/05/2030","f":true,"fe":"","p":{"Nivo":1,"Laeticia":2,"Rija":4,"Nathalie Rija":3,"Manovosoa":5}},{"d":"12/05/2030","f":false,"fe":"","p":{"Nivo":2,"Laeticia":3,"Rija":1,"Nathalie Rija":4,"Manovosoa":5}},{"d":"19/05/2030","f":false,"fe":"","p":{"Nivo":3,"Laeticia":4,"Rija":2,"Nathalie Rija":1,"Manovosoa":5}},{"d":"26/05/2030","f":false,"fe":"","p":{"Nivo":4,"Laeticia":1,"Rija":3,"Nathalie Rija":2,"Manovosoa":5}},{"d":"30/05/2030","f":true,"fe":"Ascension","p":{"Nivo":1,"Laeticia":2,"Rija":4,"Nathalie Rija":3,"Manovosoa":5}}]}],"fitaovana":[{"date":"06/09/2026","fete":"","fitaovana":"Ando","mois_num":9,"annee":2026,"label":"1er dim. Septembre 2026"},{"date":"04/10/2026","fete":"","fitaovana":"Patricia","mois_num":10,"annee":2026,"label":"1er dim. Octobre 2026"},{"date":"01/11/2026","fete":"","fitaovana":"Nivo","mois_num":11,"annee":2026,"label":"1er dim. Novembre 2026"},{"date":"06/12/2026","fete":"","fitaovana":"Laeticia","mois_num":12,"annee":2026,"label":"1er dim. Décembre 2026"},{"date":"25/12/2026","fete":"Noël","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2026,"label":"Noël 2026"},{"date":"03/01/2027","fete":"","fitaovana":"Nivo","mois_num":1,"annee":2027,"label":"1er dim. Janvier 2027"},{"date":"07/02/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":2,"annee":2027,"label":"1er dim. Février 2027"},{"date":"07/03/2027","fete":"","fitaovana":"Laeticia","mois_num":3,"annee":2027,"label":"1er dim. Mars 2027"},{"date":"25/03/2027","fete":"Jeudi Saint","fitaovana":"Nathalie Rija","mois_num":3,"annee":2027,"label":"Mars 2027"},{"date":"28/03/2027","fete":"Pâques","fitaovana":"Ando","mois_num":3,"annee":2027,"label":"Mars 2027"},{"date":"04/04/2027","fete":"","fitaovana":"Patricia","mois_num":4,"annee":2027,"label":"1er dim. Avril 2027"},{"date":"02/05/2027","fete":"","fitaovana":"Nivo","mois_num":5,"annee":2027,"label":"1er dim. Mai 2027"},{"date":"06/05/2027","fete":"Ascension","fitaovana":"Laeticia","mois_num":5,"annee":2027,"label":"Mai 2027"},{"date":"16/05/2027","fete":"Pentecôte","fitaovana":"Nathalie Lolona","mois_num":5,"annee":2027,"label":"Mai 2027"},{"date":"06/06/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":6,"annee":2027,"label":"1er dim. Juin 2027"},{"date":"04/07/2027","fete":"","fitaovana":"Patricia","mois_num":7,"annee":2027,"label":"1er dim. Juillet 2027"},{"date":"01/08/2027","fete":"","fitaovana":"Ando","mois_num":8,"annee":2027,"label":"1er dim. Août 2027"},{"date":"05/09/2027","fete":"","fitaovana":"Nivo","mois_num":9,"annee":2027,"label":"1er dim. Septembre 2027"},{"date":"03/10/2027","fete":"","fitaovana":"Laeticia","mois_num":10,"annee":2027,"label":"1er dim. Octobre 2027"},{"date":"07/11/2027","fete":"","fitaovana":"Nathalie Rija","mois_num":11,"annee":2027,"label":"1er dim. Novembre 2027"},{"date":"05/12/2027","fete":"","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2027,"label":"1er dim. Décembre 2027"},{"date":"25/12/2027","fete":"Noël","fitaovana":"Patricia","mois_num":12,"annee":2027,"label":"Décembre 2027"},{"date":"02/01/2028","fete":"","fitaovana":"Ando","mois_num":1,"annee":2028,"label":"1er dim. Janvier 2028"},{"date":"06/02/2028","fete":"","fitaovana":"Nivo","mois_num":2,"annee":2028,"label":"1er dim. Février 2028"},{"date":"05/03/2028","fete":"","fitaovana":"Nathalie Lolona","mois_num":3,"annee":2028,"label":"1er dim. Mars 2028"},{"date":"02/04/2028","fete":"","fitaovana":"Laeticia","mois_num":4,"annee":2028,"label":"1er dim. Avril 2028"},{"date":"13/04/2028","fete":"Jeudi Saint","fitaovana":"Nathalie Rija","mois_num":4,"annee":2028,"label":"Avril 2028"},{"date":"16/04/2028","fete":"Pâques","fitaovana":"Ando","mois_num":4,"annee":2028,"label":"Avril 2028"},{"date":"07/05/2028","fete":"","fitaovana":"Patricia","mois_num":5,"annee":2028,"label":"1er dim. Mai 2028"},{"date":"25/05/2028","fete":"Ascension","fitaovana":"Nathalie Lolona","mois_num":5,"annee":2028,"label":"Mai 2028"},{"date":"04/06/2028","fete":"Pentecôte","fitaovana":"Nivo","mois_num":6,"annee":2028,"label":"Juin 2028"},{"date":"02/07/2028","fete":"","fitaovana":"Laeticia","mois_num":7,"annee":2028,"label":"1er dim. Juillet 2028"},{"date":"06/08/2028","fete":"","fitaovana":"Nathalie Rija","mois_num":8,"annee":2028,"label":"1er dim. Août 2028"},{"date":"03/09/2028","fete":"","fitaovana":"Ando","mois_num":9,"annee":2028,"label":"1er dim. Septembre 2028"},{"date":"01/10/2028","fete":"","fitaovana":"Patricia","mois_num":10,"annee":2028,"label":"1er dim. Octobre 2028"},{"date":"05/11/2028","fete":"","fitaovana":"Nivo","mois_num":11,"annee":2028,"label":"1er dim. Novembre 2028"},{"date":"03/12/2028","fete":"","fitaovana":"Laeticia","mois_num":12,"annee":2028,"label":"1er dim. Décembre 2028"},{"date":"25/12/2028","fete":"Noël","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2028,"label":"Décembre 2028"},{"date":"07/01/2029","fete":"","fitaovana":"Ando","mois_num":1,"annee":2029,"label":"1er dim. Janvier 2029"},{"date":"04/02/2029","fete":"","fitaovana":"Nathalie Rija","mois_num":2,"annee":2029,"label":"1er dim. Février 2029"},{"date":"04/03/2029","fete":"","fitaovana":"Patricia","mois_num":3,"annee":2029,"label":"1er dim. Mars 2029"},{"date":"29/03/2029","fete":"Jeudi Saint","fitaovana":"Nivo","mois_num":3,"annee":2029,"label":"Mars 2029"},{"date":"01/04/2029","fete":"Pâques","fitaovana":"Nathalie Lolona","mois_num":4,"annee":2029,"label":"Avril 2029"},{"date":"06/05/2029","fete":"","fitaovana":"Laeticia","mois_num":5,"annee":2029,"label":"1er dim. Mai 2029"},{"date":"10/05/2029","fete":"Ascension","fitaovana":"Nathalie Rija","mois_num":5,"annee":2029,"label":"Mai 2029"},{"date":"20/05/2029","fete":"Pentecôte","fitaovana":"Patricia","mois_num":5,"annee":2029,"label":"Mai 2029"},{"date":"03/06/2029","fete":"","fitaovana":"Ando","mois_num":6,"annee":2029,"label":"1er dim. Juin 2029"},{"date":"01/07/2029","fete":"","fitaovana":"Nathalie Rija","mois_num":7,"annee":2029,"label":"1er dim. Juillet 2029"},{"date":"05/08/2029","fete":"","fitaovana":"Nivo","mois_num":8,"annee":2029,"label":"1er dim. Août 2029"},{"date":"02/09/2029","fete":"","fitaovana":"Nathalie Lolona","mois_num":9,"annee":2029,"label":"1er dim. Septembre 2029"},{"date":"07/10/2029","fete":"","fitaovana":"Laeticia","mois_num":10,"annee":2029,"label":"1er dim. Octobre 2029"},{"date":"04/11/2029","fete":"","fitaovana":"Ando","mois_num":11,"annee":2029,"label":"1er dim. Novembre 2029"},{"date":"02/12/2029","fete":"","fitaovana":"Patricia","mois_num":12,"annee":2029,"label":"1er dim. Décembre 2029"},{"date":"25/12/2029","fete":"Noël","fitaovana":"Nathalie Lolona","mois_num":12,"annee":2029,"label":"Décembre 2029"},{"date":"06/01/2030","fete":"","fitaovana":"Nivo","mois_num":1,"annee":2030,"label":"1er dim. Janvier 2030"},{"date":"03/02/2030","fete":"","fitaovana":"Nathalie Rija","mois_num":2,"annee":2030,"label":"1er dim. Février 2030"},{"date":"03/03/2030","fete":"","fitaovana":"Laeticia","mois_num":3,"annee":2030,"label":"1er dim. Mars 2030"},{"date":"07/04/2030","fete":"","fitaovana":"Patricia","mois_num":4,"annee":2030,"label":"1er dim. Avril 2030"},{"date":"18/04/2030","fete":"Jeudi Saint","fitaovana":"Ando","mois_num":4,"annee":2030,"label":"Avril 2030"},{"date":"21/04/2030","fete":"Pâques","fitaovana":"Nivo","mois_num":4,"annee":2030,"label":"Avril 2030"},{"date":"05/05/2030","fete":"","fitaovana":"Nathalie Lolona","mois_num":5,"annee":2030,"label":"1er dim. Mai 2030"},{"date":"30/05/2030","fete":"Ascension","fitaovana":"Ando","mois_num":5,"annee":2030,"label":"Mai 2030"}],"fivoriana":[{"annee":2026,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2026,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2026,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2026,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2027,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2027,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2027,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2027,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2027,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2027,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2027,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2027,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2027,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2027,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2028,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2028,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2028,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2028,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2028,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2028,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2028,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2028,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2028,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2028,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2029,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2029,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2029,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2029,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2029,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"},{"annee":2029,"mois_num":6,"mois":"Juin","nom":"Rado & Nathalie Lolona","type":"pl"},{"annee":2029,"mois_num":9,"mois":"Septembre","nom":"Nivo","type":"diacre"},{"annee":2029,"mois_num":10,"mois":"Octobre","nom":"Yvon Staël","type":"diacre"},{"annee":2029,"mois_num":11,"mois":"Novembre","nom":"Rija & Nathalie Rija","type":"couple"},{"annee":2029,"mois_num":12,"mois":"Décembre","nom":"Pasteur Rakotoniaina","type":"pasteur"},{"annee":2030,"mois_num":1,"mois":"Janvier","nom":"Sortie","type":"sortie"},{"annee":2030,"mois_num":2,"mois":"Février","nom":"Manovosoa","type":"diacre"},{"annee":2030,"mois_num":3,"mois":"Mars","nom":"Rivo & Patricia","type":"couple"},{"annee":2030,"mois_num":4,"mois":"Avril","nom":"Laeticia","type":"diacre"},{"annee":2030,"mois_num":5,"mois":"Mai","nom":"Mahery & Ando","type":"couple"}]};
 
 let SD_LOADED=false, SD_LOADING=false;
 let SD_CONTACTS={}, SD_GENRE={}, SD_ALL_NAMES=[];
@@ -8797,7 +9115,25 @@ async function sdImporterDonnees(){
   try{ obj=JSON.parse(zone.value); }
   catch(e){ alert('Le texte collé n\'est pas valide : '+e.message); return; }
   if(!obj.planning || !Array.isArray(obj.planning)){ alert("Le bloc collé ne contient pas de champ 'planning' valide."); return; }
-  if(!confirm('Remplacer le planning des services actuel par ce nouveau contenu ?')) return;
+  const fusion=obj.mode==='fusion'&&/^\d{4}-\d{2}$/.test(obj.debut||'');
+  if(fusion){
+    // Nouveau planning à partir de obj.debut : on garde tout ce qui est avant (mois, Fitaovana, Fivoriana)
+    // et les contacts déjà enregistrés (numéros WhatsApp, emails).
+    let actuel={};
+    try{ const s=await _fs.getDoc(_fs.doc(_db,'services_diacres','data')); if(s.exists()) actuel=s.data(); }
+    catch(e){ alert('Lecture du planning actuel impossible : '+e.message); return; }
+    const deb=obj.debut, cle=function(a,mn){ return a+'-'+String(mn).padStart(2,'0'); };
+    const avant=(actuel.planning||[]).filter(function(m){ return cle(m.a,m.mn)<deb; });
+    const fitaAvant=(actuel.fitaovana||[]).filter(function(f){ return cle(f.annee,f.mois_num)<deb; });
+    const fivoAvant=(actuel.fivoriana||[]).filter(function(f){ return cle(f.annee,f.mois_num)<deb; });
+    const contacts=Object.assign({}, obj.contacts||{}, actuel.contacts||{});
+    const n=obj.planning.length, d1=obj.planning[0], d2=obj.planning[n-1];
+    if(!confirm('Nouveau planning de '+d1.m+' '+d1.a+' à '+d2.m+' '+d2.a+' ('+n+' mois).\n'
+      +avant.length+" mois d'avant sont gardés, ainsi que les numéros WhatsApp.\nContinuer ?")) return;
+    obj={contacts:contacts, planning:avant.concat(obj.planning),
+      fitaovana:fitaAvant.concat(obj.fitaovana||[]),
+      fivoriana:obj.fivoriana?fivoAvant.concat(obj.fivoriana):(actuel.fivoriana||[])};
+  } else if(!confirm('Remplacer le planning des services actuel par ce nouveau contenu ?')) return;
   try{
     await _fs.setDoc(_fs.doc(_db,'services_diacres','data'), obj);
     alert('Planning mis à jour ✅');
@@ -8881,6 +9217,7 @@ function sdGetFandr(g,p){
   if(f[1]) a[f[1]]=[{c:"plateau",t:"Manaramaso plateau vide"},{c:"fitaovana",t:"Latabatra (1)"}];
   if(h[0]) a[h[0]]=[{c:"divay",t:"Mizara divay"}];
   if(h[1]) a[h[1]]=[{c:"kapoaka",t:"Manangona kapoaka vide"}];
+  g.forEach(function(n){ if(!a[n]&&p[n]) a[n]=[{c:"mampandroso",t:"Mampandroso olona"}]; });
   return a;
 }
 function sdGetBanner(g,p){
@@ -8891,6 +9228,8 @@ function sdGetBanner(g,p){
   if(f[1]) s+="<div class='fandr-role plateau'>📋 Manaramaso plateau + Latabatra : "+esc(f[1])+"</div>";
   if(h[0]) s+="<div class='fandr-role divay'>👨 Mizara divay : "+esc(h[0])+"</div>";
   if(h[1]) s+="<div class='fandr-role kapoaka'>👨 Manangona kapoaka : "+esc(h[1])+"</div>";
+  g.forEach(function(n){ if(p[n]&&f.slice(0,2).indexOf(n)<0&&h.slice(0,2).indexOf(n)<0)
+    s+="<div class='fandr-role mampandroso'>🙋 Mampandroso olona : "+esc(n)+"</div>"; });
   s+="</div></div>"; return s;
 }
 
@@ -8914,7 +9253,8 @@ function sdRenderMois(){
     const badge=isFandr
       ?"<span class='pill pill-fandr'>🙏"+(jour.fe?" "+esc(jour.fe):" Fandraisana")+"</span>"
       :(jour.fe?"<span class='pill pill-fandr'>★ "+esc(jour.fe)+"</span>":"<span class='pill pill-tsotra'>Tsotra</span>");
-    const postes=[1,2,3,4].map(function(p){
+    const nums=[1,2,3,4]; if(Object.keys(jour.p).some(function(n){return jour.p[n]===5;})) nums.push(5);
+    const postes=nums.map(function(p){
       let name="—";
       Object.keys(jour.p).forEach(function(n){if(jour.p[n]===p)name=n;});
       const g2=SD_GENRE[name]||"";
@@ -8941,7 +9281,7 @@ function sdRenderDiacre(){
   if(scroll) scroll.innerHTML=SD_ALL_NAMES.map(function(n,idx){
     return "<button class='diacre-btn"+(n===sdCurDiacre?" active":"")+"' onclick='sdSelectDiacre("+idx+")'>"+esc(n)+"</button>";
   }).join("");
-  const pc={1:0,2:0,3:0,4:0};
+  const pc={1:0,2:0,3:0,4:0,5:0};
   let totJ=0,totF=0,totMofo=0,totDivay=0;
   const moisD=[];
   SD_PLANNING.forEach(function(m){
@@ -8963,7 +9303,7 @@ function sdRenderDiacre(){
     +"<div class='stat-card'><div class='stat-val' style='color:var(--amber)'>"+totF+"</div><div class='stat-lbl'>🙏 Fandraisana</div></div>"
     +"<div class='stat-card'><div class='stat-val' style='color:var(--pink)'>"+totMofo+"</div><div class='stat-lbl'>👩 Mofo</div></div>";
   const pmEl=document.getElementById("sd-postes-mini");
-  if(pmEl) pmEl.innerHTML=[1,2,3,4].map(function(p){
+  if(pmEl) pmEl.innerHTML=[1,2,3,4,5].filter(function(p){return p<5||pc[5]>0;}).map(function(p){
     return "<span class='pm' style='background:"+SD_PC_BG[p-1]+";color:"+SD_PC_COLOR[p-1]+"'>P"+p+":"+(pc[p]||0)+"</span>";
   }).join("");
   const gn=SD_GENRE[sdCurDiacre];
@@ -9029,12 +9369,10 @@ function sdBuildMsg(name,mIdx){
     const dt=SD_DISPATCH[String(p)];
     const tasks=dt?dt.t.slice():[];
     if(j.f){
-      const gf=m.g.filter(function(n){return SD_GENRE[n]==="F";}).sort(function(a,b){return j.p[a]-j.p[b];});
-      const gh=m.g.filter(function(n){return SD_GENRE[n]==="H";}).sort(function(a,b){return j.p[a]-j.p[b];});
-      if(gf[0]===name) tasks.push("👩 Mizara mofo + Manomana fitaovana");
-      else if(gf[1]===name) tasks.push("📋 Manaramaso plateau + Latabatra (1)");
-      else if(gh[0]===name) tasks.push("👨 Mizara divay");
-      else if(gh[1]===name) tasks.push("👨 Manangona kapoaka vide");
+      const role=((sdGetFandr(m.g,j.p)[name]||[])[0]||{}).c;
+      const txt={mofo:"👩 Mizara mofo + Manomana fitaovana",plateau:"📋 Manaramaso plateau + Latabatra (1)",
+        divay:"👨 Mizara divay",kapoaka:"👨 Manangona kapoaka vide",mampandroso:"🙋 Mampandroso olona (Fandraisana)"}[role];
+      if(txt) tasks.push(txt);
     }
     const mk=j.f?"🙏 Fandraisana"+(j.fe?" — "+j.fe:""):"Alahady Tsotra";
     lines.push("- "+j.d+" ("+mk+")");
