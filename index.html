@@ -1208,7 +1208,20 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 .scan-qr-texte{display:flex;flex-direction:column;line-height:1.3;}
 .scan-qr-texte b{font-size:16px;font-weight:700;}
 .scan-qr-texte small{font-size:12px;font-weight:400;opacity:.85;}
-body.role-diacre_journal #btn-scan-accueil{display:none !important;}
+body.role-diacre_journal #scan-duo{display:none !important;}
+/* 23/11/2026 : « Chercher un nom » à côté du scan (carte oubliée ou QR abîmé) */
+#scan-duo{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px;margin-bottom:10px;}
+#scan-duo .btn-scan-qr{margin:0;min-width:0;overflow:hidden;}
+#scan-duo .scan-qr-texte{min-width:0;}
+.btn-scan-nom{background:#fff;color:var(--bleu);border:2px solid var(--bleu);gap:8px;padding:8px;}
+.btn-scan-nom .scan-qr-icone{background:var(--bleu);color:#fff;font-size:18px;width:32px;height:32px;align-items:center;justify-content:center;box-sizing:border-box;}
+.btn-scan-nom .scan-qr-texte b{font-size:14px;line-height:1.2;}
+@media (max-width:420px){ #scan-duo .btn-scan-qr:not(.btn-scan-nom){gap:10px;padding:10px;} #scan-duo .scan-qr-texte b{font-size:14px;} #scan-duo .scan-qr-icone svg{width:30px;height:30px;} }
+.nom-res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe3ea;border-radius:10px;padding:10px 12px;margin-bottom:6px;font:inherit;font-size:15px;color:#1e1e1e;cursor:pointer;}
+.nom-res:active{background:#eef3fa;}
+.nom-res .env-badge{flex-shrink:0;}
+.nom-res small{display:block;font-size:11px;color:#777;}
+.nom-res.inactif{background:#fff4e5;border-color:#f0c88a;}
 /* ── Calendrier (Diary 2027) ── */
 .dy-mois{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px;}
 .dy-mois button{padding:9px 2px;border:1px solid #dddcd5;background:white;border-radius:8px;font:inherit;font-size:12px;font-weight:700;color:#666;cursor:pointer;}
@@ -1352,7 +1365,7 @@ body.role-diacre_journal #btn-scan-accueil{display:none !important;}
 body.lecture-seule #app-content::before{content:'👁️ Lecture seule : consultation et exports uniquement';display:block;margin-bottom:10px;
   padding:8px 12px;border-radius:8px;background:#eaf2f8;color:var(--bleu);font-size:12.5px;font-weight:600;}
 body.lecture-seule #fiche-lecture-card, body.lecture-seule #bv-card, body.lecture-seule #vf-card, body.lecture-seule #va-card,
-body.lecture-seule #k45-form-zone, body.lecture-seule #tr-card, body.lecture-seule #ob-card, body.lecture-seule #btn-scan-accueil,
+body.lecture-seule #k45-form-zone, body.lecture-seule #tr-card, body.lecture-seule #ob-card, body.lecture-seule #scan-duo, body.lecture-seule #btn-nom-anj,
 body.lecture-seule [onclick*="enregistrer"], body.lecture-seule [onclick*="ajouter"], body.lecture-seule [onclick*="supprimer"],
 body.lecture-seule [onclick*="annuler"], body.lecture-seule [onclick*="modifier"], body.lecture-seule [onclick*="Correction"],
 body.lecture-seule [onclick*="verser"], body.lecture-seule [onclick*="faireTransfert"], body.lecture-seule [onclick*="importer"],
@@ -1436,10 +1449,16 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 
 
 <div id="section-gest" style="display:block">
+<div id="scan-duo">
 <button class="btn btn-scan-qr" id="btn-scan-accueil" type="button" onclick="ouvrirScanDepuisGestion()">
  <span class="scan-qr-icone"><svg viewBox="0 0 22 22" width="38" height="38" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M1 1h7v7h-7z M2 2h5v5h-5z M3 3h3v3h-3z M14 1h7v7h-7z M15 2h5v5h-5z M16 3h3v3h-3z M1 14h7v7h-7z M2 15h5v5h-5z M3 16h3v3h-3z M10 1h2v2h-2z M10 5h1v3h-1z M12 4h1v2h-1z M1 10h2v1h-2z M5 10h3v2h-3z M10 10h3v2h-3z M14 10h2v1h-2z M18 10h3v2h-3z M10 14h2v2h-2z M14 14h3v3h-3z M19 14h2v1h-2z M10 18h3v3h-3z M15 19h2v2h-2z M19 17h2v4h-2z"/></svg></span>
  <span class="scan-qr-texte"><b>Scanner les cartes</b><small>QR code de la carte Anjarako</small></span>
 </button>
+<button class="btn btn-scan-qr btn-scan-nom" id="btn-nom-accueil" type="button" onclick="ouvrirNomDepuisGestion()">
+ <span class="scan-qr-icone" aria-hidden="true">🔎</span>
+ <span class="scan-qr-texte"><b>Chercher un nom</b><small>Sans la carte</small></span>
+</button>
+</div>
 <div class="nav-tabs">
  <button class="nav-btn actif" id="gnav-rakitra" onclick="showGestTab('rakitra',this)"><span class="nb-ico">🙏</span>Rakitra</button>
  <button class="nav-btn" id="gnav-anjarako" onclick="showGestTab('anjarako',this)"><span class="nb-ico">📨</span>Anjarako</button>
@@ -1621,20 +1640,12 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 
  <!-- Mode par carte -->
  <div id="env-zone-carte">
- <div class="grid2" style="margin-bottom:9px">
- <div class="champ carte-wrap">
- <label>📇 N° carte ou Nom</label>
- <input type="text" id="env-carte" placeholder="Ex: 47 ou Rakoto…" autocomplete="off"
- oninput="rechercherCarte(this.value)" onblur="fermerSugCarte()">
- <div class="carte-sug" id="carte-sug"></div>
- </div>
- <div class="champ">
- <label>📆 Mois payé</label>
+ <div class="champ" style="margin-bottom:9px">
+ <label>📆 Mois coché d'office</label>
  <input type="month" id="env-mois">
  </div>
- </div>
- <div id="carte-preview" style="display:none;background:var(--gris1);border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:13px;border-left:3px solid var(--vert)"></div>
- <button class="btn btn-or" onclick="ajouterEnveloppe()"><span>➕</span> Ajouter</button>
+ <button class="btn btn-or" id="btn-nom-anj" type="button" onclick="ouvrirRechercheNom()"><span>🔎</span> Chercher un nom ou un n° de carte</button>
+ <div style="font-size:11px;color:var(--texte2);margin-top:5px">Même écran que le scan : on coche un ou plusieurs mois, et la ligne part aussi aux autres téléphones.</div>
  <button class="btn btn-gris" type="button" style="margin-top:8px" onclick="recupererScansPartages()"><span>📥</span> Récupérer les scans des autres téléphones</button>
  </div>
 
@@ -4102,49 +4113,90 @@ function pickSug(id,nom){document.getElementById(id).value=nom;hideSug(id);}
 // ── ANJARAKO ─────────────────────────────────────────────────
 let enveloppesJour=[];
 
-let carteSelectionnee=null;
-function rechercherCarte(val){
-  carteSelectionnee=null;
-  const sug=document.getElementById('carte-sug');
-  const prev=document.getElementById('carte-preview');
-  if(!val){sug.style.display='none';prev.style.display='none';return;}
-  const membres=load(SK_ANJ_M).filter(m=>m.actif!==false);
-  const valLower=val.toLowerCase();
-  const f=membres.filter(m=>String(m.num).startsWith(val)||(m.nom||'').toLowerCase().includes(valLower));
-  if(!f.length){sug.style.display='none';prev.style.display='none';return;}
-  sug.innerHTML=f.slice(0,8).map(m=>`<div class="carte-sug-item" onmousedown="choisirCarte(${jsVal(m.num)})"><strong>${esc(m.num)}</strong>${m.nom?' — '+esc(m.nom):''}</div>`).join('');
-  sug.style.display='block';
-  const exact=membres.find(m=>String(m.num)===val||(m.nom||'').toLowerCase()===valLower);
-  if(exact){prev.style.display='block';prev.innerHTML=`✅ <strong>Carte n°${esc(exact.num)}</strong>${exact.nom?' — '+esc(exact.nom):''}`;carteSelectionnee=exact.num;}
-  else prev.style.display='none';
+// ── RECHERCHE PAR NOM (23/11/2026) ──────────────────────────────
+// Pour une carte oubliée ou un QR abîmé : même écran que le scan, sans caméra. On cherche le nom
+// (ou le n°) dans la liste des membres, puis le même panneau des mois s'ouvre et « Valider » fait
+// exactement comme le scan (envoi aux autres téléphones, contrôle des doublons). Les lignes sont
+// marquées « sans carte » (_nom), y compris dans l'enregistrement (sansCarte), pour les commissaires.
+function ouvrirNomDepuisGestion(){
+  const onglet=document.getElementById('gnav-anjarako');
+  if(onglet) showGestTab('anjarako',onglet);
+  if(envMode!=='carte') showEnvMode('carte');
+  ouvrirRechercheNom();
 }
-function choisirCarte(num){
-  carteSelectionnee=num;
-  const m=load(SK_ANJ_M).find(m=>m.num===num);
-  document.getElementById('env-carte').value=m&&m.nom?num+' — '+m.nom:num;
-  document.getElementById('carte-sug').style.display='none';
-  const p=document.getElementById('carte-preview');
-  if(m){p.style.display='block';p.innerHTML=`✅ <strong>Carte n°${esc(m.num)}</strong>${m.nom?' — '+esc(m.nom):''}`;}
+function htmlRechercheNom(){
+  return `<div id="scan-overlay" style="position:fixed;inset:0;z-index:10000;background:#f4f6fa;color:#1e1e1e;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bleu);color:white">
+      <div style="font-weight:700">🔎 Chercher un nom<div style="font-size:12px;font-weight:400;opacity:.8">Culte du ${esc(fmtDateFr(dateCulteAnj())||'—')} · carte non présentée</div></div>
+      <button type="button" onclick="fermerScanCartes()" style="background:white;color:#111;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:14px">✖ Terminer</button>
+    </div>
+    <div id="nom-zone" style="flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 14px 0">
+      <input type="search" id="nom-rech" placeholder="Nom ou n° de carte…" autocomplete="off" enterkeyhint="search"
+        oninput="majRechercheNom()" onkeydown="if(event.key==='Enter'){event.preventDefault();choisirPremierNom();}"
+        style="width:100%;box-sizing:border-box;border:2px solid var(--bleu);border-radius:10px;padding:12px;font-size:17px;font-family:inherit;margin-bottom:10px">
+      <div id="nom-resultats" style="flex:1;min-height:0;overflow-y:auto;padding-bottom:10px"></div>
+    </div>
+    <div id="scan-statut" style="padding:8px 14px;font-size:14px;text-align:center;min-height:20px"></div>
+    <div id="scan-panneau" style="display:none;background:white;color:#1e1e1e;padding:14px;border-radius:14px 14px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.12);overflow-y:auto"></div>
+    <div id="scan-compteur" style="padding:0 14px 12px;font-size:12px;text-align:center;color:#777;background:inherit"></div>
+  </div>`;
 }
-function fermerSugCarte(){setTimeout(()=>{document.getElementById('carte-sug').style.display='none';},180);}
-
-function ajouterEnveloppe(){
-  let carte=carteSelectionnee;
-  if(!carte){
-    const val=document.getElementById('env-carte').value.trim();
-    carte=parseInt(val)||null;
-  }
-  const mois=document.getElementById('env-mois').value;
-  if(!carte){alert('Veuillez saisir un numéro de carte, ou choisir un nom dans la liste proposée.');return;}
-  if(!mois){alert('Veuillez choisir le mois payé.');return;}
-  if(enveloppesJour.find(e=>e.carte===carte&&e.mois===mois)){alert(`Carte n°${carte} déjà enregistrée pour ${moisLabel(mois)}.`);return;}
-  const m=load(SK_ANJ_M).find(m=>m.num===carte);
-  enveloppesJour.push({carte,nom:m?m.nom||'':'',mois});
-  carteSelectionnee=null;
-  document.getElementById('env-carte').value='';
-  document.getElementById('carte-preview').style.display='none';
-  document.getElementById('env-carte').focus();
-  afficherEnveloppesJour();
+function ouvrirRechercheNom(){
+  if(scanEtat) return;
+  if(!dateCulteAnj()){alert('Choisis d\'abord la date du culte (en haut de la page).');return;}
+  document.body.insertAdjacentHTML('beforeend',htmlRechercheNom());
+  scanEtat={mode:'nom',flux:null,timer:null,detecteur:null,occupe:false,pause:false,carte:null,ignorer:null,audio:null,nbAjouts:0};
+  majCompteurScan(); majRechercheNom();
+  const inp=document.getElementById('nom-rech'); if(inp) inp.focus();
+}
+function resultatsRechercheNom(){
+  const q=sansAccent(((document.getElementById('nom-rech')||{}).value||'').trim());
+  if(!q) return null;
+  const mots=q.split(/\s+/);
+  const estNum=/^\d+$/.test(q);
+  return load(SK_ANJ_M).filter(function(m){
+    if(estNum) return String(m.num).startsWith(q);
+    const nom=sansAccent(m.nom||'');
+    return mots.every(function(w){return nom.indexOf(w)>=0;});
+  }).sort(function(a,b){
+    if(estNum){ const ea=String(a.num)===q, eb=String(b.num)===q; if(ea!==eb) return ea?-1:1; }
+    return ((a.actif===false)-(b.actif===false))||String(a.nom||'').localeCompare(String(b.nom||''),'fr')||(a.num-b.num);
+  });
+}
+function majRechercheNom(){
+  const s=scanEtat; if(!s||s.mode!=='nom') return;
+  const box=document.getElementById('nom-resultats'); if(!box) return;
+  const r=resultatsRechercheNom();
+  if(r===null){ box.innerHTML='<div style="text-align:center;color:#777;font-size:13px;padding:18px 8px">Tape quelques lettres du nom (ex : « rako ») ou le n° de la carte.</div>'; return; }
+  if(!r.length){ box.innerHTML='<div style="text-align:center;color:#b9770e;font-size:13px;padding:18px 8px">Personne trouvé dans la liste des membres.<br>Vérifie l\'orthographe, ou cherche par n° de carte.</div>'; return; }
+  box.innerHTML=r.slice(0,40).map(function(m){
+    const nbJour=enveloppesJour.filter(function(e){return e.carte===m.num;}).length;
+    return `<button type="button" class="nom-res${m.actif===false?' inactif':''}" onclick="choisirNomRecherche(${jsVal(m.num)})">
+      <span class="env-badge">${esc(m.num)}</span>
+      <span style="flex:1">${esc(m.nom||'(nom inconnu)')}${m.actif===false?'<small>⚠️ carte désactivée</small>':''}${nbJour?'<small>✓ déjà '+nbJour+' mois compté'+(nbJour>1?'s':'')+' aujourd\'hui</small>':''}</span>
+      <span style="color:var(--bleu);font-size:20px">›</span></button>`;
+  }).join('')+(r.length>40?'<div style="text-align:center;color:#777;font-size:12px;padding:6px">… '+(r.length-40)+' autre(s) : précise la recherche.</div>':'');
+}
+function choisirPremierNom(){
+  const r=resultatsRechercheNom();
+  if(r&&r.length===1) choisirNomRecherche(r[0].num);
+  else if(r&&r.length>1&&/^\d+$/.test(((document.getElementById('nom-rech')||{}).value||'').trim())&&String(r[0].num)===document.getElementById('nom-rech').value.trim()) choisirNomRecherche(r[0].num);
+}
+function choisirNomRecherche(num){
+  const s=scanEtat; if(!s||s.mode!=='nom') return;
+  s.pause=true; s.carte=num;
+  const z=document.getElementById('nom-zone'); if(z) z.style.display='none';
+  afficherPanneauScan(num);
+}
+// Retour à la recherche après « Valider » ou « Annuler »
+function reprendreRechercheNom(){
+  const z=document.getElementById('nom-zone'); if(z) z.style.display='flex';
+  const inp=document.getElementById('nom-rech');
+  if(inp){ inp.value=''; inp.focus(); }
+  majRechercheNom();
+}
+function msgAnnulScan(){
+  return scanEtat&&scanEtat.mode==='nom'?'Annulé. Cherche la personne suivante.':'Scan annulé. Présente la carte suivante.';
 }
 // ── SCAN DES CARTES ANJARAKO (QR « FKMA-ANJ-0145 ») ─────────────
 // Le QR ne contient que le n° de carte ; le nom vient de la liste des membres. Chaque mois coché
@@ -4309,7 +4361,7 @@ function afficherPanneauScan(num){
     ${nbDeja?`<div style="font-size:11px;color:#666;margin-bottom:8px">✓ = déjà compté pour cette carte aujourd'hui.</div>`:''}
     <div style="display:flex;gap:8px">
       <button type="button" class="btn btn-vert" style="margin:0;flex:2" onclick="validerScanCarte()">✅ Valider</button>
-      <button type="button" class="btn btn-gris" style="margin:0;flex:1" onclick="reprendreScan('Scan annulé. Présente la carte suivante.')">✖ Annuler</button>
+      <button type="button" class="btn btn-gris" style="margin:0;flex:1" onclick="reprendreScan(msgAnnulScan())">✖ Annuler</button>
     </div>`;
   p.style.display='block';
   document.getElementById('scan-statut').textContent='';
@@ -4326,7 +4378,8 @@ function avecDelai(promesse,ms){
   return Promise.race([promesse,new Promise(function(_,rej){setTimeout(function(){rej(new Error('délai dépassé'));},ms);})]);
 }
 // lignes : [{carte,mois}] → {ok:[…], deja:[{carte,mois,par}]}
-function envoyerScansPartages(date,lignes){
+// via : 'nom' quand la personne a été choisie par son nom (carte non présentée)
+function envoyerScansPartages(date,lignes,via){
   const ref=window._fs.doc(window._db,'anjarako_scans',date);
   const moi=emailConnecte();
   return avecDelai(window._fs.runTransaction(window._db,async function(tx){
@@ -4338,6 +4391,7 @@ function envoyerScansPartages(date,lignes){
       const k=cleScan(l.carte,l.mois);
       if(scans[k]){ res.deja.push({carte:l.carte,mois:l.mois,par:scans[k].par||''}); return; }
       scans[k]={carte:l.carte,mois:l.mois,par:moi,le:new Date().toISOString()};
+      if(via) scans[k].via=via;
       res.ok.push(l);
     });
     if(res.ok.length){
@@ -4370,8 +4424,9 @@ async function validerScanCarte(){
   if(/^\d{4}-\d{2}$/.test(autre)&&choisis.indexOf(autre)<0) choisis.push(autre);
   if(!choisis.length){alert('Coche au moins un mois payé.');return;}
   const m=load(SK_ANJ_M).find(function(x){return x.num===num;});
+  const parNom=s.mode==='nom';
   const alerte=!m?'carte '+num+' scannée mais absente de la liste des membres'
-    :(m.actif===false?'carte '+num+' scannée mais désactivée dans la liste des membres':'');
+    :(m.actif===false?'carte '+num+(parNom?' choisie par nom':' scannée')+' mais désactivée dans la liste des membres':'');
   const doublons=[];
   let aAjouter=[];
   choisis.sort().forEach(function(ym){
@@ -4385,7 +4440,7 @@ async function validerScanCarte(){
     s.envoi=true;
     const st=document.getElementById('scan-statut'); if(st) st.textContent='⏳ Envoi…';
     try{
-      const r=await envoyerScansPartages(date,aAjouter);
+      const r=await envoyerScansPartages(date,aAjouter,parNom?'nom':'');
       autresTel=r.deja; aAjouter=r.ok;
     }catch(e){ echec=e.message||'erreur'; console.log('Scan partagé :',echec); }
     if(scanEtat) scanEtat.envoi=false;
@@ -4394,6 +4449,7 @@ async function validerScanCarte(){
   aAjouter.forEach(function(l){
     // _scan : ligne venue du scan, gardée quand on lit ensuite la photo de la fiche (non enregistré)
     const env={carte:num,nom:m?m.nom||'':'',mois:l.mois,_scan:true};
+    if(parNom) env._nom=true;   // carte non présentée : choisie par le nom
     if(alerte) env._alerte=alerte;
     enveloppesJour.push(env); ajoutes++;
   });
@@ -4428,6 +4484,7 @@ async function recupererScansPartages(){
     if(enveloppesJour.some(function(e){return e.carte===x.carte&&e.mois===x.mois;})){deja++;return;}
     const m=membres.find(function(y){return y.num===x.carte;});
     const env={carte:x.carte,nom:m?m.nom||'':'',mois:x.mois,_scan:true};
+    if(x.via==='nom') env._nom=true;
     if(!m) env._alerte='carte '+x.carte+' scannée mais absente de la liste des membres';
     else if(m.actif===false) env._alerte='carte '+x.carte+' scannée mais désactivée dans la liste des membres';
     enveloppesJour.push(env); ajoutes++;
@@ -4444,6 +4501,7 @@ function reprendreScan(message){
   document.getElementById('scan-panneau').style.display='none';
   document.getElementById('scan-statut').innerHTML=message||'';
   majCompteurScan();
+  if(s.mode==='nom') reprendreRechercheNom();
 }
 function majCompteurScan(){
   const el=document.getElementById('scan-compteur');
@@ -4480,7 +4538,7 @@ function afficherEnveloppesJour(){
   el.innerHTML=enveloppesJour.map((e,i)=>i===envEnEdition?htmlEditionEnveloppe(e,i):`<div class="env-item"${e._alerte?' style="border-color:var(--orange);background:#fff4e5"':''}>
     <div class="env-badge">${esc(e.carte)}</div>
     <div style="flex:1"><div style="font-size:13px;font-weight:600">${esc(e.nom||'Carte n°'+e.carte)}</div>
-      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${esc(moisLabel(e.mois))}</strong>${e._ligne?' · ligne '+esc(e._ligne)+' de la fiche':''}</div>
+      <div style="font-size:11px;color:var(--texte2)">Pour : <strong>${esc(moisLabel(e.mois))}</strong>${e._ligne?' · ligne '+esc(e._ligne)+' de la fiche':''}${e._nom?' · <span title="Carte non présentée : choisie par le nom">🔎 sans carte</span>':''}</div>
       ${e._alerte?`<div style="font-size:11px;color:#b9770e;margin-top:2px">⚠️ ${e._alerte}</div>`:''}</div>
     <button class="env-del" style="color:var(--bleu,#1D4E7A)" title="Corriger cette ligne" onclick="modifierEnveloppe(${i})">✏️</button>
     <button class="env-del" title="Supprimer" onclick="supprimerEnveloppe(${i})">✕</button>
@@ -4780,6 +4838,7 @@ async function enregistrerAnjarako(){
   const enveloppes=enveloppesJour.map(function(e){
     const o={carte:e.carte,nom:e.nom||'',mois:e.mois};
     if(e._alerte) o.aRevoir=texteBrut(e._alerte);
+    if(e._nom) o.sansCarte=true;   // carte non présentée (recherche par nom, 23/11/2026)
     return o;
   });
   // Compte rendu déjà enregistré pour un AUTRE dimanche (saisie suivante faite sans vider l'écran) : on ne le recopie pas
@@ -6459,6 +6518,7 @@ async function chargerAnjHist(){
   enveloppesJour=(anj.enveloppes||[]).map(function(e){
     const x={carte:e.carte,nom:e.nom||'',mois:e.mois};
     if(e.aRevoir) x._alerte=esc(e.aRevoir);
+    if(e.sansCarte) x._nom=true;
     return x;
   });
   valopyListe=[...(anj.valopy||[])];
@@ -10016,11 +10076,9 @@ function remettreDateCorrectionAnj(){
 function viderSaisieAnj(){
   enveloppesJour=[]; valopyListe=[]; cartesCacheesAnj=null; envEnEdition=null; rapportLectureAnj=null;
   BILLETS.forEach(function(b){ const el=document.getElementById('anj_b_'+b.v); if(el) el.value=''; });
-  ['anj-total-direct','env-nb-direct','env-mois-direct','env-carte','valopy-autre'].forEach(function(id){
+  ['anj-total-direct','env-nb-direct','env-mois-direct','valopy-autre'].forEach(function(id){
     const el=document.getElementById(id); if(el) el.value='';
   });
-  const cp=document.getElementById('carte-preview'); if(cp) cp.style.display='none';
-  carteSelectionnee=null;
   calculerAnjTotal();
   afficherEnveloppesJour(); renderValopy();
 }
