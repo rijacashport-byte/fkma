@@ -1256,6 +1256,16 @@ body.role-diacre_journal #scan-duo{display:none !important;}
 .dy-av{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px dashed #dddcd5;font-size:13px;cursor:pointer;}
 .dy-av:last-child{border-bottom:none;}
 .dy-av b{flex:0 0 118px;color:var(--vert);font-size:12px;}
+/* Thème du mois, légende des couleurs liturgiques, titre liturgique des dimanches */
+.dy-theme{background:linear-gradient(135deg,#eaf2f8,#f7f3e6);border-left:4px solid var(--or);border-radius:9px;padding:9px 12px;margin:4px 0 10px;}
+.dy-theme b{display:block;font-size:14px;color:var(--vert);line-height:1.35;}
+.dy-theme small{display:block;font-size:11px;color:#777;margin-top:2px;}
+.dy-legende{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:11px;color:#555;margin:2px 0 8px;}
+.dy-legende span{display:inline-flex;align-items:center;gap:5px;}
+.dy-legende i,.dy-lit i,.dy-g-lit i{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.18);}
+.dy-lit{background:#f4f3ee;color:#333;display:inline-flex;align-items:center;gap:5px;}
+.dy-g-lit{font-size:10.5px;color:#444;line-height:1.25;display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;}
+.dy-g-lit i{margin-top:2px;}
 /* Grille du mois : écran large seulement (sur téléphone, la liste) */
 .dy-grille{display:none;}
 @media(min-width:900px){
@@ -2114,6 +2124,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <input type="search" id="dy-rech" class="dy-rech" placeholder="🔎 Chercher dans l'année (ex : Noely)" oninput="dyRendre()" autocomplete="off">
  <div class="dy-groupes" id="dy-groupes"></div>
  <label class="dy-check"><input type="checkbox" id="dy-tout" onchange="dyRendre()"> Afficher aussi les rendez-vous de chaque semaine et les dates vides</label>
+ <div class="dy-legende" id="dy-legende" style="margin-top:8px"></div>
  </div>
  <div id="dy-liste"></div>
  <button class="btn bwa" id="dy-btn-wa" onclick="dyPartagerWA()"><i class="ti ti-brand-whatsapp"></i> Partager ce mois sur WhatsApp</button>
@@ -2974,7 +2985,7 @@ function showK45Tab(tab, btn){
 const DIARY_ANNEE=2027;
 const DIARY_2027=[
 ["01-01","Jour de l’An","","libre"],
-["01-02","Famerenankira AM","AM",""],
+["01-02","","",""],
 ["01-03","Alahadin'ny Taombaovao: Fanaterana ny RAKI-BOLAMENA","",""],
 ["01-06","vondrom-bavaka","",""],
 ["01-08","fianarana soratra masina","",""],
@@ -3019,7 +3030,7 @@ const DIARY_2027=[
 ["03-14","","",""],
 ["03-17","vondrom-bavaka","",""],
 ["03-19","fianarana soratra masina","",""],
-["03-20","Fiofanana: Mpitandrina+ mpampianatra S.A","S.A",""],
+["03-20","Fiofanana: Mpitandrina+ mpampianatra S.A/ Famerenankira AM","S.A/AM",""],
 ["03-21","SAMPANDROFIA / MIARAKA EM-CI","SAMPANDROFIA",""],
 ["03-24","vondrom-bavaka","",""],
 ["03-25","Jeudi Saint","CULTE /FANDRAISANA",""],
@@ -3045,21 +3056,21 @@ const DIARY_2027=[
 ["04-25","","",""],
 ["04-28","vondrom-bavaka","",""],
 ["04-30","fianarana soratra masina","",""],
-["05-01","Fête du Travail / Famerenankira AM","AM",""],
+["05-01","","",""],
 ["05-02","","",""],
 ["05-05","vondrom-bavaka","",""],
 ["05-06","Andro niakarana/ Fiofanana STS miaraka @ Mpitandrina","STS",""],
 ["05-07","fianarana soratra masina","",""],
-["05-08","Fivoriana: Fanomanana fanadinana S.A","S.A",""],
+["05-08","Fivoriana: Fanomanana fanadinana S.A/ Fivorian'ny SV/ Famerenakira AM","S.A/SV/AM",""],
 ["05-09","Mpitoriteny: Pred. ASKET FLAVIE","",""],
 ["05-12","vondrom-bavaka","",""],
 ["05-14","fianarana soratra masina","",""],
-["05-15","Famerenankira AM/ Fivoriana SV","AM / SV",""],
+["05-15","Famerenankira AM","AM / SV",""],
 ["05-16","Pentekosta / Tabaski","",""],
 ["05-17","Lundi de Pentecôte/ Fitsangatsanganana FKMA karakarain'ny STS","STS",""],
 ["05-19","vondrom-bavaka","",""],
 ["05-21","fianarana soratra masina","",""],
-["05-22","Famerenankira AM","AM",""],
+["05-22","","",""],
 ["05-23","fanadinana S.A","S.A",""],
 ["05-26","vondrom-bavaka","",""],
 ["05-28","fianarana soratra masina","",""],
@@ -3072,7 +3083,7 @@ const DIARY_2027=[
 ["06-09","vondrom-bavaka","",""],
 ["06-11","fianarana soratra masina","",""],
 ["06-12","Famerenankira AM/ Fivoriana famaranana taona SV","AM / SV",""],
-["06-13","Famaranana ny taona: Fizarana mari-pankasitrahana S.A","S.A",""],
+["06-13","Famaranana ny taona ny sampana rehetra/ Fetin'ny fianakaviana","S.A",""],
 ["06-16","vondrom-bavaka","",""],
 ["06-18","fianarana soratra masina","",""],
 ["06-19","","",""],
@@ -3087,7 +3098,7 @@ const DIARY_2027=[
 ["07-04","","",""],
 ["07-07","vondrom-bavaka","",""],
 ["07-09","fianarana soratra masina","",""],
-["07-10","Fivoriana: Fanomanana fanadinana S.A","S.A",""],
+["07-10","Fivoriana: Fanomanana fidirana S.A","S.A",""],
 ["07-11","","",""],
 ["07-14","vondrom-bavaka","",""],
 ["07-16","fianarana soratra masina","",""],
@@ -3160,7 +3171,7 @@ const DIARY_2027=[
 ["11-24","vondrom-bavaka","",""],
 ["11-26","fianarana soratra masina","",""],
 ["11-27","Famerenankira AM","AM",""],
-["11-28","","",""],
+["11-28","Alahadin'ny STS","STS",""],
 ["12-01","vondrom-bavaka","",""],
 ["12-03","fianarana soratra masina","",""],
 ["12-04","Famerenankira AM","AM",""],
@@ -3180,6 +3191,12 @@ const DIARY_2027=[
 ["12-29","vondrom-bavaka","",""],
 ["12-31","fianarana soratra masina","",""]
 ];
+// Perikopa FJKM 2027 : titre du dimanche (ou de la fête) et couleur liturgique. b=blanc, v=vert, m=violet, r=rouge.
+const DIARY_LITURGIE={"01-03":["Alah. Epifania","b"],"01-10":["Alah. I man. Epifania","b"],"01-17":["Alah. II man. Epifania","b"],"01-24":["Alah. III man. Epifania – FFKM","b"],"01-31":["Alah. IV man. Epifania – Marary hoditra","b"],"02-07":["Alah. V man. Epifania","b"],"02-14":["Karemy I – Alahadin'ny Baiboly","m"],"02-21":["Karemy II – Arsiva FJKM","m"],"02-28":["Karemy III","m"],"03-07":["Karemy IV","m"],"03-14":["Karemy V","m"],"03-21":["Sampandrofia – Sampanasa SAF","r"],"03-28":["Paska","b"],"04-04":["Alah. I man. Paska – AFIFAB FJKM","b"],"04-11":["Alah. II man. Paska – DORKASY FJKM","b"],"04-18":["Alah. III man. Paska","b"],"04-25":["Alah. IV man. Paska – Asa TOPAZA","b"],"05-02":["Alah. V man. Paska","b"],"05-09":["Alah. VI man. Paska – Sampana Lehilahy Kristiana FJKM","b"],"05-16":["Pentekosta","r"],"05-23":["Alah. Trinite – Mpiasa Foibe FJKM","b"],"05-30":["Alah. I man. Trinite","v"],"06-06":["Alah. II man. Trinite","v"],"06-13":["Alah. III man. Trinite – SEKOLY FJKM","v"],"06-20":["Alah. IV man. Trinite – Sampana Vokovoko Manga FJKM","v"],"06-27":["Alah. V man. Trinite – Aumonerie Nationale","v"],"07-04":["Alah. VI man. Trinite","v"],"07-11":["Alah. VII man. Trinite – Sampana Tanora Kristiana","v"],"07-18":["Alah. VIII man. Trinite – Sampana Fivondronana Laika","v"],"07-25":["Alah. IX man. Trinite – TPM sy IFRP","v"],"08-01":["Alah. X man. Trinite","v"],"08-08":["Alah. XI man. Trinite – KFTM – Maritiora","v"],"08-15":["Alah. XII man. Trinite","v"],"08-18":["Tsangerintaona FJKM","v"],"08-22":["Alah. XIII man. Trinite","v"],"08-29":["Alah. XIV man. Trinite – Orphelinat FJKM – AKAFITA","v"],"09-05":["Alah. XV man. Trinite","v"],"09-12":["Alah. XVI man. Trinite – Sampanasa A.F.F","v"],"09-19":["Alah. XVII man. Trinite","v"],"10-03":["Alah. XIX man. Trinite","v"],"10-10":["Alah. XX man. Trinite – Radio Protestanta","v"],"10-17":["Alah. XXI man. Trinite – Masera MAMRE","v"],"10-24":["Alah. XXII man. Trinite – SAFIF FJKM","v"],"10-31":["Alah. XXIII man. Trinite – Reformasiona","v"],"11-07":["Alah. XXIV man. Trinite","v"],"11-14":["Alah. XXV man. Trinite – Fitantsanana ny Fanorana FJKM (FIFA)","v"],"11-21":["Alah. XXVI man. Trinite – SAMPATI","v"],"11-28":["Advento I – KPMS","m"],"12-05":["Advento II","m"],"12-12":["Advento III – Sampana Sekoly Alahady","m"],"12-19":["Advento IV","m"],"12-24":["Zoma Sambatra","b"],"12-25":["KRISMASY","b"],"12-26":["Alah. man. Krismasy – Fiantsoana – SEFALA","b"]};
+// Thème de chaque mois (Perikopa FJKM 2027)
+const DIARY_THEMES=["Kristy maneho ny tenany amin' ny asa", "Kristy mofon' aina isan-tokantrano", "Kristy miasa sy mamonjy izay mino", "Kristy miasa ka mampandresy ny mino", "Kristy mampiaina araka ny fanahy masina", "Kristy miasa ho an'ny firenena sy ny vahoaka", "Kristiana mpiara-miasa amin'ny Tompo", "Kristiana mijoro amin'ny finoana", "Kristiana manohitra ny fampianarana-diso", "Kristiana tsy mizaha tavan' olona", "Kristiana miomana handray an'ny Tompo", "Kristiana manome voninahitra ny Mpamonjy"];
+const DIARY_MOTTO="Mahefà be mandrakariva amin'ny asan'ny Tompo";
+const DIARY_MOTTO_REF="1 Kor. 15:58b";
 const DY_JOURS=['Alahady','Alatsinainy','Talata','Alarobia','Alakamisy','Zoma','Sabotsy'];
 const DY_MOIS_COURT=['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
 const DY_HEBDO=['vondrom-bavaka','fianarana soratra masina'];
@@ -3188,7 +3205,10 @@ let dyMois=-1, dyGroupe='';
 
 function dyDate(l){return new Date(DIARY_ANNEE,parseInt(l[0].slice(0,2),10)-1,parseInt(l[0].slice(3),10));}
 function dyEstHebdo(l){return DY_HEBDO.indexOf(l[1].toLowerCase())>=0;}
-function dyEstVide(l){return !l[1]&&!l[2];}
+function dyEstVide(l){return !l[1]&&!l[2]&&!DIARY_LITURGIE[l[0]];}
+// Couleurs liturgiques (Perikopa FJKM 2027)
+const DY_COUL={b:{c:'#d8d2bf',nom:'Blanc — fêtes'},v:{c:'#2e8b57',nom:'Vert — temps ordinaire'},m:{c:'#7b3fa0',nom:'Violet — Carême / Avent'},r:{c:'#c0392b',nom:'Rouge — Pentecôte / Rameaux'}};
+function dyLit(l){return DIARY_LITURGIE[l[0]]||null;}
 function dyAujourdhui(){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());}
 // Un groupe (AM, SV, S.A…) est cherché comme mot entier : « SV » ne doit pas trouver « SVM », ni « AM » « RAMADAN »
 function dyAGroupe(l,g){
@@ -3219,14 +3239,16 @@ function dyLigneHtml(l,auj){
   if(d<auj) cl+=' dy-passe';
   if(d.getTime()===auj.getTime()) cl+=' dy-auj';
   if(hebdo||vide) cl+=' dy-leger';
-  const titre=l[1]||l[2]||'—';
+  const lit=dyLit(l);
+  const titre=l[1]||l[2]||(lit?lit[0]:'—');
   let puces='';
+  if(lit) puces+='<span class="dy-p dy-lit"><i style="background:'+DY_COUL[lit[1]].c+'"></i>'+esc(lit[0])+'</span>';
   if(l[1]&&l[2]) l[2].split('/').forEach(function(p){p=p.trim();if(p) puces+='<span class="dy-p">'+esc(p)+'</span>';});
   if(l[3]){
     const o=l[3].toLowerCase();
     puces+='<span class="dy-p '+(o==='conflit'?'dy-conflit':(o==='libre'?'dy-libre':''))+'">'+(o==='conflit'?'⚠️ ':'')+esc(l[3])+'</span>';
   }
-  return '<div class="'+cl+'"><div class="dy-d'+(js===0?' dy-dim':(js===6?' dy-sam':''))+'"><b>'+l[0].slice(3)+'</b><span>'+DY_JOURS[js]+'</span></div>'
+  return '<div class="'+cl+'"'+(lit?' style="box-shadow:inset 4px 0 0 '+DY_COUL[lit[1]].c+',0 1px 4px rgba(0,0,0,.05)"':'')+'><div class="dy-d'+(js===0?' dy-dim':(js===6?' dy-sam':''))+'"><b>'+l[0].slice(3)+'</b><span>'+DY_JOURS[js]+'</span></div>'
     +'<div class="dy-c"><div class="dy-a">'+esc(titre)+'</div>'+(puces?'<div class="dy-t">'+puces+'</div>':'')+'</div></div>';
 }
 
@@ -3239,7 +3261,7 @@ function dyLignes(){
     if(filtre){
       if(dyEstVide(l)) return false;
       if(dyGroupe&&!dyAGroupe(l,dyGroupe)) return false;
-      if(rech&&dySansAccent(l[1]+' '+l[2]+' '+l[3]+' '+DY_JOURS[dyDate(l).getDay()]).indexOf(rech)<0) return false;
+      if(rech&&dySansAccent(l[1]+' '+l[2]+' '+l[3]+' '+((dyLit(l)||[''])[0])+' '+DY_JOURS[dyDate(l).getDay()]).indexOf(rech)<0) return false;
       if(!rech&&!tout&&dyEstHebdo(l)) return false;
       return true;
     }
@@ -3262,7 +3284,7 @@ function dyRendre(anim){
   // Prochains rendez-vous (hors rendez-vous de chaque semaine)
   const av=document.getElementById('dy-avenir');
   if(av){
-    const pro=DIARY_2027.filter(function(l){return dyDate(l)>=auj&&!dyEstHebdo(l)&&!dyEstVide(l);}).slice(0,4);
+    const pro=DIARY_2027.filter(function(l){return dyDate(l)>=auj&&!dyEstHebdo(l)&&(l[1]||l[2]);}).slice(0,4);
     av.innerHTML=pro.length?pro.map(function(l){
       const d=dyDate(l);
       return '<div class="dy-av" onclick="dyChoisirMois('+d.getMonth()+')"><b>'+DY_JOURS[d.getDay()]+' '+d.getDate()+' '+MOIS_FR[d.getMonth()].toLowerCase()+'</b><span>'+esc(l[1]||l[2])+'</span></div>';
@@ -3293,6 +3315,7 @@ function dyRendre(anim){
     });
     if(!r.lignes.length) h+='<div class="dy-vide">Rien ne correspond.</div>';
   }else{
+    h+='<div class="dy-theme"><b>'+esc(DIARY_THEMES[dyMois])+'</b><small>'+esc(DIARY_MOTTO)+' ('+esc(DIARY_MOTTO_REF)+')</small></div>';
     h+='<div class="dy-titre-mois">'+MOIS_FR[dyMois]+' '+DIARY_ANNEE+'</div>';
     h+='<div class="dy-hebdo-note dy-note-mois">'+dyNoteHebdo(dyMois)+'</div>';
     // Téléphone : liste. Ordinateur (écran large) : grille du mois, comme un agenda — le CSS choisit.
@@ -3300,6 +3323,8 @@ function dyRendre(anim){
     if(!r.lignes.length) h+='<div class="dy-vide">Aucun rendez-vous particulier inscrit ce mois-ci.</div>';
     h+='</div>'+dyGrilleHtml(dyMois,auj);
   }
+  const lg=document.getElementById('dy-legende');
+  if(lg&&!lg.innerHTML) lg.innerHTML=Object.keys(DY_COUL).map(function(k){return '<span><i style="background:'+DY_COUL[k].c+'"></i>'+esc(DY_COUL[k].nom)+'</span>';}).join('');
   const li=document.getElementById('dy-liste'); if(li){li.classList.toggle('dy-anim',anim===true);li.innerHTML=h;}
   const bw=document.getElementById('dy-btn-wa'); if(bw) bw.style.display=r.filtre?'none':'';
 }
@@ -3321,9 +3346,11 @@ function dyGrilleHtml(m,auj){
     if(js===6) cl+=' dy-g-sam';
     if(d<auj) cl+=' dy-g-passe';
     if(d.getTime()===auj.getTime()) cl+=' dy-g-auj';
-    h+='<div class="'+cl+'"><div class="dy-g-n">'+j+'</div>';
-    if(l&&!dyEstVide(l)){
-      h+='<div class="dy-g-e'+(dyEstHebdo(l)?' dy-g-hebdo':'')+'">'+esc(l[1]||l[2])+'</div>';
+    const lit=l?dyLit(l):null;
+    h+='<div class="'+cl+'"'+(lit?' style="box-shadow:inset 0 3px 0 '+DY_COUL[lit[1]].c+'"':'')+'><div class="dy-g-n">'+j+'</div>';
+    if(l){
+      if(lit) h+='<div class="dy-g-lit"><i style="background:'+DY_COUL[lit[1]].c+'"></i><span>'+esc(lit[0])+'</span></div>';
+      if(l[1]||l[2]) h+='<div class="dy-g-e'+(dyEstHebdo(l)?' dy-g-hebdo':'')+'">'+esc(l[1]||l[2])+'</div>';
       let puces='';
       if(l[1]&&l[2]) l[2].split('/').forEach(function(p){p=p.trim();if(p) puces+='<span class="dy-p">'+esc(p)+'</span>';});
       if(l[3]){
@@ -3341,10 +3368,10 @@ function dyGrilleHtml(m,auj){
 function dyPartagerWA(){
   const r=dyLignes();
   if(r.filtre||!r.lignes.length){alert('Rien à partager pour ce mois.');return;}
-  let m='*📅 FKMA Abidjan — Diary '+DIARY_ANNEE+' · '+MOIS_FR[dyMois]+'*\n';
+  let m='*📅 FKMA Abidjan — Diary '+DIARY_ANNEE+' · '+MOIS_FR[dyMois]+'*\n*Thème du mois :* '+DIARY_THEMES[dyMois]+'\n';
   r.lignes.forEach(function(l){
-    const d=dyDate(l);
-    m+='\n• *'+DY_JOURS[d.getDay()]+' '+l[0].slice(3)+'* : '+(l[1]||l[2]||'—')+((l[1]&&l[2])?' ('+l[2]+')':'')+(l[3]?' — '+l[3]:'');
+    const d=dyDate(l), lit=dyLit(l);
+    m+='\n• *'+DY_JOURS[d.getDay()]+' '+l[0].slice(3)+'* : '+(l[1]||l[2]||(lit?lit[0]:'—'))+((l[1]&&l[2])?' ('+l[2]+')':'')+((lit&&(l[1]||l[2]))?' 🎨 '+lit[0]:'')+(l[3]?' — '+l[3]:'');
   });
   const note=dyNoteHebdo(dyMois).replace(/<\/?b>/g,'').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
   m+='\n\n_'+note+'_';
