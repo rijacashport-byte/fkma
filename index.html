@@ -2873,6 +2873,8 @@ function appliquerRole(role){
     if(gnavAnj) gnavAnj.style.display='none';
     if(gnavVola) gnavVola.style.display='none';
     if(gnavDash) gnavDash.style.display='none';
+    // Réinitialise les sous-onglets Gestion (sinon le tableau de bord ouvert par le compte précédent reste visible)
+    showGestTab('rakitra', document.getElementById('gnav-rakitra'));
     showMain('k45', tabK45);
     return;
   }
