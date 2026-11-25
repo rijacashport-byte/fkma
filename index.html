@@ -18,7 +18,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction, deleteField, serverTimestamp }
+import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, setDoc, query, orderBy, onSnapshot, where, enableIndexedDbPersistence, runTransaction, deleteField, serverTimestamp, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, browserSessionPersistence, sendPasswordResetEmail }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -42,7 +42,7 @@ enableIndexedDbPersistence(db).catch(function(err){
   // err.code==='unimplemented' -> navigateur trop ancien / non supporté
 });
 window._app=app; window._db=db; window._auth=auth;
-window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction,deleteField,serverTimestamp};
+window._fs={collection,addDoc,getDocs,getDoc,doc,updateDoc,deleteDoc,setDoc,query,orderBy,onSnapshot,where,runTransaction,deleteField,serverTimestamp,writeBatch};
 window._signIn=signInWithEmailAndPassword;
 window._signOut=signOut;
 window._sendReset=sendPasswordResetEmail;
@@ -1210,13 +1210,14 @@ input[readonly].champ-montant{background:var(--gris1);color:var(--texte2);}
 .scan-qr-texte small{font-size:12px;font-weight:400;opacity:.85;}
 body.role-diacre_journal #scan-duo{display:none !important;}
 /* 23/11/2026 : « Chercher un nom » à côté du scan (carte oubliée ou QR abîmé) */
-#scan-duo{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:8px;margin-bottom:10px;}
-#scan-duo .btn-scan-qr{margin:0;min-width:0;overflow:hidden;}
+#scan-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-bottom:10px;}
+#scan-duo .btn-scan-qr{margin:0;min-width:0;overflow:hidden;height:100%;box-sizing:border-box;}
 #scan-duo .scan-qr-texte{min-width:0;}
-.btn-scan-nom{background:#fff;color:var(--bleu);border:2px solid var(--bleu);gap:8px;padding:8px;}
-.btn-scan-nom .scan-qr-icone{background:var(--bleu);color:#fff;font-size:18px;width:32px;height:32px;align-items:center;justify-content:center;box-sizing:border-box;}
-.btn-scan-nom .scan-qr-texte b{font-size:14px;line-height:1.2;}
-@media (max-width:420px){ #scan-duo .btn-scan-qr:not(.btn-scan-nom){gap:10px;padding:10px;} #scan-duo .scan-qr-texte b{font-size:14px;} #scan-duo .scan-qr-icone svg{width:30px;height:30px;} }
+/* 25/11/2026 : « Chercher un nom » a la même taille que « Scanner les cartes » */
+.btn-scan-nom{background:#fff;color:var(--bleu);border:2px solid var(--bleu);}
+.btn-scan-nom .scan-qr-icone{background:var(--bleu);color:#fff;font-size:22px;width:38px;height:38px;align-items:center;justify-content:center;box-sizing:border-box;}
+.btn-scan-nom .scan-qr-texte b{font-size:16px;line-height:1.3;}
+@media (max-width:420px){ #scan-duo .btn-scan-qr{gap:10px;padding:10px;} #scan-duo .scan-qr-texte b{font-size:14px;} #scan-duo .scan-qr-icone svg{width:30px;height:30px;} #scan-duo .btn-scan-nom .scan-qr-icone{width:34px;height:34px;font-size:20px;} }
 .nom-res{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid #dfe3ea;border-radius:10px;padding:10px 12px;margin-bottom:6px;font:inherit;font-size:15px;color:#1e1e1e;cursor:pointer;}
 .nom-res:active{background:#eef3fa;}
 .nom-res .env-badge{flex-shrink:0;}
@@ -1266,12 +1267,38 @@ body.role-diacre_journal #scan-duo{display:none !important;}
 .dy-lit{background:#f4f3ee;color:#333;display:inline-flex;align-items:center;gap:5px;}
 .dy-g-lit{font-size:10.5px;color:#444;line-height:1.25;display:flex;gap:4px;align-items:flex-start;margin-bottom:4px;}
 .dy-g-lit i{margin-top:2px;}
-/* Grille du mois : écran large seulement (sur téléphone, la liste) */
-.dy-grille{display:none;}
+/* Grille du mois : même tableau sur téléphone (compact : n°, couleur, point ; touchez un jour pour le détail)
+   et sur ordinateur (grande grille avec les textes). 25/11/2026 */
+.dy-grille{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#dddcd5;gap:1px;border:1px solid #dddcd5;border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.dy-g-tete{background:#eaf2f8;color:var(--vert);font-size:10px;font-weight:800;text-transform:uppercase;text-align:center;padding:5px 0;}
+.dy-g-tete.dy-g-dim{background:var(--vert);color:white;}
+.dy-g-c{background:white;min-height:48px;padding:3px 2px 4px;min-width:0;cursor:pointer;}
+.dy-g-c.dy-g-hors{background:#f4f3ee;cursor:default;}
+.dy-g-c.dy-g-sam{background:#f7fafc;}
+.dy-g-c.dy-g-dim{background:#eaf2f8;}
+.dy-g-c.dy-g-passe>*{opacity:.55;}
+.dy-g-c.dy-g-auj{box-shadow:inset 0 0 0 2px var(--or);}
+.dy-g-c.dy-g-sel{box-shadow:inset 0 0 0 2px var(--vert);background:#fffbea;}
+.dy-g-c.dy-g-hors{pointer-events:none;}
+.dy-g-n{font-size:12px;font-weight:800;color:#666;text-align:center;}
+.dy-g-dim .dy-g-n{color:var(--vert);}
+.dy-g-auj .dy-g-n{color:var(--or);}
+.dy-g-pt{display:block;width:6px;height:6px;border-radius:50%;background:var(--vert);margin:3px auto 0;}
+.dy-g-pt.dy-g-pt-conflit{background:#c0392b;}
+.dy-g-e,.dy-g-lit,.dy-t{display:none;}
+.dy-jour-detail{margin-bottom:12px;}
+.dy-jour-detail .dy-l{margin-bottom:0;}
+.dy-jour-detail .dy-vide{background:white;border-radius:10px;}
+@media(max-width:899px){ .dy-liste-mois{display:none;} .dy-g-c{min-height:52px;} }
 @media(min-width:900px){
-  .dy-liste-mois,.dy-note-mois,.dy-check{display:none;}
+  .dy-liste-mois,.dy-note-mois,.dy-check,.dy-jour-detail{display:none;}
+  .dy-g-e{display:block;}
+  .dy-g-lit{display:flex;}
+  .dy-t{display:flex;}
+  .dy-g-pt{display:none;}
+  .dy-g-c{cursor:default;}
   .dy-mois{grid-template-columns:repeat(12,1fr);}
-  .dy-grille{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#dddcd5;gap:1px;border:1px solid #dddcd5;border-radius:10px;overflow:hidden;margin-bottom:12px;}
+  .dy-grille{margin-bottom:12px;}
   .dy-g-tete{background:#eaf2f8;color:var(--vert);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;text-align:center;padding:7px 2px;}
   .dy-g-tete.dy-g-dim{background:var(--vert);color:white;}
   .dy-g-c{background:white;min-height:104px;padding:6px 7px 8px;}
@@ -1370,6 +1397,14 @@ body.role-diacre_journal #scan-duo{display:none !important;}
 .filtre-barre .f-eff{border:1.5px solid var(--gris2);background:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;color:var(--rouge);font-size:13px;}
 .filtre-barre .f-resume{font-size:12px;color:var(--bleu);}
 @media print{.filtre-barre{display:none !important;}}
+/* Catégories (membres actifs / autres) */
+.cat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.cat-chip{border:1.5px solid var(--gris2);background:#fff;border-radius:16px;padding:5px 11px;font:inherit;font-size:12px;font-weight:600;color:var(--texte2);cursor:pointer;}
+.cat-chip.actif{background:var(--bleu);border-color:var(--bleu);color:#fff;}
+/* Onglets par année, planning des services */
+.sd-annees{display:flex;gap:6px;padding:10px 14px 0;overflow-x:auto;}
+.sd-an{flex:0 0 auto;border:1.5px solid var(--bleu);background:#fff;color:var(--bleu);border-radius:8px;padding:6px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;}
+.sd-an.actif{background:var(--bleu);color:#fff;}
 
 /* ── Lecture seule (contrôleurs) : on consulte et on exporte, on ne saisit rien ── */
 body.lecture-seule #app-content::before{content:'👁️ Lecture seule : consultation et exports uniquement';display:block;margin-bottom:10px;
@@ -1949,7 +1984,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <span>✅ Ont payé (<span id="suivi-cnt-payes">0</span>)</span>
  <button id="suivi-toggle-payes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('payes')">▸ Afficher</button>
  </div>
- <div id="suivi-liste-payes" style="display:none"></div>
+ <div id="suivi-liste-payes" style="display:none"><div id="suivi-barre-payes"></div><div id="suivi-items-payes"></div></div>
  </div>
 
  <div class="card">
@@ -1957,7 +1992,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <span>❌ N'ont pas payé (<span id="suivi-cnt-nonpayes">0</span>)</span>
  <button id="suivi-toggle-nonpayes" style="background:none;border:none;color:var(--bleu);font-size:11px;font-weight:600;cursor:pointer" onclick="toggleSuiviListe('nonpayes')">▸ Afficher</button>
  </div>
- <div id="suivi-liste-nonpayes" style="display:none"></div>
+ <div id="suivi-liste-nonpayes" style="display:none"><div id="suivi-barre-nonpayes"></div><div id="suivi-items-nonpayes"></div></div>
  </div>
 
  <div class="btns">
@@ -1989,7 +2024,17 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  </div>
  <button class="btn btn-vert" onclick="ajouterMembreAnj()"><span>➕</span> Ajouter un membre</button>
  <div class="note" style="margin-top:9px;margin-bottom:0">💡 Pour importer une liste complète depuis un fichier Excel, demandez à Claude — il préparera un fichier JSON prêt à coller ici.</div>
- <div style="margin-top:10px;display:none" id="suivi-liste-membres"></div>
+ <div style="margin-top:10px;display:none" id="suivi-liste-membres">
+ <div class="cat-chips" id="mb-cat-chips"></div>
+ <div id="suivi-barre-membres"></div>
+ <div id="suivi-items-membres"></div>
+ </div>
+ <div class="card" style="margin-top:12px;background:var(--gris1)">
+ <div class="card-titre">⭐ Membres actifs — dernière liste établie</div>
+ <div class="note" style="margin-bottom:8px">Collez ici la liste complète (fichier <b>membres_actifs_2027.json</b>, gardé sur l'ordinateur, jamais sur GitHub). Les membres de cette liste deviennent « Membres actifs » ; ceux qui n'y sont plus passent dans « Autres ».</div>
+ <textarea id="mb-actifs-zone" placeholder="Collez ici le contenu du fichier JSON…" style="width:100%;min-height:70px;border:1.5px solid var(--gris2);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;box-sizing:border-box"></textarea>
+ <button class="btn btn-vert" style="margin-top:8px" onclick="importerMembresActifs()"><span>⭐</span> Enregistrer la liste des membres actifs</button>
+ </div>
  </div>
 
  </div><!-- /anj-view-suivi -->
@@ -2641,6 +2686,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
     ℹ️ Aucune donnée de planning n'a encore été enregistrée dans la base. Les données par défaut sont affichées. Un secrétaire peut les enregistrer dans Firestore ci-dessous (⚙️ en bas de cette page).
  </div>
 
+ <div class="sd-annees" id="sd-annees"></div>
  <div class="month-nav" id="sd-monthNav">
  <button class="mnav-btn" onclick="sdPrevMois()">&#8249;</button>
  <select class="month-select" id="sd-selMois" onchange="sdGoMois(this.value)"></select>
@@ -3321,9 +3367,12 @@ function dyRendre(anim){
     h+='<div class="dy-titre-mois">'+MOIS_FR[dyMois]+' '+DIARY_ANNEE+'</div>';
     h+='<div class="dy-hebdo-note dy-note-mois">'+dyNoteHebdo(dyMois)+'</div>';
     // Téléphone : liste. Ordinateur (écran large) : grille du mois, comme un agenda — le CSS choisit.
+    // Téléphone : le tableau du mois (touchez un jour pour son détail). Ordinateur : grande grille.
+    const jc=dyJourCourant(dyMois,auj);
     h+='<div class="dy-liste-mois">'+r.lignes.map(function(l){return dyLigneHtml(l,auj);}).join('');
     if(!r.lignes.length) h+='<div class="dy-vide">Aucun rendez-vous particulier inscrit ce mois-ci.</div>';
     h+='</div>'+dyGrilleHtml(dyMois,auj);
+    h+='<div class="dy-jour-detail" id="dy-jour-detail">'+dyDetailJour(dyMois,jc,auj)+'</div>';
   }
   const lg=document.getElementById('dy-legende');
   if(lg&&!lg.innerHTML) lg.innerHTML=Object.keys(DY_COUL).map(function(k){return '<span><i style="background:'+DY_COUL[k].c+'"></i>'+esc(DY_COUL[k].nom)+'</span>';}).join('');
@@ -3331,7 +3380,34 @@ function dyRendre(anim){
   const bw=document.getElementById('dy-btn-wa'); if(bw) bw.style.display=r.filtre?'none':'';
 }
 
-// Grille du mois (lundi → dimanche), affichée sur écran large. Toutes les dates du mois y figurent,
+// Jour choisi dans le tableau du mois (téléphone) : aujourd'hui si c'est ce mois-ci, sinon le 1er jour
+// avec un rendez-vous. Réinitialisé quand on change de mois.
+let dyJour=null, dyJourMois=-1;
+function dyJourCourant(m,auj){
+  if(dyJourMois!==m){ dyJourMois=m; dyJour=null; }
+  if(dyJour===null){
+    if(auj.getFullYear()===DIARY_ANNEE && auj.getMonth()===m) dyJour=auj.getDate();
+    else {
+      const l=DIARY_2027.find(function(x){return parseInt(x[0].slice(0,2),10)-1===m && (x[1]||x[2]||dyLit(x));});
+      dyJour=l?parseInt(l[0].slice(3),10):1;
+    }
+  }
+  return dyJour;
+}
+function dyVoirJour(j){
+  dyJour=j;
+  document.querySelectorAll('.dy-grille .dy-g-c[data-j]').forEach(function(c){c.classList.toggle('dy-g-sel',parseInt(c.dataset.j,10)===j);});
+  const d=document.getElementById('dy-jour-detail');
+  if(d) d.innerHTML=dyDetailJour(dyMois,j,dyAujourdhui());
+}
+function dyDetailJour(m,j,auj){
+  const l=DIARY_2027.find(function(x){return parseInt(x[0].slice(0,2),10)-1===m && parseInt(x[0].slice(3),10)===j;});
+  const entete='<div class="dy-titre-mois">'+DY_JOURS[new Date(DIARY_ANNEE,m,j).getDay()]+' '+j+' '+MOIS_FR[m]+'</div>';
+  if(!l||(!l[1]&&!l[2]&&!dyLit(l))) return entete+'<div class="dy-vide">Rien de particulier ce jour-là.</div>';
+  return entete+dyLigneHtml(l,auj);
+}
+
+// Grille du mois (lundi → dimanche). Toutes les dates du mois y figurent,
 // les rendez-vous de chaque semaine en gris.
 function dyGrilleHtml(m,auj){
   const parJour={};
@@ -3349,7 +3425,10 @@ function dyGrilleHtml(m,auj){
     if(d<auj) cl+=' dy-g-passe';
     if(d.getTime()===auj.getTime()) cl+=' dy-g-auj';
     const lit=l?dyLit(l):null;
-    h+='<div class="'+cl+'"'+(lit?' style="box-shadow:inset 0 3px 0 '+DY_COUL[lit[1]].c+'"':'')+'><div class="dy-g-n">'+j+'</div>';
+    const aEv=!!(l&&(l[1]||l[2]||lit));
+    if(j===dyJour) cl+=' dy-g-sel';
+    h+='<div class="'+cl+'" data-j="'+j+'" onclick="dyVoirJour('+j+')"'+(lit?' style="box-shadow:inset 0 3px 0 '+DY_COUL[lit[1]].c+'"':'')+'><div class="dy-g-n">'+j+'</div>'
+      +(aEv?'<span class="dy-g-pt'+((l&&l[3]&&l[3].toLowerCase()==='conflit')?' dy-g-pt-conflit':'')+'"></span>':'');
     if(l){
       if(lit) h+='<div class="dy-g-lit"><i style="background:'+DY_COUL[lit[1]].c+'"></i><span>'+esc(lit[0])+'</span></div>';
       if(l[1]||l[2]) h+='<div class="dy-g-e'+(dyEstHebdo(l)?' dy-g-hebdo':'')+'">'+esc(l[1]||l[2])+'</div>';
@@ -5287,17 +5366,150 @@ async function supprimerMembreAnj(num){
   renderSuiviPaiements();
 }
 
+// ── Recherche et tri des listes du Suivi (25/11/2026) ──
+// Chaque liste garde sa recherche (nom ou n° de carte) et son tri (n° ou nom) ; seule la liste
+// se redessine quand on tape, pour ne pas perdre le curseur dans la zone de recherche.
+let suiviFiltres={payes:{q:'',tri:'num'},nonpayes:{q:'',tri:'num'},membres:{q:'',tri:'num',cat:'tous'}};
+function suiviBarreHtml(which){
+  const f=suiviFiltres[which];
+  return '<div class="filtre-barre">'
+    +'<input type="search" class="f-txt" placeholder="🔎 Chercher un nom ou un n° de carte" value="'+esc(f.q)+'" autocomplete="off" oninput="suiviSetFiltre(\''+which+'\',\'q\',this.value)">'
+    +'<div class="f-ligne"><select onchange="suiviSetFiltre(\''+which+'\',\'tri\',this.value)">'
+    +'<option value="num"'+(f.tri==='num'?' selected':'')+'>Trier par n° de carte</option>'
+    +'<option value="nom"'+(f.tri==='nom'?' selected':'')+'>Trier par nom (A → Z)</option>'
+    +'</select><span class="f-resume" id="suivi-res-'+which+'"></span></div></div>';
+}
+function suiviPoserBarres(){
+  ['payes','nonpayes','membres'].forEach(function(w){
+    const el=document.getElementById('suivi-barre-'+w);
+    if(el && !el.dataset.pose){ el.innerHTML=suiviBarreHtml(w); el.dataset.pose='1'; }
+  });
+}
+function suiviSetFiltre(which,cle,val){
+  suiviFiltres[which][cle]=val;
+  if(which==='membres') renderListeMembres(); else renderSuiviPaiements();
+}
+function suiviSetCat(cat){
+  suiviFiltres.membres.cat=cat;
+  renderListeMembres();
+}
+function suiviFiltrerTrier(liste,which){
+  const f=suiviFiltres[which];
+  const q=dySansAccent(f.q||'').trim();
+  const r=liste.filter(function(m){
+    if(!q) return true;
+    return String(m.num).indexOf(q)>=0 || dySansAccent(m.nom||'').indexOf(q)>=0;
+  });
+  if(f.tri==='nom') r.sort(function(a,b){return dySansAccent(a.nom||'').localeCompare(dySansAccent(b.nom||''),'fr');});
+  else r.sort(function(a,b){return (a.num||0)-(b.num||0);});
+  return r;
+}
+function suiviResume(which,aff,tot){
+  const e=document.getElementById('suivi-res-'+which);
+  if(e) e.textContent=(aff===tot)?tot+' membre(s)':aff+' sur '+tot+' affiché(s)';
+}
+
 function renderListeMembres(){
-  const el=document.getElementById('suivi-liste-membres');
+  const el=document.getElementById('suivi-items-membres');
   if(!el) return;
-  const membres=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
-  document.getElementById('suivi-cnt-total').textContent=membres.length;
-  if(!membres.length){el.innerHTML='<div class="vide">Aucun membre enregistré — ajoutez-les un par un ci-dessus, ou demandez à Claude un import groupé.</div>';return;}
-  el.innerHTML=membres.map(function(m){
+  suiviPoserBarres();
+  const tous=load(SK_ANJ_M).filter(function(m){return m.actif!==false;});
+  const nbActifs=tous.filter(function(m){return m.cat==='actif';}).length;
+  document.getElementById('suivi-cnt-total').textContent=tous.length;
+  // Catégories : Tous / Membres actifs (dernière liste établie) / Autres
+  const chips=document.getElementById('mb-cat-chips');
+  const cat=suiviFiltres.membres.cat;
+  if(chips){
+    const bouton=function(v,lab,n){return '<button type="button" class="cat-chip'+(cat===v?' actif':'')+'" onclick="suiviSetCat(\''+v+'\')">'+lab+' ('+n+')</button>';};
+    chips.innerHTML=bouton('tous','Tous',tous.length)+bouton('actif','⭐ Membres actifs',nbActifs)+bouton('autre','Autres',tous.length-nbActifs);
+  }
+  if(!tous.length){el.innerHTML='<div class="vide">Aucun membre enregistré — ajoutez-les un par un ci-dessus, ou collez la liste des membres actifs plus bas.</div>';suiviResume('membres',0,0);return;}
+  const liste=tous.filter(function(m){
+    if(cat==='actif') return m.cat==='actif';
+    if(cat==='autre') return m.cat!=='actif';
+    return true;
+  });
+  const aff=suiviFiltrerTrier(liste,'membres');
+  suiviResume('membres',aff.length,liste.length);
+  el.innerHTML=aff.length?aff.map(function(m){
     return '<div class="env-item"><div class="env-badge">'+esc(m.num)+'</div>'
-      +'<div style="flex:1;font-size:13px">'+esc(m.nom||'—')+'</div>'
+      +'<div style="flex:1;font-size:13px">'+esc(m.nom||'—')
+      +(m.cat==='actif'?' <span style="font-size:10px;font-weight:700;color:var(--or)">⭐ actif</span>':'')+'</div>'
       +'<button class="env-del" onclick="supprimerMembreAnj('+jsVal(m.num)+')">✕</button></div>';
-  }).join('');
+  }).join(''):'<div class="vide">Aucun résultat pour cette recherche.</div>';
+}
+
+// Dernière liste établie des membres actifs (collée depuis membres_actifs_2027.json).
+// La liste remplace la précédente : ceux qui n'y figurent plus passent dans « Autres ».
+async function importerMembresActifs(){
+  if(!aAccesSuiviAnj()){ alert("Réservé au secrétaire et aux diacres."); return; }
+  const zone=document.getElementById('mb-actifs-zone');
+  let liste;
+  try{ liste=JSON.parse(zone.value); }
+  catch(e){ alert("Le texte collé n'est pas valide : "+e.message); return; }
+  if(!Array.isArray(liste)||!liste.length){ alert('La liste doit être un tableau [{"num":…,"nom":…}, …].'); return; }
+  const cibles=new Map();
+  for(const x of liste){
+    const num=parseInt(x.num,10);
+    if(!num){ alert('Numéro de carte invalide : '+JSON.stringify(x)); return; }
+    cibles.set(num,{num:num,nom:String(x.nom||'').trim()});
+  }
+  const membres=load(SK_ANJ_M);
+  const actifsAvant=membres.filter(function(m){return m.actif!==false&&m.cat==='actif';}).length;
+  const sortants=membres.filter(function(m){return m.actif!==false&&m.cat==='actif'&&!cibles.has(m.num);}).length;
+  if(!confirm(cibles.size+' membre(s) actifs dans la nouvelle liste (il y en avait '+actifsAvant+').\n'
+    +sortants+' membre(s) passeront dans « Autres ».\nContinuer ?')) return;
+
+  const ops=[]; // écritures Firestore (par lots)
+  const col=window._fs&&window._db?window._fs.collection(window._db,'anj_membres'):null;
+  const vus=new Set();
+  membres.forEach(function(m){
+    if(m.actif===false) return;
+    vus.add(m.num);
+    const dedans=cibles.has(m.num);
+    const nouveauCat=dedans?'actif':'autre';
+    const c=cibles.get(m.num);
+    if(dedans && !m.nom && c.nom) m.nom=c.nom;
+    if(m.cat!==nouveauCat){
+      m.cat=nouveauCat;
+      if(m._id) ops.push({ref:window._fs?window._fs.doc(window._db,'anj_membres',m._id):null,data:{cat:nouveauCat}});
+    }
+  });
+  cibles.forEach(function(c,num){
+    if(vus.has(num)) return;
+    // Carte absente ou désactivée : on la (ré)active comme membre actif
+    const existant=membres.find(function(m){return m.num===num;});
+    if(existant){
+      existant.actif=true; existant.cat='actif'; if(!existant.nom) existant.nom=c.nom;
+      if(existant._id) ops.push({ref:window._fs?window._fs.doc(window._db,'anj_membres',existant._id):null,data:{actif:true,cat:'actif'}});
+    } else {
+      const rec={num:num,nom:c.nom,actif:true,cat:'actif'};
+      membres.push(rec);
+      if(col) ops.push({ref:window._fs.doc(col),data:rec,nouveau:true,rec:rec});
+    }
+  });
+  membres.sort(function(a,b){return (a.num||0)-(b.num||0);});
+  save(SK_ANJ_M,membres);
+
+  if(window._db && window._fs && ops.length){
+    try{
+      for(let i=0;i<ops.length;i+=400){
+        const lot=window._fs.writeBatch(window._db);
+        ops.slice(i,i+400).forEach(function(o){
+          if(!o.ref) return;
+          if(o.nouveau){ lot.set(o.ref,o.data); o.rec._id=o.ref.id; }
+          else lot.update(o.ref,o.data);
+        });
+        lot.commit().catch(function(e){console.log('Firebase membres actifs:',e.message);});
+      }
+    }catch(e){console.log('Firebase membres actifs:',e.message);}
+  }
+  save(SK_ANJ_M,membres);
+  zone.value='';
+  suiviFiltres.membres.cat='actif';
+  renderListeMembres();
+  renderSuiviPaiements();
+  alert('Membres actifs enregistrés ✅ ('+cibles.size+').');
 }
 
 // Numéros de carte ayant payé pour un mois (YYYY-MM) donné, toutes dates confondues
@@ -5626,19 +5838,26 @@ function renderSuiviPaiements(){
   document.getElementById('suivi-cnt-nonpayes').textContent=nonPayes.length;
   renderSuiviValopy(ym);
 
-  const elP=document.getElementById('suivi-liste-payes');
-  const elN=document.getElementById('suivi-liste-nonpayes');
+  suiviPoserBarres();
+  const elP=document.getElementById('suivi-items-payes');
+  const elN=document.getElementById('suivi-items-nonpayes');
   if(!membres.length){
     elP.innerHTML='<div class="vide">Aucun membre enregistré pour l\'instant.</div>';
     elN.innerHTML='';
+    suiviResume('payes',0,0); suiviResume('nonpayes',0,0);
     return;
   }
-  elP.innerHTML=payes.length?payes.map(function(m){
+  const pAff=suiviFiltrerTrier(payes,'payes');
+  const nAff=suiviFiltrerTrier(nonPayes,'nonpayes');
+  suiviResume('payes',pAff.length,payes.length);
+  suiviResume('nonpayes',nAff.length,nonPayes.length);
+  const vide=function(txt){return '<div class="vide">'+txt+'</div>';};
+  elP.innerHTML=payes.length?(pAff.length?pAff.map(function(m){
     return '<div class="env-item"><div class="env-badge" style="background:var(--vert)">'+esc(m.num)+'</div><div style="flex:1;font-size:13px">'+esc(m.nom)+'</div></div>';
-  }).join(''):'<div class="vide">Personne n\'a encore payé ce mois-ci.</div>';
-  elN.innerHTML=nonPayes.length?nonPayes.map(function(m){
+  }).join(''):vide('Aucun résultat pour cette recherche.')):vide('Personne n\'a encore payé ce mois-ci.');
+  elN.innerHTML=nonPayes.length?(nAff.length?nAff.map(function(m){
     return '<div class="env-item"><div class="env-badge" style="background:var(--rouge)">'+esc(m.num)+'</div><div style="flex:1;font-size:13px">'+esc(m.nom)+'</div></div>';
-  }).join(''):'<div class="vide">Tout le monde a payé ! 🎉</div>';
+  }).join(''):vide('Aucun résultat pour cette recherche.')):vide('Tout le monde a payé ! 🎉');
 }
 
 function partagerWANonPayants(){
@@ -9144,6 +9363,7 @@ const SD_DEFAULT = {"contacts":{"Rado":{"nom":"Rado","genre":"H"},"Nathalie Lolo
 let SD_LOADED=false, SD_LOADING=false;
 let SD_CONTACTS={}, SD_GENRE={}, SD_ALL_NAMES=[];
 let SD_PLANNING=[], SD_FITAOVANA=[], SD_FIVORIANA=[];
+let sdCurAnnee=null;
 let sdCurTab="mois", sdCurMois=0, sdCurDiacre=null, sdCurFilter="all", sdCurRappelMois=0, sdOpenJours={};
 let SD_MSGS={};
 
@@ -9192,7 +9412,15 @@ async function sdChargerDonnees(){
     periodeEl.textContent="FKMA Abidjan · "+premier.m+" "+premier.a+" – "+dernier.m+" "+dernier.a;
   }
   SD_LOADED=true; SD_LOADING=false;
+  // Année affichée : celle du mois courant par défaut (onglets par année, 25/11/2026)
+  if(!sdCurAnnee || !SD_PLANNING.some(function(m){return m.a===sdCurAnnee;})){
+    sdCurAnnee=SD_PLANNING[sdCurMois]?SD_PLANNING[sdCurMois].a:null;
+  }
+  if(sdCurAnnee && SD_PLANNING[sdCurMois] && SD_PLANNING[sdCurMois].a!==sdCurAnnee){
+    sdCurMois=SD_PLANNING.findIndex(function(m){return m.a===sdCurAnnee;});
+  }
   sdInitMoisSelect();
+  sdRenderAnnees();
   sdRenderFilterRow();
   sdRenderCurrentView();
 }
@@ -9234,12 +9462,36 @@ async function sdImporterDonnees(){
   }
 }
 
+// Onglets par année (2027, 2028…) : la liste des mois et les flèches ne montrent que l'année choisie
+function sdRenderAnnees(){
+  const el=document.getElementById('sd-annees');
+  if(!el) return;
+  const annees=[];
+  SD_PLANNING.forEach(function(m){ if(annees.indexOf(m.a)<0) annees.push(m.a); });
+  annees.sort(function(a,b){return a-b;});
+  el.innerHTML=annees.length>1?annees.map(function(a){
+    return '<button type="button" class="sd-an'+(a===sdCurAnnee?' actif':'')+'" onclick="sdChoisirAnnee('+a+')">'+a+'</button>';
+  }).join(''):'';
+}
+function sdChoisirAnnee(a){
+  sdCurAnnee=a;
+  if(!SD_PLANNING[sdCurMois]||SD_PLANNING[sdCurMois].a!==a){
+    const idx=SD_PLANNING.findIndex(function(m){return m.a===a;});
+    if(idx>=0) sdCurMois=idx;
+  }
+  sdOpenJours={};
+  sdInitMoisSelect();
+  sdRenderAnnees();
+  sdRenderMois();
+}
+
 function sdInitMoisSelect(){
   const sel=document.getElementById('sd-selMois');
   const selR=document.getElementById('sd-selRappelMois');
   if(sel){
     sel.innerHTML="";
     SD_PLANNING.forEach(function(m,i){
+      if(sdCurAnnee && m.a!==sdCurAnnee) return;
       const o=document.createElement('option');
       o.value=i; o.textContent=m.m+' '+m.a;
       sel.appendChild(o);
@@ -9284,12 +9536,21 @@ function sdSetTab(t){
   });
   const mn=document.getElementById("sd-monthNav");
   if(mn) mn.style.display=(t==="mois")?"flex":"none";
+  const an=document.getElementById("sd-annees");
+  if(an) an.style.display=(t==="mois")?"flex":"none";
   sdRenderCurrentView();
 }
 
 function sdGoMois(i){sdCurMois=parseInt(i);sdOpenJours={};sdRenderMois();}
-function sdPrevMois(){if(sdCurMois>0){sdCurMois--;sdOpenJours={};sdRenderMois();}}
-function sdNextMois(){if(sdCurMois<SD_PLANNING.length-1){sdCurMois++;sdOpenJours={};sdRenderMois();}}
+// Flèches : on reste dans l'année affichée
+function sdPasMois(dir){
+  const j=sdCurMois+dir;
+  if(j<0||j>=SD_PLANNING.length) return;
+  if(sdCurAnnee && SD_PLANNING[j].a!==sdCurAnnee) return;
+  sdCurMois=j; sdOpenJours={}; sdRenderMois();
+}
+function sdPrevMois(){sdPasMois(-1);}
+function sdNextMois(){sdPasMois(1);}
 function sdToggleJour(id){
   sdOpenJours[id]=!sdOpenJours[id];
   const b=document.getElementById("sd-body-"+id);
