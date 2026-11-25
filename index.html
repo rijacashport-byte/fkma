@@ -2675,6 +2675,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <div class="topbar-sub">Services <span>Diacres</span></div>
  <div class="tabs">
  <div class="tab active" onclick="sdSetTab('mois')" id="sd-tab-mois">📅 Par mois</div>
+ <div class="tab" onclick="sdSetTab('annee')" id="sd-tab-annee">📆 Par année</div>
  <div class="tab" onclick="sdSetTab('diacre')" id="sd-tab-diacre">👤 Par diacre</div>
  <div class="tab" onclick="sdSetTab('rappel')" id="sd-tab-rappel">📱 Rappels</div>
  <div class="tab" onclick="sdSetTab('fitaovana')" id="sd-tab-fitaovana">🧺 Fitaovana</div>
@@ -2686,7 +2687,6 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
     ℹ️ Aucune donnée de planning n'a encore été enregistrée dans la base. Les données par défaut sont affichées. Un secrétaire peut les enregistrer dans Firestore ci-dessous (⚙️ en bas de cette page).
  </div>
 
- <div class="sd-annees" id="sd-annees"></div>
  <div class="month-nav" id="sd-monthNav">
  <button class="mnav-btn" onclick="sdPrevMois()">&#8249;</button>
  <select class="month-select" id="sd-selMois" onchange="sdGoMois(this.value)"></select>
@@ -2708,6 +2708,11 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <div class="stats-grid" id="sd-diacre-stats"></div>
  <div class="postes-mini" id="sd-postes-mini"></div>
  <div class="mois-list" id="sd-moisList"></div>
+ </div>
+
+ <div id="sd-view-annee" style="display:none;">
+ <div class="sd-annees" id="sd-annee-btns"></div>
+ <div id="sd-annee-liste" style="padding:4px 14px 14px"></div>
  </div>
 
  <div id="sd-view-rappel" style="display:none;">
@@ -9363,7 +9368,6 @@ const SD_DEFAULT = {"contacts":{"Rado":{"nom":"Rado","genre":"H"},"Nathalie Lolo
 let SD_LOADED=false, SD_LOADING=false;
 let SD_CONTACTS={}, SD_GENRE={}, SD_ALL_NAMES=[];
 let SD_PLANNING=[], SD_FITAOVANA=[], SD_FIVORIANA=[];
-let sdCurAnnee=null;
 let sdCurTab="mois", sdCurMois=0, sdCurDiacre=null, sdCurFilter="all", sdCurRappelMois=0, sdOpenJours={};
 let SD_MSGS={};
 
@@ -9412,15 +9416,7 @@ async function sdChargerDonnees(){
     periodeEl.textContent="FKMA Abidjan · "+premier.m+" "+premier.a+" – "+dernier.m+" "+dernier.a;
   }
   SD_LOADED=true; SD_LOADING=false;
-  // Année affichée : celle du mois courant par défaut (onglets par année, 25/11/2026)
-  if(!sdCurAnnee || !SD_PLANNING.some(function(m){return m.a===sdCurAnnee;})){
-    sdCurAnnee=SD_PLANNING[sdCurMois]?SD_PLANNING[sdCurMois].a:null;
-  }
-  if(sdCurAnnee && SD_PLANNING[sdCurMois] && SD_PLANNING[sdCurMois].a!==sdCurAnnee){
-    sdCurMois=SD_PLANNING.findIndex(function(m){return m.a===sdCurAnnee;});
-  }
   sdInitMoisSelect();
-  sdRenderAnnees();
   sdRenderFilterRow();
   sdRenderCurrentView();
 }
@@ -9462,36 +9458,12 @@ async function sdImporterDonnees(){
   }
 }
 
-// Onglets par année (2027, 2028…) : la liste des mois et les flèches ne montrent que l'année choisie
-function sdRenderAnnees(){
-  const el=document.getElementById('sd-annees');
-  if(!el) return;
-  const annees=[];
-  SD_PLANNING.forEach(function(m){ if(annees.indexOf(m.a)<0) annees.push(m.a); });
-  annees.sort(function(a,b){return a-b;});
-  el.innerHTML=annees.length>1?annees.map(function(a){
-    return '<button type="button" class="sd-an'+(a===sdCurAnnee?' actif':'')+'" onclick="sdChoisirAnnee('+a+')">'+a+'</button>';
-  }).join(''):'';
-}
-function sdChoisirAnnee(a){
-  sdCurAnnee=a;
-  if(!SD_PLANNING[sdCurMois]||SD_PLANNING[sdCurMois].a!==a){
-    const idx=SD_PLANNING.findIndex(function(m){return m.a===a;});
-    if(idx>=0) sdCurMois=idx;
-  }
-  sdOpenJours={};
-  sdInitMoisSelect();
-  sdRenderAnnees();
-  sdRenderMois();
-}
-
 function sdInitMoisSelect(){
   const sel=document.getElementById('sd-selMois');
   const selR=document.getElementById('sd-selRappelMois');
   if(sel){
     sel.innerHTML="";
     SD_PLANNING.forEach(function(m,i){
-      if(sdCurAnnee && m.a!==sdCurAnnee) return;
       const o=document.createElement('option');
       o.value=i; o.textContent=m.m+' '+m.a;
       sel.appendChild(o);
@@ -9521,6 +9493,7 @@ function sdRenderFilterRow(){
 function sdRenderCurrentView(){
   if(sdCurTab==='mois') sdRenderMois();
   else if(sdCurTab==='diacre') sdRenderDiacre();
+  else if(sdCurTab==='annee') sdRenderAnnee();
   else if(sdCurTab==='rappel') sdRenderRappel();
   else if(sdCurTab==='fitaovana') sdRenderFitaovana();
   else sdRenderFivoriana();
@@ -9528,7 +9501,7 @@ function sdRenderCurrentView(){
 
 function sdSetTab(t){
   sdCurTab=t;
-  ["mois","diacre","rappel","fitaovana","fivoriana"].forEach(function(v){
+  ["mois","annee","diacre","rappel","fitaovana","fivoriana"].forEach(function(v){
     const el=document.getElementById("sd-view-"+v);
     if(el) el.style.display=(v===t)?"block":"none";
     const tb=document.getElementById("sd-tab-"+v);
@@ -9536,21 +9509,42 @@ function sdSetTab(t){
   });
   const mn=document.getElementById("sd-monthNav");
   if(mn) mn.style.display=(t==="mois")?"flex":"none";
-  const an=document.getElementById("sd-annees");
-  if(an) an.style.display=(t==="mois")?"flex":"none";
   sdRenderCurrentView();
 }
 
-function sdGoMois(i){sdCurMois=parseInt(i);sdOpenJours={};sdRenderMois();}
-// Flèches : on reste dans l'année affichée
-function sdPasMois(dir){
-  const j=sdCurMois+dir;
-  if(j<0||j>=SD_PLANNING.length) return;
-  if(sdCurAnnee && SD_PLANNING[j].a!==sdCurAnnee) return;
-  sdCurMois=j; sdOpenJours={}; sdRenderMois();
+// Onglet « Par année » : une ligne par mois, avec les diacres de ce mois. Touchez un mois pour l'ouvrir.
+let sdAnneeOnglet=null;
+function sdChoisirAnneeOnglet(a){sdAnneeOnglet=a;sdRenderAnnee();}
+function sdRenderAnnee(){
+  const btns=document.getElementById('sd-annee-btns');
+  const el=document.getElementById('sd-annee-liste');
+  if(!btns||!el) return;
+  const annees=[];
+  SD_PLANNING.forEach(function(m){ if(annees.indexOf(m.a)<0) annees.push(m.a); });
+  annees.sort(function(a,b){return a-b;});
+  if(sdAnneeOnglet===null||annees.indexOf(sdAnneeOnglet)<0){
+    const cur=SD_PLANNING[sdCurMois];
+    sdAnneeOnglet=cur?cur.a:(annees[0]||null);
+  }
+  btns.innerHTML=annees.map(function(a){
+    return '<div class="filter-chip'+(a===sdAnneeOnglet?' active':'')+'" onclick="sdChoisirAnneeOnglet('+a+')">'+a+'</div>';
+  }).join('');
+  const lignes=SD_PLANNING.map(function(m,i){return {m:m,i:i};}).filter(function(x){return x.m.a===sdAnneeOnglet;});
+  el.innerHTML=lignes.length?lignes.map(function(x){
+    const noms=(x.m.g||[]).map(function(n){return esc(n);}).join(' · ');
+    return '<div onclick="sdOuvrirMoisDepuisAnnee('+x.i+')" style="background:#fff;border:1px solid var(--gris2);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer">'
+      +'<div style="font-size:13px;font-weight:800;color:var(--bleu);margin-bottom:4px">'+esc(x.m.m)+' '+x.m.a+'</div>'
+      +'<div style="font-size:13px;line-height:1.5;color:var(--texte)">'+noms+'</div></div>';
+  }).join(''):'<div class="vide">Aucun planning pour cette année.</div>';
 }
-function sdPrevMois(){sdPasMois(-1);}
-function sdNextMois(){sdPasMois(1);}
+function sdOuvrirMoisDepuisAnnee(i){
+  sdCurMois=i; sdOpenJours={};
+  sdSetTab('mois');
+}
+
+function sdGoMois(i){sdCurMois=parseInt(i);sdOpenJours={};sdRenderMois();}
+function sdPrevMois(){if(sdCurMois>0){sdCurMois--;sdOpenJours={};sdRenderMois();}}
+function sdNextMois(){if(sdCurMois<SD_PLANNING.length-1){sdCurMois++;sdOpenJours={};sdRenderMois();}}
 function sdToggleJour(id){
   sdOpenJours[id]=!sdOpenJours[id];
   const b=document.getElementById("sd-body-"+id);
