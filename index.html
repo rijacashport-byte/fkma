@@ -1843,6 +1843,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <optgroup label="C3 — Fitoriana">
  <option value="C3.1">C3.1 — Mpitoriteny ivelany</option>
  <option value="C3.2">C3.2 — Fanampiana asa fitoriana</option>
+ <option value="TAFO-EMCI">TAFO EM-CI (sous C3)</option>
  <option value="C3.3">C3.3 — Fanampiana Fiangonana / SAMUEL</option>
  </optgroup>
  <optgroup label="C4 — Fiaraha-miasa">
@@ -1853,20 +1854,26 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  </optgroup>
  <optgroup label="C5 — Asa anatiny">
  <option value="C5.1">C5.1 — Famangiana - Tsodrano</option>
- <option value="C5.2">C5.2 — Asa vavolombelona</option>
+ <option value="C5.2">C5.2 — Asa vavolombelona (ex-Fanampiana - fanomezana)</option>
+ <option value="C5.2.1">C5.2.1 — Raki-pisaorana mivoaka</option>
+ <option value="C5.2.2">C5.2.2 — Fanomezana mivoaka (cf. B3)</option>
  <option value="C5.3">C5.3 — Fisintonanan'ny Fiangonana</option>
  <option value="C5.4.1">C5.4.1 — Fiofanan'ny Mpitandrina</option>
  <option value="C5.5">C5.5 — Divay sy mofo Fandraisana</option>
  </optgroup>
  <optgroup label="C6 — Fampitaovana">
- <option value="C6.1">C6.1 — Fampitaovana</option>
+ <option value="C6.1.1">C6.1.1 — ETOL Mpitandrina</option>
+ <option value="C6.1.3">C6.1.3 — Fanotàna boky sy antonta-taratasy</option>
+ <option value="C6.1.4">C6.1.4 — Fanatsaràna ny trano fiangonana</option>
+ <option value="C6.1.5">C6.1.5 — Latabatra masina</option>
  <option value="C6.2">C6.2 — Banky</option>
  <option value="C6.3">C6.3 — Samihafa</option>
- <option value="C6.5">C6.5 — Prise en charge sanitaire Mpitandrina</option>
+ <option value="C6.5">C6.5 — Prise en charge sanitaire Mpitandrina mivady</option>
+ <option value="C6.5.1">C6.5.1 — Prise en charge sanitaire Mpitandrina mivady (reliquat N-1)</option>
  <option value="C6.6">C6.6 — Tranokala www.fkma.ci</option>
  </optgroup>
  <optgroup label="C7">
- <option value="C7.1">C7.1 — Raki-pisaorana & fanomezana</option>
+ <option value="C7.1">C7.1 — Raki-pisaorana & fanomezana ary fara-rakitra</option>
  </optgroup>
  </select>
  </div>
@@ -3693,7 +3700,7 @@ function libelleRubrique(code){
     if(o&&o.value) return sels[i]==='vf-cat'?o.text:code+' — '+o.text;
   }
   // Rubriques des écritures automatiques (pas dans les listes du formulaire)
-  const AUTO={'B1.1':'Rakitra','B2':'Raki-pisaorana','ANJ-E1':'Anjarako voaray','VB':'Versement banque','K45-INFO':'Raki-pandraisana (ancien)'};
+  const AUTO={'B1.1':'Rakitra','B2':'Raki-pisaorana','C6.1':'Fampitaovana (ancien code, à recoder en C6.1.x)','ANJ-E1':'Anjarako voaray','VB':'Versement banque','K45-INFO':'Raki-pandraisana (ancien)'};
   return AUTO[code]?code+' — '+AUTO[code]:code;
 }
 function fmt(n){return Number(n||0).toLocaleString('fr-FR').replace(/[\u202f\u2009]/g,'\u00a0');}
