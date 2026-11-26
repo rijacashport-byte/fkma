@@ -1530,6 +1530,11 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <input type="text" id="rak-lettrage" placeholder="Ex: A, B, C…"
  style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;text-transform:uppercase;">
  </div>
+ <div class="champ" style="grid-column:1/-1">
+ <label>👥 Isan'olona (total présents)</label>
+ <input type="number" id="rak-pres" min="0" placeholder="0" inputmode="numeric"
+ style="width:100%;border:1.5px solid var(--gris2);border-radius:7px;padding:9px 11px;font-size:14px;font-family:'Inter',sans-serif;">
+ </div>
  </div>
  </div>
 
@@ -2140,6 +2145,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
  <button class="btn btn-or"   onclick="chargerAnjHist()"><span>📨</span> Recharger cet Anjarako</button>
  </div>
  <div id="hist-info" style="font-size:12px;color:var(--texte2);margin-top:8px;padding:8px 10px;background:var(--gris1);border-radius:7px;display:none"></div>
+ <button class="btn btn-excel btn-full" onclick="exporterHistoriqueExcel()" style="margin-top:10px"><span>📊</span> Exporter l'historique (Excel : Rakitra, Anjarako, cultes)</button>
  </div>
  </div>
 
@@ -4171,6 +4177,7 @@ function snapRakitra(){
     date:document.getElementById('rak-date-input')?.value||'',lb,lp,tb,tp,totalRakitra:tb+tp,
     rpOn,lrpb,lrpp,rpb,rpp,totalRP:rpb+rpp,total:tb+tp+rpb+rpp,
     rakis,totalRaki,diacres,
+    presences:parseInt(document.getElementById('rak-pres')?.value)||0,
     page:document.getElementById('rak-page')?.value||'',
     lettrage:document.getElementById('rak-lettrage')?.value.toUpperCase()||'',
     tresNom:document.getElementById('tres-nom').value,
@@ -6800,13 +6807,22 @@ async function chargerAnjHist(){
 let dashAnnee=new Date().getFullYear();
 function changerAnnee(d){dashAnnee+=d;renderDashboard();}
 
+// Présences de l'année : cultes enregistrés + présents saisis dans le journal Rakitra (sans doublon de date).
+function presencesAnnee(yr){
+  const cultes=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const dates=new Set(cultes.map(h=>h.date));
+  const rak=load(SK_RAKITRA).filter(h=>h.date&&h.date.startsWith(yr)&&h.presences>0&&!dates.has(h.date))
+    .map(h=>({date:h.date,type:'Rakitra',mpitarika:'',lieu:'',presences:h.presences,isFandraisana:false,mpandray:0}));
+  return cultes.concat(rak);
+}
+
 function renderDashboard(){
   document.getElementById('dash-annee-label').textContent=dashAnnee;
   const yr=String(dashAnnee);
   const rak=load(SK_RAKITRA).filter(h=>h.date&&h.date.startsWith(yr));
   const anj=load(SK_ANJ_H).filter(h=>h.date&&h.date.startsWith(yr));
   const dep=load(SK_DEP).filter(d=>d.date&&d.date.startsWith(yr));
-  const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const cul=presencesAnnee(yr);
   const T=totauxPeriode(rak,anj,dep);
   const tR=T.rakitra+T.rp, tRakiPis=T.rakiPis, tA=T.anjarako, tD=T.depenses, solde=T.solde;
   const tP=cul.reduce((a,h)=>a+(h.presences||0),0);
@@ -6849,7 +6865,7 @@ function renderDashFinances(){
 
 function renderDashPresences(){
   const yr=String(dashAnnee);
-  const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const cul=presencesAnnee(yr);
   const tbody=document.getElementById('dash-tbody-pres');tbody.innerHTML='';
   let tP=0,tC=0,tF=0,tM=0;
   for(let m=0;m<12;m++){
@@ -6871,7 +6887,7 @@ function renderDashPresences(){
 
 function renderDashCultes(){
   const yr=String(dashAnnee);
-  const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const cul=presencesAnnee(yr);
   const rak=load(SK_RAKITRA);
   const tbody=document.getElementById('dash-tbody-cultes');tbody.innerHTML='';
   if(!cul.length){tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--texte2)">Aucun culte enregistré pour ${dashAnnee}</td></tr>`;return;}
@@ -6892,7 +6908,7 @@ function exporterDashExcel(){
   const rak=load(SK_RAKITRA).filter(h=>h.date&&h.date.startsWith(yr));
   const anj=load(SK_ANJ_H).filter(h=>h.date&&h.date.startsWith(yr));
   const dep=load(SK_DEP).filter(d=>d.date&&d.date.startsWith(yr));
-  const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const cul=presencesAnnee(yr);
   const rows=[['BILAN FKMA ABIDJAN — '+dashAnnee],[],
     ['Mois','Cultes','Présences','Rakitra','Raki-pand.','Anjarako','Dépenses','Solde']];
   for(let m=0;m<12;m++){
@@ -6910,12 +6926,37 @@ function exporterDashExcel(){
   XLSX.writeFile(wb,'bilan_fkma_'+dashAnnee+'.xlsx');
 }
 
+// Export Excel de l'historique (Rakitra, Anjarako, cultes) depuis les données de cet appareil.
+function exporterHistoriqueExcel(){
+  const wb=XLSX.utils.book_new();
+  const cul=load(SK_CULTES);
+  const rak=load(SK_RAKITRA).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  const rows=[['Date','N° Rakitra','Page','Lettrage','Rakitra (F)','Raki-pandraisana (F)','Raki-pis. offrandes (F)','Total (F)','Présents','Diacres','Trésorier','Enregistré par']];
+  rak.forEach(function(h){
+    const pres=h.presences||cul.filter(function(x){return x.date===h.date;}).reduce(function(a,x){return a+(x.presences||0);},0);
+    rows.push([h.date||'',h.numero||'',h.page||'',h.lettrage||'',h.totalRakitra||0,h.totalRP||0,h.totalRaki||0,h.total||0,pres,(h.diacres||[]).join(', '),h.tresNom||'',h.createdByNom||'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Rakitra');
+
+  const anj=load(SK_ANJ_H).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  const ra=[['Date','Total Anjarako (F)','Cartes','Versements directs','Mois direct']];
+  anj.forEach(function(h){ra.push([h.date||'',h.total||0,h.nbCartes||h.nbCompte||h.nbEnv||'',h.nbDirect||'',h.moisDirect||'']);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ra),'Anjarako');
+
+  const rc=[['Date','Type de culte','Présents','Fandraisana','Mpandray (F)','Lieu','Mpitarika']];
+  cul.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).forEach(function(c){
+    rc.push([c.date||'',c.type||'',c.presences||0,c.isFandraisana?'oui':'',c.mpandray||0,c.lieu||'',c.mpitarika||'']);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rc),'Cultes');
+  XLSX.writeFile(wb,'historique_fkma_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
 function exporterDashWA(){
   const yr=String(dashAnnee);
   const rak=load(SK_RAKITRA).filter(h=>h.date&&h.date.startsWith(yr));
   const anj=load(SK_ANJ_H).filter(h=>h.date&&h.date.startsWith(yr));
   const dep=load(SK_DEP).filter(d=>d.date&&d.date.startsWith(yr));
-  const cul=load(SK_CULTES).filter(h=>h.date&&h.date.startsWith(yr));
+  const cul=presencesAnnee(yr);
   const T=totauxPeriode(rak,anj,dep);
   const tR=T.rakitra+T.rp, tA=T.anjarako, tD=T.depenses;
   const tP=cul.reduce((a,h)=>a+(h.presences||0),0);
