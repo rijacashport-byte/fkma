@@ -6959,11 +6959,11 @@ async function exporterJournalK45Excel(){
   const snap=await fs.getDocs(fs.query(fs.collection(db,'journal_k45'), fs.orderBy('date','asc')));
   const docs=[]; snap.forEach(function(ds){ docs.push({id:ds.id, d:ds.data()}); });
   const txt=function(v){ if(v==null) return ''; if(Array.isArray(v)) return v.map(function(x){return typeof x==='string'?x:(x&&(x.label||x.nom||x.texte)) ||JSON.stringify(x);}).join(' · '); if(typeof v==='object') return JSON.stringify(v); return String(v); };
-  const rows=[['Page','Date','Type de culte','Lieu','Présents','Fandraisana','Mpandray','Mpitarika','Mitory teny','Sermon','Référence','Thème','Mpamaky','Faits','Nb faits','Photo','Pièces','Enregistré par','ID Firebase']];
+  const rows=[['Page','Date','Type de culte','Lieu','Présents','Fandraisana','Mpandray','Mpitarika','Mitory teny','Vavaka fitsilovana','Sermon','Référence','Thème','Mpamaky','Faits','Nb faits','Photo','Pièces','Enregistré par','ID Firebase']];
   let n=0;
   docs.forEach(function(x){
     const d=x.d; n++;
-    rows.push([n, d.date||'', d.type||'', d.lieu||'', d.presences||0, d.isFandraisana?'oui':'', d.mpandray||0, txt(d.mpitarika), txt(d.mitory), txt(d.sermon), txt(d.ref), txt(d.theme), txt(d.tags||d.mpamaky), txt(d.faits), (d.faits&&d.faits.length)||0, txt(d.photoNum), d.nbPieces||0, d.createdByNom||d.createdBy||'', x.id]);
+    rows.push([n, d.date||'', d.type||'', d.lieu||'', d.presences||0, d.isFandraisana?'oui':'', d.mpandray||0, txt(d.mpitarika), txt(d.mitory), txt(d.vavaka), txt(d.sermon), txt(d.ref), txt(d.theme), txt(d.tags||d.mpamaky), txt(d.faits), (d.faits&&d.faits.length)||0, txt(d.photoNum), d.nbPieces||0, d.createdByNom||d.createdBy||'', x.id]);
   });
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Journal K45');
@@ -7289,6 +7289,7 @@ async function chargerHistorique(){
               ${d.presences?`<span>👥 ${esc(d.presences)}</span>`:''}
               ${d.isFandraisana&&d.mpandray?`<span>🍷 ${esc(d.mpandray)} Mpandray</span>`:''}
               ${d.mitory?`<span>📖 ${esc(d.mitory)}</span>`:''}
+              ${d.vavaka?`<span>🙏 ${esc(d.vavaka)}</span>`:''}
               ${d.photoNum?`<span>📷 ${esc(d.photoNum)}</span>`:''}
               ${d.faits?.length?`<span>⭐ ${d.faits.length} fait(s)</span>`:''}
               ${badgePieces(docId,d.nbPieces)}
