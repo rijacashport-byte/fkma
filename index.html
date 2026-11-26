@@ -2318,6 +2318,7 @@ body.lecture-seule [onclick*="import-input"]{display:none !important;}
 <div id="k45-tab-historique" style="display:none">
  <div class="card">
  <div class="ctit"><i class="ti ti-book"></i>Journal K45 — toutes les pages</div>
+ <button class="btn btn-excel btn-full" onclick="exporterJournalK45Excel()" style="margin-bottom:10px"><span>📊</span> Exporter le journal (Excel, toutes les pages)</button>
  <div id="hist-liste"><div class="apvide">Chargement…</div></div>
  </div>
 </div>
@@ -6949,6 +6950,27 @@ function exporterHistoriqueExcel(){
   });
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rc),'Cultes');
   XLSX.writeFile(wb,'historique_fkma_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// Export Excel du journal (collection journal_k45 : une ligne par page de culte), lu directement depuis Firebase.
+async function exporterJournalK45Excel(){
+  const db=window._db, fs=window._fs;
+  if(!db){ alert('Firebase non connecté.'); return; }
+  const snap=await fs.getDocs(fs.query(fs.collection(db,'journal_k45'), fs.orderBy('date','asc')));
+  const docs=[]; snap.forEach(function(ds){ docs.push({id:ds.id, d:ds.data()}); });
+  const txt=function(v){ if(v==null) return ''; if(Array.isArray(v)) return v.map(function(x){return typeof x==='string'?x:(x&&(x.label||x.nom||x.texte)) ||JSON.stringify(x);}).join(' · '); if(typeof v==='object') return JSON.stringify(v); return String(v); };
+  const rows=[['Page','Date','Type de culte','Lieu','Présents','Fandraisana','Mpandray','Mpitarika','Mitory teny','Sermon','Référence','Thème','Mpamaky','Faits','Nb faits','Photo','Pièces','Enregistré par','ID Firebase']];
+  let n=0;
+  docs.forEach(function(x){
+    const d=x.d; n++;
+    rows.push([n, d.date||'', d.type||'', d.lieu||'', d.presences||0, d.isFandraisana?'oui':'', d.mpandray||0, txt(d.mpitarika), txt(d.mitory), txt(d.sermon), txt(d.ref), txt(d.theme), txt(d.tags||d.mpamaky), txt(d.faits), (d.faits&&d.faits.length)||0, txt(d.photoNum), d.nbPieces||0, d.createdByNom||d.createdBy||'', x.id]);
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Journal K45');
+  const brut=[['ID Firebase','Données complètes (JSON)']];
+  docs.forEach(function(x){ brut.push([x.id, JSON.stringify(x.d)]); });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(brut),'Brut');
+  XLSX.writeFile(wb,'journal_fkma_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 function exporterDashWA(){
